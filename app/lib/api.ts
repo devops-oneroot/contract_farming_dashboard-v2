@@ -621,6 +621,8 @@ export type DiseaseReport = {
   cropName: string;
   photos: string[];
   note: string;
+  voiceNoteUrl?: string;
+  voiceNoteSeconds?: number;
   location: { latitude: number | null; longitude: number | null };
   status: "open" | "answered";
   replies: DiseaseReply[];

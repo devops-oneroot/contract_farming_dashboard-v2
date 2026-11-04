@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Bug, Clock, MapPin, ExternalLink, MessageSquare } from "lucide-react";
+import { Bug, Clock, MapPin, ExternalLink, MessageSquare, Mic } from "lucide-react";
 import { api, DiseaseReport } from "../lib/api";
 import { PhotoThumb } from "../components/lightbox";
+import { AudioPlayer } from "../components/audio-player";
 
 function fmtDateTime(s: string) {
   return new Date(s).toLocaleString(undefined, {
@@ -179,6 +180,16 @@ export default function DiseaseReportsPage() {
 
                 {r.note ? (
                   <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-300">{r.note}</p>
+                ) : null}
+
+                {/* The problem as the agent described it by voice. */}
+                {r.voiceNoteUrl ? (
+                  <div className="mt-3">
+                    <div className="mb-1 flex items-center gap-1 text-xs text-zinc-500">
+                      <Mic size={12} /> Voice note
+                    </div>
+                    <AudioPlayer src={r.voiceNoteUrl} fallbackSeconds={r.voiceNoteSeconds ?? 0} />
+                  </div>
                 ) : null}
 
                 {/* The advice sent back — the outcome the whole flow exists for. */}

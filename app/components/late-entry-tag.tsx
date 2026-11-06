@@ -56,7 +56,7 @@ const plural = (n: number) => `${n} day${n === 1 ? "" : "s"}`;
 export function LateEntryTag({ sale }: { sale: Sale }) {
   if (!isLateEntry(sale)) return null;
   return (
-    <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-100 px-1.5 py-0.5 align-middle text-[10px] font-bold text-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
+    <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-amber-100 px-1.5 py-0.5 align-middle text-[10px] font-bold text-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
       <Clock size={10} /> OLD SALE
     </span>
   );

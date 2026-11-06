@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CalendarClock, CalendarDays, ExternalLink, MapPin, Search } from "lucide-react";
+import { CalendarClock, ExternalLink, MapPin, Search } from "lucide-react";
 
 import { api, Person, Visit } from "../lib/api";
 import { PhotoThumb } from "../components/lightbox";
@@ -169,41 +169,45 @@ export default function VisitsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <MapPin size={20} className="text-green-600" />
+      <div className="page-toolbar">
+        <div className="flex min-w-0 items-center gap-2">
+          <MapPin size={20} className="shrink-0 text-green-600" />
           <h2 className="text-lg font-semibold">
             Farm Visits ({rows.length}
             {rows.length !== visits.length ? ` of ${visits.length}` : ""})
           </h2>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 text-sm">
-          <div className="flex items-center gap-2 rounded-lg border border-zinc-300 px-2 dark:border-zinc-700">
-            <Search size={14} className="text-zinc-400" />
+        <ExcelExport id="visits" fileName="farm-visits" columns={VISIT_COLUMNS} rows={() => rows} />
+      </div>
+
+      <div className="card filter-bar p-3">
+        <label className="filter-field">
+          <span className="filter-label">Search</span>
+          <span className="relative block">
+            <Search size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400" />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Farmer name or number"
-              className="w-48 bg-transparent py-1.5 outline-none"
+              className="filter-control pl-8"
             />
-          </div>
+          </span>
+        </label>
+        <div className="filter-field">
+          <span className="filter-label">Agronomist</span>
           <AgronomistMultiSelect agronomists={agronomists} value={who} onChange={setWho} />
-          <CalendarDays size={15} className="text-zinc-400" />
-          <input
-            type="date"
-            value={from}
-            onChange={(e) => setFrom(e.target.value)}
-            className="rounded-lg border border-zinc-300 bg-transparent px-2 py-1.5 dark:border-zinc-700"
-          />
-          <span className="text-zinc-400">to</span>
-          <input
-            type="date"
-            value={to}
-            onChange={(e) => setTo(e.target.value)}
-            className="rounded-lg border border-zinc-300 bg-transparent px-2 py-1.5 dark:border-zinc-700"
-          />
-          {filtered && (
+        </div>
+        <label className="filter-field">
+          <span className="filter-label">Visited from</span>
+          <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="filter-control" />
+        </label>
+        <label className="filter-field">
+          <span className="filter-label">Visited to</span>
+          <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="filter-control" />
+        </label>
+        {filtered && (
+          <div className="filter-actions">
             <button
               onClick={() => {
                 setWho([]);
@@ -212,18 +216,17 @@ export default function VisitsPage() {
                 setOwed("");
                 setQuery("");
               }}
-              className="rounded-lg px-2.5 py-1.5 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-900"
+              className="h-9 rounded-lg px-3 text-zinc-500 hover:bg-zinc-100 hover:text-red-600 dark:hover:bg-zinc-900"
             >
               Clear filters
             </button>
-          )}
-          <ExcelExport id="visits" fileName="farm-visits" columns={VISIT_COLUMNS} rows={() => rows} />
-        </div>
+          </div>
+        )}
       </div>
 
       {/* The counts double as the filter. "No next visit" leads because it is
           the one that needs somebody to do something about it. */}
-      <div className="flex flex-wrap gap-2">
+      <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
         {(
           [
             { key: "none", n: stats.none },
@@ -259,17 +262,17 @@ export default function VisitsPage() {
             : "No visits match these filters."}
         </p>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
-          <table className="w-full min-w-[1040px] text-sm">
+        <div className="table-wrap">
+          <table className="data-table">
             <thead>
-              <tr className="border-b border-zinc-200 text-left text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-800">
-                <th className="px-4 py-3 font-medium">Agronomist</th>
-                <th className="px-4 py-3 font-medium">Farmer</th>
-                <th className="px-4 py-3 font-medium">Visited</th>
-                <th className="px-4 py-3 font-medium">Next visit</th>
-                <th className="px-4 py-3 font-medium">Photos</th>
-                <th className="px-4 py-3 font-medium">Location</th>
-                <th className="px-4 py-3 font-medium">Notes</th>
+              <tr>
+                <th>Agronomist</th>
+                <th>Farmer</th>
+                <th>Visited</th>
+                <th>Next visit</th>
+                <th>Photos</th>
+                <th>Location</th>
+                <th>Notes</th>
               </tr>
             </thead>
             <tbody>
@@ -283,30 +286,27 @@ export default function VisitsPage() {
                 const due =
                   state === "skipped" ? null : v.farmer?.nextFollowUpAt || v.farmer?.visitDate;
                 return (
-                  <tr
-                    key={v._id}
-                    className="border-b border-zinc-100 align-top last:border-0 dark:border-zinc-900"
-                  >
-                    <td className="px-4 py-3">
+                  <tr key={v._id} className="[&>td]:align-top">
+                    <td>
                       <div className="font-medium">{v.agronomist?.name ?? "—"}</div>
                       {v.agronomist?.mobile ? (
                         <div className="text-xs text-zinc-500">{v.agronomist.mobile}</div>
                       ) : null}
                     </td>
-                    <td className="px-4 py-3">
+                    <td>
                       <div className="font-medium">{v.farmer?.name || v.farmerName || "Farmer"}</div>
                       {v.farmer?.mobile ? (
                         <div className="text-xs text-zinc-500">{v.farmer.mobile}</div>
                       ) : null}
                     </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-zinc-500">
+                    <td className="text-zinc-500">
                       {fmtTime(v.visitedAt)}
                     </td>
 
                     {/* Whether anyone knows when to go back, and the way to say
                         so if not. A random visit has no farmer to schedule
                         against, so it only reports. */}
-                    <td className="px-4 py-3">
+                    <td>
                       <span
                         className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${OWED[state].className}`}
                       >
@@ -359,7 +359,7 @@ export default function VisitsPage() {
                       )}
                     </td>
 
-                    <td className="px-4 py-3">
+                    <td>
                       {photos.length > 0 ? (
                         <div className="flex gap-1.5">
                           {photos.map((p, i) => (
@@ -378,7 +378,7 @@ export default function VisitsPage() {
                         <span className="text-xs text-zinc-400">No photos</span>
                       )}
                     </td>
-                    <td className="whitespace-nowrap px-4 py-3">
+                    <td>
                       {hasLoc ? (
                         <a
                           href={`https://www.google.com/maps?q=${v.location.latitude},${v.location.longitude}`}
@@ -392,8 +392,8 @@ export default function VisitsPage() {
                         <span className="text-xs text-zinc-400">—</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-zinc-600 dark:text-zinc-300">
-                      <span className="line-clamp-3 max-w-[220px]">{v.notes || "—"}</span>
+                    <td className="cell-wrap text-zinc-600 dark:text-zinc-300">
+                      <span className="line-clamp-3">{v.notes || "—"}</span>
                     </td>
                   </tr>
                 );

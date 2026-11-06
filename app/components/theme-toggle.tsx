@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { Check, Moon, Palette, Sun } from "lucide-react";
+import { useSyncExternalStore } from "react";
+import { Moon, Sun } from "lucide-react";
 
 type Theme = "light" | "dark";
 
@@ -13,7 +13,7 @@ export const ACCENTS = [
   { key: "blue", label: "Blue", swatch: "#2563eb" },
   { key: "purple", label: "Purple", swatch: "#7c3aed" },
 ] as const;
-type Accent = (typeof ACCENTS)[number]["key"];
+export type Accent = (typeof ACCENTS)[number]["key"];
 
 const root = () => document.documentElement;
 const currentTheme = (): Theme => (root().getAttribute("data-theme") === "dark" ? "dark" : "light");
@@ -76,70 +76,12 @@ export function ThemeToggle() {
   );
 }
 
-export function AccentPicker() {
+// Current accent plus a setter that applies and remembers it (used by the profile menu).
+export function useAccent() {
   const accent = useSyncExternalStore(subscribe, currentAccent, () => "orange" as Accent);
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
-    document.addEventListener("mousedown", onDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [open]);
-
-  function pick(key: Accent) {
+  function setAccent(key: Accent) {
     root().setAttribute("data-accent", key);
     save("accent", key);
   }
-
-  return (
-    <div ref={ref} className="relative">
-      <button
-        onClick={() => setOpen((o) => !o)}
-        title="Accent colour"
-        aria-label="Accent colour"
-        aria-expanded={open}
-        className={ROUND_BUTTON}
-      >
-        <Palette size={17} />
-        <span className="absolute bottom-1.5 right-1.5 h-2 w-2 rounded-full bg-brand-500 ring-2 ring-white dark:ring-zinc-900" />
-      </button>
-
-      {open && (
-        <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-2xl border border-zinc-200 bg-white p-2 shadow-xl dark:border-zinc-800 dark:bg-zinc-950">
-          <div className="px-2 pb-1.5 pt-1 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
-            Accent colour
-          </div>
-          {ACCENTS.map((a) => {
-            const active = a.key === accent;
-            return (
-              <button
-                key={a.key}
-                onClick={() => pick(a.key)}
-                className={`flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left text-sm transition-colors ${
-                  active ? "bg-brand-50 font-medium text-brand-700 dark:bg-brand-500/10 dark:text-brand-300" : "hover:bg-zinc-100 dark:hover:bg-zinc-900"
-                }`}
-              >
-                <span
-                  className="flex h-6 w-6 items-center justify-center rounded-full text-white shadow-sm"
-                  style={{ background: a.swatch }}
-                >
-                  {active && <Check size={14} strokeWidth={3} />}
-                </span>
-                {a.label}
-              </button>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
+  return [accent, setAccent] as const;
 }

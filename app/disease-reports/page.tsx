@@ -60,12 +60,12 @@ export default function DiseaseReportsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Bug size={20} className="text-green-600" />
+      <div className="page-toolbar">
+        <div className="flex min-w-0 items-center gap-2">
+          <Bug size={20} className="shrink-0 text-green-600" />
           <h2 className="text-lg font-semibold">Crop Disease Reports ({reports.length})</h2>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {[
             { key: "" as const, label: "All" },
             { key: "open" as const, label: "Waiting" },
@@ -86,7 +86,7 @@ export default function DiseaseReportsPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
         {[
           { label: "Waiting for advice", value: String(stats.open), alert: stats.open > 0 },
           { label: "Answered", value: String(stats.answered) },
@@ -96,8 +96,8 @@ export default function DiseaseReportsPage() {
             key={s.label}
             className="card p-3"
           >
-            <div className="text-xs uppercase tracking-wide text-zinc-500">{s.label}</div>
-            <div className={`mt-1 text-xl font-semibold${s.alert ? " text-amber-600" : ""}`}>
+            <div className="text-[11px] uppercase tracking-wide text-zinc-500 sm:text-xs">{s.label}</div>
+            <div className={`mt-1 text-lg font-semibold sm:text-xl${s.alert ? " text-amber-600" : ""}`}>
               {s.value}
             </div>
           </div>
@@ -123,7 +123,7 @@ export default function DiseaseReportsPage() {
                 className="card p-4"
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
+                  <div className="min-w-0">
                     <div className="font-medium">
                       {r.cropName || "Crop"}
                       {r.farmerName ? <span className="text-zinc-400"> · </span> : null}
@@ -135,7 +135,7 @@ export default function DiseaseReportsPage() {
                       {r.farmerMobile ? ` · ${r.farmerMobile}` : ""}
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-3">
                     {hasLoc && (
                       <a
                         href={`https://www.google.com/maps?q=${r.location.latitude},${r.location.longitude}`}
@@ -172,14 +172,14 @@ export default function DiseaseReportsPage() {
                         }))}
                         index={pi}
                         alt="Reported crop"
-                        className="h-28 w-28 rounded-lg object-cover ring-1 ring-zinc-200 hover:ring-brand-400 dark:ring-zinc-700"
+                        className="h-24 w-24 rounded-lg object-cover sm:h-28 sm:w-28 ring-1 ring-zinc-200 hover:ring-brand-400 dark:ring-zinc-700"
                       />
                     ))}
                   </div>
                 )}
 
                 {r.note ? (
-                  <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-300">{r.note}</p>
+                  <p className="mt-3 break-words text-sm text-zinc-600 dark:text-zinc-300">{r.note}</p>
                 ) : null}
 
                 {/* The problem as the agent described it by voice. */}
@@ -200,14 +200,14 @@ export default function DiseaseReportsPage() {
                         key={i}
                         className="border-l-2 border-green-600 bg-green-50/60 py-2 pl-3 pr-2 text-sm dark:bg-green-950/20"
                       >
-                        <div className="flex items-center gap-1.5 font-medium text-green-700 dark:text-green-400">
+                        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 font-medium text-green-700 dark:text-green-400">
                           <MessageSquare size={13} />
                           {rep.seniorName || "Senior agronomist"}
                           <span className="font-normal text-xs text-zinc-500">
                             · {fmtDateTime(rep.at)}
                           </span>
                         </div>
-                        <div className="mt-0.5 text-zinc-700 dark:text-zinc-200">{rep.advice}</div>
+                        <div className="mt-0.5 break-words text-zinc-700 dark:text-zinc-200">{rep.advice}</div>
                       </div>
                     ))}
                   </div>

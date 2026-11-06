@@ -199,44 +199,46 @@ export function ProductsManager() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">
+      <div className="page-toolbar">
+        <h2 className="text-lg font-semibold">
           Products <span className="text-zinc-400">({total})</span>
-        </h1>
-        <div className="relative">
-          <Search
-            size={15}
-            className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400"
-          />
-          <input
-            value={query}
-            onChange={(e) => search(e.target.value)}
-            placeholder="Search products…"
-            className="w-56 rounded-lg border border-zinc-300 bg-transparent py-2 pl-8 pr-3 text-sm dark:border-zinc-700"
-          />
+        </h2>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="relative w-full sm:w-64">
+            <Search
+              size={15}
+              className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400"
+            />
+            <input
+              value={query}
+              onChange={(e) => search(e.target.value)}
+              placeholder="Search products…"
+              className="w-full rounded-lg border border-zinc-300 bg-transparent py-2 pl-8 pr-3 text-sm dark:border-zinc-700"
+            />
+          </div>
+          <button
+            onClick={openNew}
+            className="flex shrink-0 items-center justify-center gap-2 rounded-lg bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600"
+          >
+            <Plus size={16} /> Add product
+          </button>
         </div>
-        <button
-          onClick={openNew}
-          className="flex items-center gap-2 rounded-lg bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600"
-        >
-          <Plus size={16} /> Add product
-        </button>
       </div>
 
-      {error && !open && <p className="mt-4 text-sm text-red-600">{error}</p>}
+      {error && !open && <p className="mb-4 text-sm text-red-600">{error}</p>}
 
       {loading ? (
-        <p className="mt-6 text-zinc-500">Loading…</p>
+        <p className="mt-2 text-zinc-500">Loading…</p>
       ) : products.length === 0 ? (
-        <p className="mt-6 text-zinc-500">
+        <p className="mt-2 text-zinc-500">
           {query ? `No product matches “${query}”.` : "No products yet. Click “Add product”."}
         </p>
       ) : (
-        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {products.map((p) => (
             <div
               key={p._id}
-              className="flex flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950"
+              className="flex min-w-0 flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -245,8 +247,8 @@ export function ProductsManager() {
                 className="h-40 w-full bg-zinc-100 object-cover dark:bg-zinc-900"
               />
               <div className="flex flex-1 flex-col p-4">
-                <div className="font-semibold">{p.name}</div>
-                {p.description && <p className="mt-1 text-sm text-zinc-500">{p.description}</p>}
+                <div className="break-words font-semibold">{p.name}</div>
+                {p.description && <p className="mt-1 break-words text-sm text-zinc-500">{p.description}</p>}
                 {/* Every size and its price, or the single price when there
                     are none. The sizes are what the agronomist picks from in
                     the field, so they are what the card should show. */}
@@ -340,11 +342,11 @@ export function ProductsManager() {
 
       {/* Add / edit modal */}
       {open && (
-        <div className="fixed inset-0 z-20 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-xl bg-white p-6 dark:bg-zinc-950">
-            <div className="flex items-center justify-between">
+        <div className="modal-backdrop">
+          <div className="modal-panel p-4 sm:max-w-md sm:p-6">
+            <div className="flex items-center justify-between gap-3">
               <h2 className="text-lg font-semibold">{form.id ? "Edit product" : "Add product"}</h2>
-              <button onClick={() => setOpen(false)} className="text-zinc-400 hover:text-zinc-700">
+              <button onClick={() => setOpen(false)} className="shrink-0 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200">
                 <X size={20} />
               </button>
             </div>
@@ -369,8 +371,8 @@ export function ProductsManager() {
                 />
               </label>
 
-              <div className="flex gap-3">
-                <label className="block flex-1 text-sm">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <label className="block text-sm">
                   <span className="mb-1 block text-zinc-500">Price (₹)</span>
                   <input
                     type="number"
@@ -379,7 +381,7 @@ export function ProductsManager() {
                     className="w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700"
                   />
                 </label>
-                <label className="block flex-1 text-sm">
+                <label className="block text-sm">
                   <span className="mb-1 block text-zinc-500">Unit</span>
                   <input
                     placeholder="per 1 kg"
@@ -393,15 +395,15 @@ export function ProductsManager() {
               {/* Pack sizes. Once any exist they replace the single price
                   above — the agronomist picks one of these in the field. */}
               <div className="text-sm">
-                <div className="mb-1 flex items-center justify-between">
-                  <span className="text-zinc-500">
+                <div className="mb-1 flex items-start justify-between gap-2">
+                  <span className="min-w-0 text-zinc-500">
                     Sizes{" "}
                     <span className="text-zinc-400">— same product in different packs, each with its own price</span>
                   </span>
                   <button
                     type="button"
                     onClick={addVariant}
-                    className="flex items-center gap-1 rounded-lg border border-zinc-300 px-2 py-1 text-xs hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
+                    className="flex shrink-0 items-center gap-1 rounded-lg border border-zinc-300 px-2 py-1 text-xs hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
                   >
                     <Plus size={13} /> Add size
                   </button>
@@ -418,9 +420,9 @@ export function ProductsManager() {
                           placeholder="1 L"
                           value={v.label}
                           onChange={(e) => setVariant(i, { label: e.target.value })}
-                          className="w-full flex-1 rounded-lg border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700"
+                          className="w-full min-w-0 flex-1 rounded-lg border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700"
                         />
-                        <div className="relative w-36">
+                        <div className="relative w-28 shrink-0 sm:w-36">
                           <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400">
                             ₹
                           </span>
@@ -437,7 +439,7 @@ export function ProductsManager() {
                           type="button"
                           onClick={() => removeVariant(i)}
                           title="Remove this size"
-                          className="rounded-lg p-2 text-zinc-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40"
+                          className="shrink-0 rounded-lg p-2 text-zinc-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40"
                         >
                           <Trash2 size={15} />
                         </button>
@@ -454,7 +456,7 @@ export function ProductsManager() {
                   price, with no CGST/SGST taken out of it on the bill. */}
               <div className="text-sm">
                 <span className="mb-1 block text-zinc-500">GST (5%) on field sales</span>
-                <div className="flex gap-4">
+                <div className="flex flex-wrap gap-x-4 gap-y-1">
                   {[
                     { value: true, label: "Enabled" },
                     { value: false, label: "Disabled" },
@@ -480,12 +482,12 @@ export function ProductsManager() {
 
               <div className="text-sm">
                 <span className="mb-1 block text-zinc-500">Image</span>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
                   {form.preview ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={form.preview} alt="" className="h-16 w-16 rounded-lg object-cover" />
+                    <img src={form.preview} alt="" className="h-16 w-16 shrink-0 rounded-lg object-cover" />
                   ) : (
-                    <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-zinc-100 text-xs text-zinc-400 dark:bg-zinc-900">
+                    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-xs text-zinc-400 dark:bg-zinc-900">
                       none
                     </div>
                   )}
@@ -537,7 +539,7 @@ export function ProductsManager() {
               {error && <p className="text-sm text-red-600">{error}</p>}
             </div>
 
-            <div className="mt-6 flex justify-end gap-2">
+            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <button
                 onClick={() => setOpen(false)}
                 className="rounded-lg px-4 py-2 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-900"

@@ -19,7 +19,13 @@ const fmtDay = (s: string) =>
   });
 
 /** Columns per section, so each table shows what that section is actually about. */
-type Col = { title: string; render: (r: DayReportRow) => React.ReactNode; align?: "right" };
+type Col = {
+  title: string;
+  render: (r: DayReportRow) => React.ReactNode;
+  align?: "right";
+  /** Free text that wraps (12-28rem) rather than stretching the table. */
+  wrap?: boolean;
+};
 
 const NAME: Col = {
   title: "Farmer",
@@ -31,7 +37,11 @@ const NAME: Col = {
   ),
 };
 const ACRES: Col = { title: "Acres", render: (r) => (r.acres > 0 ? r.acres : "—"), align: "right" };
-const CROPS: Col = { title: "Crops", render: (r) => (r.cropNames?.length ? r.cropNames.join(", ") : "—") };
+const CROPS: Col = {
+  title: "Crops",
+  render: (r) => (r.cropNames?.length ? r.cropNames.join(", ") : "—"),
+  wrap: true,
+};
 const TIME: Col = { title: "Time", render: (r) => fmtTime(r.at), align: "right" };
 
 const SECTIONS: { key: keyof DayReport; title: string; cols: Col[] }[] = [
@@ -44,7 +54,7 @@ const SECTIONS: { key: keyof DayReport; title: string; cols: Col[] }[] = [
   {
     key: "visits",
     title: "Farm visits",
-    cols: [NAME, ACRES, { title: "Notes", render: (r) => r.notes || "—" }, TIME],
+    cols: [NAME, ACRES, { title: "Notes", render: (r) => r.notes || "—", wrap: true }, TIME],
   },
   {
     key: "sales",
@@ -52,7 +62,11 @@ const SECTIONS: { key: keyof DayReport; title: string; cols: Col[] }[] = [
     cols: [
       NAME,
       { title: "Crop", render: (r) => r.cropName || "—" },
-      { title: "Products", render: (r) => (r.products?.length ? r.products.join(", ") : "—") },
+      {
+        title: "Products",
+        render: (r) => (r.products?.length ? r.products.join(", ") : "—"),
+        wrap: true,
+      },
       { title: "Amount", render: (r) => money(r.total ?? 0), align: "right" },
       TIME,
     ],
@@ -124,22 +138,19 @@ export function DayDetailModal({
   const written = data?.report;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 sm:p-6"
-      onClick={onClose}
-    >
+    <div className="modal-backdrop" onClick={onClose}>
       <div
-        className="flex max-h-[92vh] w-full max-w-[1400px] flex-col overflow-hidden rounded-2xl bg-white shadow-xl dark:bg-zinc-950"
+        className="modal-panel flex flex-col overflow-hidden sm:max-w-[1400px]"
         // Swallows clicks meant for the dialog, which would otherwise reach the
         // backdrop behind it and close it mid-read.
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between gap-4 border-b border-zinc-200 px-5 py-4 dark:border-zinc-800">
-          <div>
-            <h3 className="text-base font-semibold">{name}</h3>
+        <div className="flex items-start justify-between gap-3 border-b border-zinc-200 px-4 py-3 sm:gap-4 sm:px-5 sm:py-4 dark:border-zinc-800">
+          <div className="min-w-0">
+            <h3 className="truncate text-base font-semibold">{name}</h3>
             <p className="text-xs text-zinc-500">{data ? fmtDay(data.date) : "Loading…"}</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             {data ? (
               <a
                 href={api.dayReportPdfUrl(userId, date)}
@@ -160,7 +171,7 @@ export function DayDetailModal({
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-5 py-4 sm:px-6">
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6">
           {loading ? (
             <div className="flex items-center gap-2 py-10 text-zinc-500">
               <Loader2 size={16} className="animate-spin" /> Loading the day…
@@ -236,14 +247,11 @@ export function DayDetailModal({
                       <p className="text-sm italic text-zinc-400">None</p>
                     ) : (
                       <div className="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-800">
-                        <table className="w-full min-w-[420px] text-sm">
+                        <table className="data-table compact">
                           <thead>
-                            <tr className="border-b border-zinc-200 text-left text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-800">
+                            <tr>
                               {s.cols.map((c) => (
-                                <th
-                                  key={c.title}
-                                  className={`px-3 py-2 font-medium ${c.align === "right" ? "text-right" : ""}`}
-                                >
+                                <th key={c.title} className={c.align === "right" ? "num" : undefined}>
                                   {c.title}
                                 </th>
                               ))}
@@ -251,14 +259,13 @@ export function DayDetailModal({
                           </thead>
                           <tbody>
                             {rows.map((r, i) => (
-                              <tr
-                                key={`${r.id}-${i}`}
-                                className="border-b border-zinc-100 align-top last:border-0 dark:border-zinc-900"
-                              >
+                              <tr key={`${r.id}-${i}`} className="[&>td]:align-top">
                                 {s.cols.map((c) => (
                                   <td
                                     key={c.title}
-                                    className={`px-3 py-2 ${c.align === "right" ? "text-right" : ""}`}
+                                    className={
+                                      c.align === "right" ? "num" : c.wrap ? "cell-wrap" : undefined
+                                    }
                                   >
                                     {c.render(r)}
                                   </td>

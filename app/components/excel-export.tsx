@@ -120,22 +120,22 @@ export function ExcelExport<T>({
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4">
-          <div className="my-12 w-full max-w-md rounded-xl border border-zinc-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-950">
-            <div className="flex items-start gap-3 border-b border-zinc-100 px-5 py-4 dark:border-zinc-900">
-              <div>
+        <div className="modal-backdrop">
+          <div className="modal-panel sm:max-w-md">
+            <div className="flex items-start gap-3 border-b border-zinc-100 px-4 py-4 sm:px-5 dark:border-zinc-900">
+              <div className="min-w-0">
                 <h2 className="text-lg font-semibold">Download Excel</h2>
                 <p className="text-xs text-zinc-500">Tick the columns you want. The current filters apply.</p>
               </div>
               <button
                 onClick={() => setOpen(false)}
-                className="ml-auto rounded-lg p-1 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-900"
+                className="ml-auto shrink-0 rounded-lg p-1 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-900"
               >
                 <X size={18} />
               </button>
             </div>
 
-            <div className="px-5 py-3">
+            <div className="px-4 py-3 sm:px-5">
               <div className="mb-2 flex justify-between text-xs">
                 <button onClick={() => setPicked(new Set(columns.map((c) => c.key)))} className="text-green-700 hover:underline">
                   Select all
@@ -144,7 +144,7 @@ export function ExcelExport<T>({
                   Clear
                 </button>
               </div>
-              <div className="grid max-h-80 grid-cols-2 gap-x-3 overflow-y-auto">
+              <div className="scroll-thin grid max-h-80 grid-cols-1 gap-x-3 overflow-y-auto sm:grid-cols-2">
                 {columns.map((c) => (
                   <button
                     key={c.key}
@@ -166,7 +166,7 @@ export function ExcelExport<T>({
               {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
             </div>
 
-            <div className="flex items-center justify-end gap-2 border-t border-zinc-100 px-5 py-3 dark:border-zinc-900">
+            <div className="flex flex-wrap items-center justify-end gap-2 border-t border-zinc-100 px-4 py-3 sm:px-5 dark:border-zinc-900">
               <span className="mr-auto text-xs text-zinc-500">{picked.size} column(s)</span>
               <button onClick={() => setOpen(false)} className="rounded-lg px-3 py-1.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-900">
                 Cancel

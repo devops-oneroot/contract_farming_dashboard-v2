@@ -110,7 +110,7 @@ export function AudioPlayer({
 
   return (
     <div
-      className={`flex items-center gap-2 rounded-full bg-zinc-100 py-1 pl-1 pr-3 dark:bg-zinc-900 ${
+      className={`flex max-w-full items-center gap-2 rounded-full bg-zinc-100 py-1 pl-1 pr-3 dark:bg-zinc-900 ${
         compact ? "w-fit" : "w-full"
       }`}
     >
@@ -124,7 +124,7 @@ export function AudioPlayer({
       </button>
 
       {!compact && (
-        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-zinc-300 dark:bg-zinc-700">
+        <div className="h-1.5 min-w-8 flex-1 overflow-hidden rounded-full bg-zinc-300 dark:bg-zinc-700">
           <div className="h-full rounded-full bg-brand-500" style={{ width: `${pct}%` }} />
         </div>
       )}

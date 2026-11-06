@@ -63,7 +63,7 @@ export function AcresCovered({ agronomists }: { agronomists: Person[] }) {
 
   return (
     <div className="flex flex-wrap items-center gap-2 text-sm">
-      <Sprout size={15} className="text-green-600" />
+      <Sprout size={15} className="shrink-0 text-green-600" />
       <span className="text-zinc-500">Acres covered</span>
       <AgronomistMultiSelect
         agronomists={agronomists}
@@ -90,7 +90,7 @@ export function AcresCovered({ agronomists }: { agronomists: Person[] }) {
       )}
 
       {who && coverage && coverage !== "error" && coverage !== "stale-server" && (
-        <span className="flex items-center gap-2 rounded-lg bg-green-50 px-3 py-1.5 text-sm font-semibold text-green-800 dark:bg-green-950/40 dark:text-green-300">
+        <span className="flex flex-wrap items-center gap-x-2 rounded-lg bg-green-50 px-3 py-1.5 text-sm font-semibold text-green-800 dark:bg-green-950/40 dark:text-green-300">
           {coverage.acres.toLocaleString("en-IN")} acres
           <span className="text-xs font-normal text-green-700/70 dark:text-green-400/70">
             across {coverage.farmers} farmer{coverage.farmers === 1 ? "" : "s"}{" "}

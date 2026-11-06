@@ -606,17 +606,17 @@ export default function TrackingPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="page-toolbar mb-0">
         <div className="flex items-center gap-2">
           <Navigation size={20} className="text-green-600" />
           <h2 className="text-lg font-semibold">Tracking ({total})</h2>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <select
-            value={who}
-            onChange={(e) => applyFilter(setWho)(e.target.value)}
-            className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-          >
+      </div>
+
+      <div className="card filter-bar p-3">
+        <label className="filter-field">
+          <span className="filter-label">Agent</span>
+          <select value={who} onChange={(e) => applyFilter(setWho)(e.target.value)} className="filter-control">
             <option value="">All agents</option>
             {agents.map((a) => (
               <option key={a._id} value={a._id}>
@@ -624,28 +624,28 @@ export default function TrackingPage() {
               </option>
             ))}
           </select>
-          <input
-            type="date"
-            value={from}
-            onChange={(e) => applyFilter(setFrom)(e.target.value)}
-            className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-          />
-          {(who || from) && (
+        </label>
+        <label className="filter-field">
+          <span className="filter-label">Date</span>
+          <input type="date" value={from} onChange={(e) => applyFilter(setFrom)(e.target.value)} className="filter-control" />
+        </label>
+        {(who || from) && (
+          <div className="filter-actions">
             <button
               onClick={() => {
                 setWho("");
                 setFrom("");
                 setPage(1);
               }}
-              className="text-sm text-zinc-500 hover:underline"
+              className="h-9 rounded-lg px-3 text-sm text-zinc-500 hover:bg-zinc-100 hover:text-red-600 dark:hover:bg-zinc-900"
             >
               Clear
             </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {[
           { label: "Distance", value: `${totals.km} km` },
           { label: "Time tracked", value: `${totals.hours} h` },
@@ -672,18 +672,18 @@ export default function TrackingPage() {
           No tracked days yet. They appear when an agent taps START in the app.
         </p>
       ) : (
-        <div className="overflow-x-auto card">
-          <table className="w-full min-w-[1100px] text-sm">
+        <div className="table-wrap">
+          <table className="data-table">
             <thead>
-              <tr className="border-b border-zinc-200 text-left text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-800">
-                <th className="px-4 py-3 font-medium">Agent</th>
-                <th className="px-4 py-3 font-medium">Started</th>
-                <th className="px-4 py-3 font-medium">Ended</th>
-                <th className="px-4 py-3 font-medium">Duration</th>
-                <th className="px-4 py-3 font-medium">Distance</th>
-                <th className="px-4 py-3 font-medium">Pauses</th>
-                <th className="px-4 py-3 font-medium">Photos</th>
-                <th className="px-4 py-3 font-medium">Route</th>
+              <tr>
+                <th>Agent</th>
+                <th>Started</th>
+                <th>Ended</th>
+                <th>Duration</th>
+                <th>Distance</th>
+                <th>Pauses</th>
+                <th>Photos</th>
+                <th>Route</th>
               </tr>
             </thead>
             <tbody>
@@ -698,13 +698,13 @@ export default function TrackingPage() {
                   { url: s.endPhotoUrl, label: "End" },
                 ].filter((p) => p.url);
                 return (
-                  <tr key={s._id} className="border-b border-zinc-100 align-top last:border-0 dark:border-zinc-900">
-                    <td className="px-4 py-3">
+                  <tr key={s._id} className="[&>td]:align-top">
+                    <td>
                       <div className="font-medium">{s.user?.name || s.userName || "—"}</div>
                       {s.user?.mobile ? <div className="text-xs text-zinc-500">{s.user.mobile}</div> : null}
                     </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-zinc-500">{fmtDateTime(s.startAt)}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-zinc-500">
+                    <td className="text-zinc-500">{fmtDateTime(s.startAt)}</td>
+                    <td className="text-zinc-500">
                       {off ? (
                         "—"
                       ) : s.endAt ? (
@@ -715,7 +715,7 @@ export default function TrackingPage() {
                         </span>
                       )}
                     </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-zinc-500">
+                    <td className="text-zinc-500">
                       {off ? (
                         "—"
                       ) : (
@@ -734,9 +734,9 @@ export default function TrackingPage() {
                         </div>
                       )}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className={off ? "cell-wrap" : undefined}>
                       {off ? (
-                        <div className="max-w-[220px]">
+                        <div>
                           <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 ring-1 ring-amber-200 dark:bg-amber-950/40 dark:text-amber-500 dark:ring-amber-900">
                             <CloudRain size={12} /> No field work
                           </span>
@@ -746,13 +746,13 @@ export default function TrackingPage() {
                         <span className="font-semibold text-green-600">{s.distanceKm} km</span>
                       )}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className={pauses.length > 0 && !off ? "cell-wrap" : undefined}>
                       {off ? (
                         <span className="text-xs text-zinc-400">—</span>
                       ) : pauses.length === 0 ? (
                         <span className="text-xs text-zinc-400">None</span>
                       ) : (
-                        <div className="max-w-[300px] space-y-2">
+                        <div className="space-y-2">
                           {pauses.map((p, i) => (
                             <div key={`${p.pausedAt}-${i}`} className="flex items-start gap-2">
                               {p.photoUrl ? (
@@ -790,7 +790,7 @@ export default function TrackingPage() {
                         </div>
                       )}
                     </td>
-                    <td className="px-4 py-3">
+                    <td>
                       {shots.length > 0 ? (
                         <div className="flex gap-1.5">
                           {shots.map((p, pi) => (
@@ -811,7 +811,7 @@ export default function TrackingPage() {
                         <span className="text-xs text-zinc-400">—</span>
                       )}
                     </td>
-                    <td className="px-4 py-3">
+                    <td>
                       {off ? (
                         <span className="text-xs text-zinc-400">—</span>
                       ) : (
@@ -862,11 +862,11 @@ export default function TrackingPage() {
 
       {/* Route map */}
       {(open || openLoading) && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="flex h-[85vh] w-full max-w-6xl flex-col overflow-hidden rounded-xl bg-white dark:bg-zinc-950">
-            <div className="flex items-center justify-between border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
-              <div>
-                <div className="font-medium">{open?.user?.name || open?.userName || "Route"}</div>
+        <div className="modal-backdrop">
+          <div className="modal-panel flex h-[92dvh] flex-col overflow-hidden sm:h-[85vh] sm:max-w-6xl">
+            <div className="flex items-start justify-between gap-3 border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
+              <div className="min-w-0">
+                <div className="truncate font-medium">{open?.user?.name || open?.userName || "Route"}</div>
                 {open && (
                   <div className="text-xs text-zinc-500">
                     {fmtDateTime(open.startAt)} · {duration(open.startAt, open.endAt)} ·{" "}
@@ -888,7 +888,7 @@ export default function TrackingPage() {
                   setAnchor(null);
                   setNearby(null);
                 }}
-                className="rounded-lg p-1.5 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-900"
+                className="shrink-0 rounded-lg p-1.5 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-900"
               >
                 <X size={18} />
               </button>
@@ -930,7 +930,7 @@ export default function TrackingPage() {
                     </button>
                   )}
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex shrink-0 items-center gap-2">
                   <span className="inline-flex items-center gap-1 text-zinc-500">
                     <Users size={14} />
                     {nearbyLoading ? "…" : `${nearby?.farmers.length ?? 0} farmers`} within
@@ -949,8 +949,9 @@ export default function TrackingPage() {
                 </div>
               </div>
             )}
-            <div className="flex min-h-0 flex-1">
-              <div className="min-w-0 flex-1">
+            {/* Map above the farmer list on phones, side by side from md up. */}
+            <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+              <div className="min-h-0 min-w-0 flex-1">
                 {openLoading ? (
                   <div className="flex h-full items-center justify-center text-sm text-zinc-500">Loading route…</div>
                 ) : open ? (
@@ -964,7 +965,7 @@ export default function TrackingPage() {
                 cluster of overlapping farms the map cannot answer that at all.
               */}
               {open && (
-                <aside className="hidden w-72 shrink-0 flex-col border-l border-zinc-200 md:flex dark:border-zinc-800">
+                <aside className="flex max-h-48 w-full shrink-0 flex-col border-t border-zinc-200 md:max-h-none md:w-72 md:border-l md:border-t-0 dark:border-zinc-800">
                   <div className="border-b border-zinc-200 px-3 py-2 text-xs font-medium uppercase tracking-wide text-zinc-500 dark:border-zinc-800">
                     Farmers nearby
                   </div>

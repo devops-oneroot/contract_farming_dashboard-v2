@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { FollowUpDialog } from "./follow-up-dialog";
 import { PhotoLightbox } from "./photo-lightbox";
-import { RefreshCw, Search, ChevronLeft, ChevronRight, ArrowRight, Plus, X, CalendarDays, CalendarClock, MapPin, Sprout } from "lucide-react";
+import { RefreshCw, Search, ChevronLeft, ChevronRight, ArrowRight, Plus, X, CalendarClock, MapPin, Sprout } from "lucide-react";
 import { api, CatalogCrop, missingDetails, Person, Region } from "../lib/api";
 import { AcresCovered } from "./acres-covered";
 import { RegionsDialog } from "./regions-dialog";
@@ -351,7 +351,7 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
   const rows = people;
 
   return (
-    <div className="rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+    <div className="card min-w-0 overflow-hidden">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-3 border-b border-zinc-100 p-3 dark:border-zinc-800">
         <button
@@ -360,7 +360,7 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
         >
           <RefreshCw size={15} /> Refresh
         </button>
-        <div className="relative flex-1 min-w-[220px]">
+        <div className="relative w-full sm:w-auto sm:min-w-[220px] sm:flex-1">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
           <input
             value={query}
@@ -408,10 +408,10 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
       </div>
 
       {/* Filters: which farmers to show, or which farmers the counts cover */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-zinc-100 px-3 py-2 text-sm dark:border-zinc-800">
+      <div className="filter-bar border-b border-zinc-100 px-3 py-3 dark:border-zinc-800">
         {showDetail && (
-          <>
-            <span className="text-zinc-500">Onboarded by</span>
+          <div className="filter-field">
+            <span className="filter-label">Onboarded by</span>
             {/* Several can be picked; sent comma-separated, which the server
                 reads as "any of these". */}
             <AgronomistMultiSelect
@@ -421,80 +421,74 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
               allLabel="All"
               noneLabel="Added from dashboard"
             />
-          </>
+          </div>
         )}
         {showDetail && (
           <>
-            <span className="text-zinc-500">Farming</span>
-            <select
-              value={farmingType}
-              onChange={(e) => applyFilter(setFarmingType)(e.target.value)}
-              className="rounded-lg border border-zinc-300 bg-transparent px-2 py-1 dark:border-zinc-700"
-            >
-              <option value="">All</option>
-              <option value="contract">Contract farming</option>
-              <option value="regular">Regular farming</option>
-            </select>
+            <label className="filter-field">
+              <span className="filter-label">Farming</span>
+              <select
+                value={farmingType}
+                onChange={(e) => applyFilter(setFarmingType)(e.target.value)}
+                className="filter-control"
+              >
+                <option value="">All</option>
+                <option value="contract">Contract farming</option>
+                <option value="regular">Regular farming</option>
+              </select>
+            </label>
 
             {/* Where the farm is. Three dropdowns rather than a typed box: the
                 addresses are reverse-geocoded, so the spellings are the
                 geocoder's and nobody would guess them reliably. */}
-            <MapPin size={15} className="text-zinc-400" />
-            <select
-              value={district}
-              onChange={(e) => pickDistrict(e.target.value)}
-              className="rounded-lg border border-zinc-300 bg-transparent px-2 py-1 dark:border-zinc-700"
-            >
-              <option value="">All districts</option>
-              {places.districts.map((d) => (
-                <option key={d} value={d}>
-                  {d}
-                </option>
-              ))}
-            </select>
-            <select
-              value={taluk}
-              onChange={(e) => pickTaluk(e.target.value)}
-              className="rounded-lg border border-zinc-300 bg-transparent px-2 py-1 dark:border-zinc-700"
-            >
-              <option value="">All taluks</option>
-              {places.taluks.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-            <select
-              value={village}
-              onChange={(e) => applyFilter(setVillage)(e.target.value)}
-              className="rounded-lg border border-zinc-300 bg-transparent px-2 py-1 dark:border-zinc-700"
-            >
-              <option value="">All villages</option>
-              {places.villages.map((v) => (
-                <option key={v} value={v}>
-                  {v}
-                </option>
-              ))}
-            </select>
+            <label className="filter-field">
+              <span className="filter-label">District</span>
+              <select value={district} onChange={(e) => pickDistrict(e.target.value)} className="filter-control">
+                <option value="">All districts</option>
+                {places.districts.map((d) => (
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="filter-field">
+              <span className="filter-label">Taluk</span>
+              <select value={taluk} onChange={(e) => pickTaluk(e.target.value)} className="filter-control">
+                <option value="">All taluks</option>
+                {places.taluks.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="filter-field">
+              <span className="filter-label">Village</span>
+              <select
+                value={village}
+                onChange={(e) => applyFilter(setVillage)(e.target.value)}
+                className="filter-control"
+              >
+                <option value="">All villages</option>
+                {places.villages.map((v) => (
+                  <option key={v} value={v}>
+                    {v}
+                  </option>
+                ))}
+              </select>
+            </label>
           </>
         )}
-        <CalendarDays size={15} className="text-zinc-400" />
-        <span className="text-zinc-500">
-          {showDetail ? "Registered" : "Counts for farmers registered"}
-        </span>
-          <input
-            type="date"
-            value={from}
-            onChange={(e) => applyFilter(setFrom)(e.target.value)}
-            className="rounded-lg border border-zinc-300 bg-transparent px-2 py-1 dark:border-zinc-700"
-          />
-          <span className="text-zinc-400">to</span>
-          <input
-            type="date"
-            value={to}
-            onChange={(e) => applyFilter(setTo)(e.target.value)}
-            className="rounded-lg border border-zinc-300 bg-transparent px-2 py-1 dark:border-zinc-700"
-          />
+        <label className="filter-field">
+          <span className="filter-label">{showDetail ? "Registered from" : "Counts for farmers registered from"}</span>
+          <input type="date" value={from} onChange={(e) => applyFilter(setFrom)(e.target.value)} className="filter-control" />
+        </label>
+        <label className="filter-field">
+          <span className="filter-label">Registered to</span>
+          <input type="date" value={to} onChange={(e) => applyFilter(setTo)(e.target.value)} className="filter-control" />
+        </label>
+        <div className="filter-actions">
           <button
             onClick={() => {
               const today = new Date().toISOString().slice(0, 10);
@@ -502,27 +496,28 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
               setTo(today);
               setPage(1);
             }}
-            className="rounded-lg border border-zinc-300 px-2.5 py-1 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
+            className="h-9 rounded-lg border border-zinc-300 px-3 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
           >
             Today
           </button>
-        {(from || to || onboardedByFilter || farmingType || district || taluk || village) && (
-          <button
-            onClick={() => {
-              setFrom("");
-              setTo("");
-              setOnboardedByFilter("");
-              setFarmingType("");
-              setDistrict("");
-              setTaluk("");
-              setVillage("");
-              setPage(1);
-            }}
-            className="rounded-lg px-2.5 py-1 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-900"
-          >
-            Clear filters
-          </button>
-        )}
+          {(from || to || onboardedByFilter || farmingType || district || taluk || village) && (
+            <button
+              onClick={() => {
+                setFrom("");
+                setTo("");
+                setOnboardedByFilter("");
+                setFarmingType("");
+                setDistrict("");
+                setTaluk("");
+                setVillage("");
+                setPage(1);
+              }}
+              className="h-9 rounded-lg px-3 text-zinc-500 hover:bg-zinc-100 hover:text-red-600 dark:hover:bg-zinc-900"
+            >
+              Clear
+            </button>
+          )}
+        </div>
       </div>
 
       {/* How much land one agronomist covers. Shared with Sales Analysis, so
@@ -541,52 +536,53 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
           and a large monitor both fill what they have. The 19rem reserved is
           the chrome above and below — header, toolbar, filters and pager — and
           little enough beyond that to keep the pager on screen. */}
-      <div className="max-h-[calc(100vh-19rem)] min-h-[24rem] overflow-auto">
-        {/* Twelve columns including an inline player: below this the cells crush
-            each other, so let the wrapper scroll instead. */}
-        <table className={`w-full text-left text-sm ${showDetail ? "min-w-[1280px]" : ""}`}>
-          <thead className="sticky top-0 z-10 bg-green-50 text-green-800 [&>tr>th]:bg-green-50 dark:bg-green-950 dark:text-green-300 dark:[&>tr>th]:bg-green-950">
+      <div className="scroll-thin max-h-[calc(100dvh-19rem)] min-h-[24rem] overflow-auto">
+        {/* Columns size to their content; when they add up to more than the
+            screen, this wrapper scrolls sideways instead. The header cells get
+            an opaque background so rows don't show through while it's pinned. */}
+        <table className="data-table">
+          <thead className="sticky top-0 z-10 [&>tr>th]:bg-zinc-50 dark:[&>tr>th]:bg-zinc-900">
             <tr>
-              {showDetail && <th className="px-4 py-3 font-semibold">Photo</th>}
-              <th className="px-4 py-3 font-semibold">Name</th>
-              {showCounts && <th className="px-4 py-3 font-semibold">Role</th>}
-              <th className="px-4 py-3 font-semibold">Registered at</th>
-              <th className="px-4 py-3 font-semibold">Mobile Number</th>
-              <th className="px-4 py-3 font-semibold">Location</th>
-              {showDetail && <th className="px-4 py-3 font-semibold">District</th>}
-              {showDetail && <th className="px-4 py-3 font-semibold">Taluk</th>}
-              {showDetail && <th className="px-4 py-3 font-semibold">Village</th>}
-              {showDetail && <th className="px-4 py-3 font-semibold text-right">Acres</th>}
-              {showDetail && <th className="px-4 py-3 font-semibold">FPO</th>}
-              {showDetail && <th className="px-4 py-3 font-semibold">Agronomist</th>}
-              {showDetail && <th className="px-4 py-3 font-semibold">Onboarded by</th>}
+              {showDetail && <th>Photo</th>}
+              <th>Name</th>
+              {showCounts && <th>Role</th>}
+              <th>Registered at</th>
+              <th>Mobile Number</th>
+              <th>Location</th>
+              {showDetail && <th>District</th>}
+              {showDetail && <th>Taluk</th>}
+              {showDetail && <th>Village</th>}
+              {showDetail && <th className="text-right">Acres</th>}
+              {showDetail && <th>FPO</th>}
+              {showDetail && <th>Agronomist</th>}
+              {showDetail && <th>Onboarded by</th>}
               {showDetail && (
-                <th className="whitespace-nowrap px-4 py-3 font-semibold">Recording</th>
+                <th>Recording</th>
               )}
-              {showDetail && <th className="px-4 py-3 font-semibold">Follow up</th>}
-              {showDetail && <th className="px-4 py-3 font-semibold">Status</th>}
-              {showDetail && <th className="px-4 py-3 font-semibold text-right">Details</th>}
-              {showCounts && <th className="px-4 py-3 font-semibold">Onboarded</th>}
-              {showCounts && <th className="px-4 py-3 font-semibold">Assigned</th>}
-              {showCounts && <th className="px-4 py-3 font-semibold">Region</th>}
+              {showDetail && <th>Follow up</th>}
+              {showDetail && <th>Status</th>}
+              {showDetail && <th className="text-right">Details</th>}
+              {showCounts && <th>Onboarded</th>}
+              {showCounts && <th>Assigned</th>}
+              {showCounts && <th>Region</th>}
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={colCount} className="px-4 py-10 text-center text-zinc-500">
+                <td colSpan={colCount} className="py-10 text-center text-zinc-500">
                   Loading…
                 </td>
               </tr>
             ) : error ? (
               <tr>
-                <td colSpan={colCount} className="px-4 py-10 text-center text-red-600">
+                <td colSpan={colCount} className="py-10 text-center text-red-600">
                   {error}
                 </td>
               </tr>
             ) : rows.length === 0 ? (
               <tr>
-                <td colSpan={colCount} className="px-4 py-10 text-center text-zinc-500">
+                <td colSpan={colCount} className="py-10 text-center text-zinc-500">
                   No {label} found.
                 </td>
               </tr>
@@ -594,17 +590,14 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
               rows.map((p) => {
                 const missing = showDetail ? missingDetails(p) : [];
                 return (
-                <tr
-                  key={p._id}
-                  className="border-t border-zinc-100 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900"
-                >
+                <tr key={p._id}>
                   {/* The photo taken when this farmer was registered. A
                       thumbnail is too small to recognise anyone by, so it is a
                       button into the full picture rather than the picture
                       itself. Farmers registered before photos were captured —
                       and any added from this dashboard — simply have none. */}
                   {showDetail && (
-                    <td className="px-4 py-3">
+                    <td>
                       {p.photoUrl ? (
                         <button
                           onClick={() => setPhoto({ url: p.photoUrl!, name: p.name })}
@@ -626,28 +619,28 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
                       )}
                     </td>
                   )}
-                  <td className="px-4 py-3 font-medium">{p.name}</td>
+                  <td className="font-medium">{p.name}</td>
                   {showCounts && (
-                    <td className="px-4 py-3">
+                    <td>
                       <RoleBadge role={p.role} />
                     </td>
                   )}
-                  <td className="px-4 py-3 text-zinc-500">{fmtDate(p.createdAt)}</td>
-                  <td className="px-4 py-3">{p.mobile}</td>
-                  <td className="px-4 py-3 text-zinc-500">
+                  <td className="text-zinc-500">{fmtDate(p.createdAt)}</td>
+                  <td>{p.mobile}</td>
+                  <td className="text-zinc-500">
                     {p.location?.latitude != null && p.location?.longitude != null
                       ? `${p.location.latitude.toFixed(3)}, ${p.location.longitude.toFixed(3)}`
                       : "—"}
                   </td>
-                  {showDetail && <td className="px-4 py-3">{p.farmAddress?.district || <NoFarm />}</td>}
-                  {showDetail && <td className="px-4 py-3">{p.farmAddress?.taluk || <NoFarm />}</td>}
-                  {showDetail && <td className="px-4 py-3">{p.farmAddress?.village || <NoFarm />}</td>}
+                  {showDetail && <td>{p.farmAddress?.district || <NoFarm />}</td>}
+                  {showDetail && <td>{p.farmAddress?.taluk || <NoFarm />}</td>}
+                  {showDetail && <td>{p.farmAddress?.village || <NoFarm />}</td>}
                   {/* Land across all of this farmer's crops. A farmer with
                       crops but no areas recorded shows a dash rather than 0 —
                       "nothing written down" and "no land" are different
                       answers, and only one of them needs chasing. */}
                   {showDetail && (
-                    <td className="px-4 py-3 text-right">
+                    <td className="num">
                       {p.acres ? (
                         <span className="font-medium">{p.acres}</span>
                       ) : p.cropCount ? (
@@ -660,7 +653,7 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
                     </td>
                   )}
                   {showDetail && (
-                    <td className="px-4 py-3">
+                    <td>
                       {p.fpo ? (
                         <div className="leading-tight">
                           <div className="font-medium">{p.fpo.name}</div>
@@ -683,7 +676,7 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
                     </td>
                   )}
                   {showDetail && (
-                    <td className="px-4 py-3">
+                    <td>
                       {p.agronomist ? (
                         p.agronomist.name
                       ) : (
@@ -692,7 +685,7 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
                     </td>
                   )}
                   {showDetail && (
-                    <td className="px-4 py-3">
+                    <td>
                       {p.onboardedBy ? (
                         <span className="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-2.5 py-1 text-xs font-medium text-green-800 dark:bg-green-950/50 dark:text-green-300">
                           {p.onboardedBy.name}
@@ -709,7 +702,7 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
                   )}
                   {/* The conversation recorded while this farmer was onboarded. */}
                   {showDetail && (
-                    <td className="px-4 py-3">
+                    <td>
                       {p.onboardingAudioUrl ? (
                         <AudioPlayer
                           src={p.onboardingAudioUrl}
@@ -729,7 +722,7 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
                     once nothing is outstanding.
                   */}
                   {showDetail && (
-                    <td className="px-4 py-3">
+                    <td>
                       {(() => {
                         const fmt = (d: string) =>
                           new Date(d).toLocaleDateString(undefined, {
@@ -829,7 +822,7 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
                     </td>
                   )}
                   {showDetail && (
-                    <td className="px-4 py-3">
+                    <td>
                       {missing.length === 0 ? (
                         <span className="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-2.5 py-1 text-xs font-medium text-green-800 dark:bg-green-950/50 dark:text-green-300">
                           <span className="h-1.5 w-1.5 rounded-full bg-green-600" />
@@ -845,12 +838,14 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
                         </span>
                       )}
                       {missing.length > 0 && (
-                        <div className="mt-1 text-xs text-zinc-500">{missing.join(" · ")}</div>
+                        <div className="mt-1 max-w-[16rem] whitespace-normal text-xs text-zinc-500">
+                          {missing.join(" · ")}
+                        </div>
                       )}
                     </td>
                   )}
                   {showCounts && (
-                    <td className="px-4 py-3">
+                    <td>
                       <span className="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-800 dark:bg-green-950/50 dark:text-green-300">
                         {p.onboardedCount ?? 0}
                       </span>
@@ -858,7 +853,7 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
                     </td>
                   )}
                   {showCounts && (
-                    <td className="px-4 py-3">
+                    <td>
                       <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-100 px-2.5 py-1 text-xs font-semibold text-orange-800 dark:bg-orange-950/50 dark:text-orange-300">
                         {p.assignedCount ?? 0}
                       </span>
@@ -869,7 +864,7 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
                       bills are numbered. Changing it only affects sales made
                       afterwards — the bills already handed over keep theirs. */}
                   {showCounts && (
-                    <td className="px-4 py-3">
+                    <td>
                       <select
                         value={p.region?._id ?? ""}
                         onChange={async (e) => {
@@ -893,7 +888,7 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
                     </td>
                   )}
                   {showDetail && (
-                    <td className="px-4 py-2 text-right">
+                    <td className="text-right">
                       <Link
                         href={`/farmers/${p._id}`}
                         className="inline-flex items-center gap-1.5 rounded-lg bg-brand-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-600"
@@ -917,7 +912,7 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
             ? "No records"
             : `Showing ${start + 1} to ${Math.min(start + PAGE_SIZE, total)} of ${total} records`}
         </span>
-        <div className="flex items-center gap-1">
+        <div className="ml-auto flex items-center gap-1">
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={current <= 1}
@@ -940,12 +935,12 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
 
       {/* Add farmer */}
       {adding && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+        <div className="modal-backdrop">
           <form
             onSubmit={submitAdd}
-            className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-xl border border-zinc-200 bg-white p-6 shadow-xl dark:border-zinc-800 dark:bg-zinc-950"
+            className="modal-panel border border-zinc-200 p-4 sm:max-w-3xl sm:p-6 dark:border-zinc-800"
           >
-            <div className="mb-5 flex items-center justify-between">
+            <div className="mb-5 flex items-center justify-between gap-3">
               <h2 className="text-lg font-semibold">Add farmer</h2>
               <button
                 type="button"
@@ -1118,7 +1113,7 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
 
             {formError && <p className="mt-3 text-sm text-red-600">{formError}</p>}
 
-            <div className="mt-5 flex justify-end gap-2">
+            <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <button
                 type="button"
                 onClick={() => setAdding(false)}

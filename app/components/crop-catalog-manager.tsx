@@ -125,8 +125,8 @@ export function CropCatalogManager() {
 
   return (
     <section>
-      <div className="mb-3 flex items-center justify-between">
-        <div>
+      <div className="page-toolbar">
+        <div className="min-w-0">
           <h2 className="flex items-center gap-2 text-lg font-semibold">
             <Leaf size={18} className="text-green-600" /> Crop Catalog
           </h2>
@@ -136,7 +136,7 @@ export function CropCatalogManager() {
         </div>
         <button
           onClick={openNew}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600"
+          className="inline-flex shrink-0 items-center gap-1.5 self-start rounded-lg bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600 sm:self-auto"
         >
           <Plus size={16} /> Add Crop
         </button>
@@ -151,14 +151,14 @@ export function CropCatalogManager() {
           No crops yet. Click “Add Crop” to create the first one.
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
-          <table className="w-full min-w-[820px] text-sm">
+        <div className="table-wrap">
+          <table className="data-table">
             <thead>
-              <tr className="border-b border-zinc-200 text-left text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-800">
-                <th className="px-4 py-3 font-medium">Crop</th>
-                <th className="px-4 py-3 font-medium">Varieties</th>
-                <th className="px-4 py-3 font-medium">Package of Practices</th>
-                <th className="px-4 py-3 text-right font-medium">Actions</th>
+              <tr>
+                <th>Crop</th>
+                <th>Varieties</th>
+                <th>Package of Practices</th>
+                <th className="text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -166,8 +166,8 @@ export function CropCatalogManager() {
                 const pop = practices[c.name.toLowerCase()];
                 const openPop = () => router.push(`/crops/${encodeURIComponent(c.name)}`);
                 return (
-                  <tr key={c._id} className="border-b border-zinc-100 last:border-0 align-middle dark:border-zinc-900">
-                    <td className="px-4 py-3">
+                  <tr key={c._id}>
+                    <td>
                       <div className="flex items-center gap-3">
                         {c.imageUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
@@ -182,11 +182,11 @@ export function CropCatalogManager() {
                         </button>
                       </div>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="cell-wrap">
                       {c.varieties.length === 0 ? (
                         <span className="text-xs text-zinc-400">No varieties</span>
                       ) : (
-                        <div className="flex max-w-[240px] flex-wrap gap-1">
+                        <div className="flex flex-wrap gap-1">
                           {c.varieties.map((v) => (
                             <span
                               key={v}
@@ -198,7 +198,7 @@ export function CropCatalogManager() {
                         </div>
                       )}
                     </td>
-                    <td className="px-4 py-3">
+                    <td>
                       {pop && pop.steps.length > 0 ? (
                         <div>
                           <div className="font-medium">
@@ -220,7 +220,7 @@ export function CropCatalogManager() {
                         </button>
                       )}
                     </td>
-                    <td className="px-4 py-3">
+                    <td>
                       <div className="flex justify-end gap-1">
                         <button
                           onClick={() => openEdit(c)}
@@ -248,14 +248,14 @@ export function CropCatalogManager() {
 
       {/* Add / edit modal */}
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setOpen(false)}>
+        <div className="modal-backdrop" onClick={() => setOpen(false)}>
           <div
-            className="w-full max-w-md rounded-xl bg-white p-5 dark:bg-zinc-950"
+            className="modal-panel p-4 sm:max-w-md sm:p-5"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="mb-4 flex items-center justify-between">
+            <div className="mb-4 flex items-center justify-between gap-3">
               <h3 className="text-lg font-semibold">{form.id ? "Edit crop" : "Add crop"}</h3>
-              <button onClick={() => setOpen(false)} className="rounded p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800">
+              <button onClick={() => setOpen(false)} className="shrink-0 rounded p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800">
                 <X size={18} />
               </button>
             </div>
@@ -285,12 +285,12 @@ export function CropCatalogManager() {
                       }
                     }}
                     placeholder="e.g. Salem, then Enter"
-                    className="w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700"
+                    className="w-full min-w-0 rounded-lg border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700"
                   />
                   <button
                     type="button"
                     onClick={addVariety}
-                    className="shrink-0 rounded-lg border border-zinc-300 px-3 text-sm dark:border-zinc-700"
+                    className="shrink-0 rounded-lg border border-zinc-300 px-3 text-sm hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
                   >
                     Add
                   </button>
@@ -314,12 +314,12 @@ export function CropCatalogManager() {
 
               <div className="text-sm">
                 <span className="mb-1 block text-zinc-500">Image</span>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
                   {form.preview ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={form.preview} alt="" className="h-16 w-16 rounded-lg object-cover" />
+                    <img src={form.preview} alt="" className="h-16 w-16 shrink-0 rounded-lg object-cover" />
                   ) : (
-                    <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-green-50 dark:bg-green-950/30">
+                    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-green-50 dark:bg-green-950/30">
                       <Leaf size={22} className="text-green-600" />
                     </div>
                   )}
@@ -330,15 +330,15 @@ export function CropCatalogManager() {
                       const f = e.target.files?.[0] ?? null;
                       setForm({ ...form, file: f, preview: f ? URL.createObjectURL(f) : form.preview });
                     }}
-                    className="text-sm"
+                    className="min-w-0 max-w-full text-sm"
                   />
                 </div>
               </div>
 
               {error && open && <p className="text-sm text-red-600">{error}</p>}
 
-              <div className="flex justify-end gap-2 pt-2">
-                <button onClick={() => setOpen(false)} className="rounded-lg px-4 py-2 text-sm">
+              <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
+                <button onClick={() => setOpen(false)} className="rounded-lg px-4 py-2 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-900">
                   Cancel
                 </button>
                 <button

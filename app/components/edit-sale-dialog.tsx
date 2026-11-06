@@ -288,22 +288,22 @@ export function EditSaleDialog({
   const label = "mb-1 block text-xs font-medium text-zinc-500";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4">
-      <div className="my-8 w-full max-w-3xl rounded-xl border border-zinc-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-950">
-        <div className="flex items-start justify-between gap-3 border-b border-zinc-100 px-5 py-4 dark:border-zinc-900">
-          <div>
+    <div className="modal-backdrop">
+      <div className="modal-panel sm:max-w-3xl">
+        <div className="flex items-start justify-between gap-3 border-b border-zinc-100 px-4 py-4 sm:px-5 dark:border-zinc-900">
+          <div className="min-w-0">
             <h2 className="text-lg font-semibold">Edit sale</h2>
             <p className="mt-0.5 text-xs text-zinc-500">
               recorded {new Date(sale.createdAt).toLocaleDateString()} · the handover photos stay as
               they are
             </p>
           </div>
-          <button onClick={onClose} className="rounded-lg p-1 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-900">
+          <button onClick={onClose} className="shrink-0 rounded-lg p-1 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-900">
             <X size={18} />
           </button>
         </div>
 
-        <div className="space-y-4 px-5 py-4">
+        <div className="space-y-4 px-4 py-4 sm:px-5">
           {/* Who bought, who sold, and what it was for. */}
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
@@ -312,13 +312,13 @@ export function EditSaleDialog({
                 <select
                   value={buyerKind}
                   onChange={(e) => setBuyerKind(e.target.value as "farmer" | "fpo")}
-                  className="rounded-lg border border-zinc-300 bg-transparent px-2 py-2 text-sm dark:border-zinc-700"
+                  className="shrink-0 rounded-lg border border-zinc-300 bg-transparent px-2 py-2 text-sm dark:border-zinc-700"
                 >
                   <option value="farmer">Farmer</option>
                   <option value="fpo">FPO</option>
                 </select>
                 {buyerKind === "farmer" ? (
-                  <select value={farmerId} onChange={(e) => setFarmerId(e.target.value)} className={field}>
+                  <select value={farmerId} onChange={(e) => setFarmerId(e.target.value)} className={`${field} min-w-0`}>
                     <option value="">Choose a farmer…</option>
                     {/* The sale's own buyer first, in case they are not on the
                         page of farmers that was loaded. */}
@@ -332,7 +332,7 @@ export function EditSaleDialog({
                     ))}
                   </select>
                 ) : (
-                  <select value={fpoId} onChange={(e) => setFpoId(e.target.value)} className={field}>
+                  <select value={fpoId} onChange={(e) => setFpoId(e.target.value)} className={`${field} min-w-0`}>
                     <option value="">Choose an FPO…</option>
                     {sale.fpo?._id && !fpos.some((f) => f._id === sale.fpo?._id) && (
                       <option value={sale.fpo._id}>{sale.fpo.name} (current)</option>
@@ -396,22 +396,22 @@ export function EditSaleDialog({
             </label>
           </div>
 
-          <div className="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-800">
-            <table className="w-full text-left text-sm">
-              <thead className="border-b border-zinc-200 text-xs uppercase text-zinc-500 dark:border-zinc-800">
+          <div className="scroll-thin overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-800">
+            <table className="data-table compact">
+              <thead>
                 <tr>
-                  <th className="px-3 py-2 font-medium">Product</th>
-                  <th className="px-3 py-2 font-medium">Qty</th>
-                  <th className="px-3 py-2 font-medium">Rate</th>
-                  <th className="px-3 py-2 font-medium">Discount</th>
-                  <th className="px-3 py-2 text-right font-medium">Amount</th>
-                  <th className="px-3 py-2" />
+                  <th>Product</th>
+                  <th>Qty</th>
+                  <th>Rate</th>
+                  <th>Discount</th>
+                  <th className="num">Amount</th>
+                  <th />
                 </tr>
               </thead>
               <tbody>
                 {lines.map((l, i) => (
-                  <tr key={i} className="border-b border-zinc-100 last:border-0 dark:border-zinc-900">
-                    <td className="px-3 py-2">
+                  <tr key={i}>
+                    <td>
                       <select
                         value={offerKey(l.productId, l.variantId)}
                         onChange={(e) => {
@@ -424,7 +424,7 @@ export function EditSaleDialog({
                             unitPrice: String(o.price ?? 0),
                           });
                         }}
-                        className="w-52 rounded-lg border border-zinc-300 bg-transparent px-2 py-1 dark:border-zinc-700"
+                        className="w-44 rounded-lg border border-zinc-300 bg-transparent px-2 py-1 sm:w-52 dark:border-zinc-700"
                       >
                         {/* The sale's own product (and size) stays selectable
                             even if it has since been removed from the catalogue. */}
@@ -439,7 +439,7 @@ export function EditSaleDialog({
                       </select>
                       {l.hasPhoto && <div className="mt-1 text-[11px] text-zinc-400">handover photo kept</div>}
                     </td>
-                    <td className="px-3 py-2">
+                    <td>
                       <input
                         value={l.qty}
                         onChange={(e) => set(i, { qty: e.target.value })}
@@ -447,7 +447,7 @@ export function EditSaleDialog({
                         className="w-16 rounded-lg border border-zinc-300 bg-transparent px-2 py-1 dark:border-zinc-700"
                       />
                     </td>
-                    <td className="px-3 py-2">
+                    <td>
                       <input
                         value={l.unitPrice}
                         onChange={(e) => set(i, { unitPrice: e.target.value })}
@@ -455,7 +455,7 @@ export function EditSaleDialog({
                         className="w-24 rounded-lg border border-zinc-300 bg-transparent px-2 py-1 dark:border-zinc-700"
                       />
                     </td>
-                    <td className="px-3 py-2">
+                    <td>
                       <div className="flex items-center gap-1">
                         <input
                           value={l.discount}
@@ -474,8 +474,8 @@ export function EditSaleDialog({
                         </select>
                       </div>
                     </td>
-                    <td className="px-3 py-2 text-right tabular-nums">{money(preview.rows[i]?.net ?? 0)}</td>
-                    <td className="px-3 py-2 text-right">
+                    <td className="num">{money(preview.rows[i]?.net ?? 0)}</td>
+                    <td className="text-right">
                       <button
                         onClick={() => setLines((ls) => ls.filter((_, n) => n !== i))}
                         className="rounded-lg p-1 text-zinc-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40"
@@ -534,7 +534,7 @@ export function EditSaleDialog({
             {/* The whole ladder, as the row and the printed bill show it — not
                 just the figure at the bottom. Somebody correcting a sale is
                 usually checking the tax too. */}
-            <div className="min-w-[15rem] text-sm">
+            <div className="w-full text-sm sm:w-auto sm:min-w-[15rem]">
               <Line label="Subtotal" value={money(preview.subtotalEx)} />
               {preview.basketEx > 0 && (
                 <Line label="Less : Discount" value={`− ${money(preview.basketEx)}`} tone="text-red-600" />
@@ -592,7 +592,7 @@ export function EditSaleDialog({
           </div>
 
           {sale.edits && sale.edits.length > 0 && (
-            <div className="rounded-lg border border-zinc-200 p-3 text-xs text-zinc-500 dark:border-zinc-800">
+            <div className="break-words rounded-lg border border-zinc-200 p-3 text-xs text-zinc-500 dark:border-zinc-800">
               <div className="mb-1 font-semibold text-zinc-600 dark:text-zinc-300">Earlier corrections</div>
               {sale.edits.map((e, i) => (
                 <div key={i}>
@@ -607,7 +607,7 @@ export function EditSaleDialog({
           {error && <p className="text-sm text-red-600">{error}</p>}
         </div>
 
-        <div className="flex items-center justify-end gap-2 border-t border-zinc-100 px-5 py-3 dark:border-zinc-900">
+        <div className="flex flex-col-reverse gap-2 border-t border-zinc-100 px-4 py-3 sm:flex-row sm:items-center sm:justify-end sm:px-5 dark:border-zinc-900">
           <button
             onClick={onClose}
             className="rounded-lg px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-900"
@@ -617,7 +617,7 @@ export function EditSaleDialog({
           <button
             onClick={save}
             disabled={saving}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-60"
+            className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-60"
           >
             <Save size={15} /> {saving ? "Saving…" : "Save changes"}
           </button>

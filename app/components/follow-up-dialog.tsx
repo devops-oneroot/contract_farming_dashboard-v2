@@ -78,15 +78,15 @@ export function FollowUpDialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      className="modal-backdrop"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-xl border border-zinc-200 bg-white p-5 shadow-xl dark:border-zinc-800 dark:bg-zinc-950"
+        className="modal-panel border border-zinc-200 p-4 sm:max-w-md sm:p-5 dark:border-zinc-800"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-start justify-between gap-3">
-          <div>
+          <div className="min-w-0">
             <h2 className="flex items-center gap-2 text-lg font-semibold">
               <CalendarClock size={18} className="text-green-600" /> Next follow-up
             </h2>
@@ -98,7 +98,7 @@ export function FollowUpDialog({
           </div>
           <button
             onClick={onClose}
-            className="rounded-lg p-1 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-900"
+            className="shrink-0 rounded-lg p-1 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-900"
           >
             <X size={18} />
           </button>
@@ -143,7 +143,7 @@ export function FollowUpDialog({
 
         {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
 
-        <div className="mt-5 flex items-center justify-between gap-2">
+        <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
           {/* Only offered when there is something to remove. */}
           {farmer.nextFollowUpAt ? (
             <button
@@ -155,13 +155,13 @@ export function FollowUpDialog({
               Remove follow-up
             </button>
           ) : (
-            <span />
+            <span className="hidden sm:block" />
           )}
           <div className="flex gap-2">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg border border-zinc-300 px-4 py-2 text-sm dark:border-zinc-700"
+              className="flex-1 rounded-lg border border-zinc-300 px-4 py-2 text-sm sm:flex-none dark:border-zinc-700"
             >
               Cancel
             </button>
@@ -169,7 +169,7 @@ export function FollowUpDialog({
               type="button"
               onClick={() => save()}
               disabled={saving || !date}
-              className="inline-flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-60"
+              className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-brand-500 px-4 py-2 sm:flex-none text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-60"
             >
               {saving ? <Loader2 size={14} className="animate-spin" /> : null}
               {farmer.nextFollowUpAt ? "Update" : "Set follow-up"}

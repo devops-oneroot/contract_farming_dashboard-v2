@@ -289,12 +289,12 @@ export default function FarmerDetailPage() {
       </Link>
 
       {/* Identity */}
-      <div className="flex flex-wrap items-center gap-4 rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
-        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-500 text-xl font-semibold text-white">
+      <div className="flex flex-wrap items-center gap-4 rounded-xl border border-zinc-200 bg-white p-4 sm:p-5 dark:border-zinc-800 dark:bg-zinc-950">
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-brand-500 text-xl font-semibold text-white">
           {farmer.name?.charAt(0)?.toUpperCase() ?? "?"}
         </div>
-        <div className="flex-1">
-          <h1 className="text-xl font-semibold">{farmer.name}</h1>
+        <div className="min-w-0 flex-1">
+          <h1 className="break-words text-xl font-semibold">{farmer.name}</h1>
           <div className="mt-1 flex flex-wrap gap-x-5 gap-y-1 text-sm text-zinc-500">
             <a href={`tel:${farmer.mobile}`} className="flex items-center gap-1.5 hover:text-green-600">
               <Phone size={14} /> {farmer.mobile}
@@ -318,9 +318,9 @@ export default function FarmerDetailPage() {
 
       {/* Agronomist assignment */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
-        <div className="flex items-center gap-2">
-          <UserCog size={18} className="text-green-600" />
-          <div>
+        <div className="flex min-w-0 items-center gap-2">
+          <UserCog size={18} className="shrink-0 text-green-600" />
+          <div className="min-w-0">
             <div className="text-sm font-medium">Assigned agronomist</div>
             <div className="text-sm text-zinc-500">
               {farmer.agronomist ? `${farmer.agronomist.name} · ${farmer.agronomist.mobile}` : "Not assigned"}
@@ -331,7 +331,7 @@ export default function FarmerDetailPage() {
           value={farmer.agronomist?._id ?? ""}
           disabled={savingAgro}
           onChange={(e) => onAssign(e.target.value)}
-          className="rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm disabled:opacity-60 dark:border-zinc-700"
+          className="w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm disabled:opacity-60 sm:w-auto dark:border-zinc-700"
         >
           <option value="" className="dark:bg-zinc-900">
             — Unassigned —
@@ -458,7 +458,7 @@ export default function FarmerDetailPage() {
 
       {/* Farm boundary (geofence) */}
       <section>
-        <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold">
+        <h2 className="mb-3 flex flex-wrap items-center gap-2 text-lg font-semibold">
           <MapIcon size={18} className="text-green-600" /> Farm boundary
           {geofence.length >= 3 && (
             <span className="text-sm font-normal text-zinc-500">· {geofence.length} corners</span>
@@ -469,7 +469,7 @@ export default function FarmerDetailPage() {
             <iframe
               title="Farm boundary"
               srcDoc={geofenceMapHtml(geofence)}
-              className="h-80 w-full"
+              className="block h-64 w-full sm:h-80 lg:h-[28rem]"
               sandbox="allow-scripts"
             />
           </div>
@@ -510,12 +510,12 @@ export default function FarmerDetailPage() {
                   key={crop._id}
                   className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="font-semibold">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="min-w-0 break-words font-semibold">
                       {crop.name}
                       {crop.variety ? <span className="text-zinc-400"> · {crop.variety}</span> : null}
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="ml-auto flex items-center gap-2">
                       <span className="text-xs text-zinc-400">Planted {fmtDate(crop.dop)}</span>
                       <button
                         onClick={() => removeCrop(crop._id, crop.name)}
@@ -613,7 +613,7 @@ export default function FarmerDetailPage() {
                   )}
 
                   {/* Current stage + tasks */}
-                  <div className="mt-3 grid grid-cols-2 gap-3">
+                  <div className="mt-3 grid grid-cols-1 gap-3 min-[400px]:grid-cols-2">
                     <div className="rounded-lg bg-zinc-50 p-3 dark:bg-zinc-900">
                       <div className="text-xs text-zinc-500">Current stage</div>
                       <div className="text-sm font-medium">{info.stage}</div>
@@ -676,7 +676,7 @@ export default function FarmerDetailPage() {
             {verifications.map((v, i) => (
               <div
                 key={i}
-                className="flex gap-4 rounded-xl border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-950"
+                className="flex gap-3 rounded-xl border border-zinc-200 bg-white p-3 sm:gap-4 dark:border-zinc-800 dark:bg-zinc-950"
               >
                 {v.imageUrl ? (
                   <PhotoThumb
@@ -691,7 +691,7 @@ export default function FarmerDetailPage() {
                   </div>
                 )}
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex min-w-0 items-center gap-2">
                       <span className="truncate font-medium">{v.operation || `Day ${v.day}`}</span>
                       <span className="shrink-0 rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-medium capitalize text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
@@ -712,7 +712,7 @@ export default function FarmerDetailPage() {
                     {v.crop} · Day {v.day}
                     {v.dayEnd && v.dayEnd !== v.day ? `–${v.dayEnd}` : ""} · {fmtDate(v.verifiedAt)}
                   </div>
-                  {v.note ? <div className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">{v.note}</div> : null}
+                  {v.note ? <div className="mt-1 break-words text-sm text-zinc-600 dark:text-zinc-300">{v.note}</div> : null}
                 </div>
               </div>
             ))}
@@ -770,7 +770,7 @@ export default function FarmerDetailPage() {
                 key={o._id}
                 className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950"
               >
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="text-xs text-zinc-400">{fmtDate(o.createdAt)}</span>
                   <span className={`rounded-full px-2.5 py-1 text-xs font-medium capitalize ${STATUS_STYLE[o.status]}`}>
                     {o.status}
@@ -778,11 +778,11 @@ export default function FarmerDetailPage() {
                 </div>
                 <div className="mt-2 space-y-1">
                   {o.items.map((it, i) => (
-                    <div key={i} className="flex items-center justify-between text-sm">
-                      <span>
+                    <div key={i} className="flex items-start justify-between gap-3 text-sm">
+                      <span className="min-w-0 break-words">
                         {it.name} <span className="text-zinc-400">× {it.qty}</span>
                       </span>
-                      <span className="text-zinc-500">₹{it.price * it.qty}</span>
+                      <span className="shrink-0 tabular-nums text-zinc-500">₹{it.price * it.qty}</span>
                     </div>
                   ))}
                 </div>
@@ -800,12 +800,12 @@ export default function FarmerDetailPage() {
 
       {/* Edit farmer details */}
       {editing && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+        <div className="modal-backdrop">
           <form
             onSubmit={submitEdit}
-            className="w-full max-w-md rounded-xl border border-zinc-200 bg-white p-5 shadow-xl dark:border-zinc-800 dark:bg-zinc-950"
+            className="modal-panel border border-zinc-200 p-4 sm:max-w-md sm:p-5 dark:border-zinc-800"
           >
-            <div className="mb-4 flex items-center justify-between">
+            <div className="mb-4 flex items-center justify-between gap-3">
               <h2 className="text-lg font-semibold">Edit farmer details</h2>
               <button
                 type="button"
@@ -848,7 +848,7 @@ export default function FarmerDetailPage() {
                 </p>
                 <div className="space-y-2">
                   {crops.map((c) => (
-                    <div key={c._id} className="flex items-center gap-3">
+                    <div key={c._id} className="flex flex-wrap items-center gap-x-3 gap-y-1">
                       <div className="min-w-0 flex-1 truncate text-sm">
                         {c.name}
                         {c.variety ? <span className="text-zinc-400"> · {c.variety}</span> : null}
@@ -864,7 +864,7 @@ export default function FarmerDetailPage() {
                         onChange={(e) =>
                           setCropDops((d) => ({ ...d, [c._id]: e.target.value }))
                         }
-                        className="rounded-lg border border-zinc-300 bg-transparent px-2 py-1.5 text-sm dark:border-zinc-700"
+                        className="shrink-0 rounded-lg border border-zinc-300 bg-transparent px-2 py-1.5 text-sm dark:border-zinc-700"
                       />
                     </div>
                   ))}
@@ -917,7 +917,7 @@ export default function FarmerDetailPage() {
                     />
                   )}
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>
                       <label className="mb-1 block text-sm text-zinc-500">
                         Date of planting <span className="text-zinc-400">— optional</span>
@@ -951,7 +951,7 @@ export default function FarmerDetailPage() {
 
             {formError && <p className="mt-3 text-sm text-red-600">{formError}</p>}
 
-            <div className="mt-5 flex justify-end gap-2">
+            <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <button
                 type="button"
                 onClick={() => setEditing(false)}

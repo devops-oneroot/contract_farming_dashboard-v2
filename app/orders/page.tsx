@@ -62,15 +62,18 @@ export default function OrdersPage() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">
-          Orders <span className="text-zinc-400">({orders.length})</span>
-        </h1>
-        <div className="flex items-center gap-2">
+      {/* The shell already shows the "Orders" title, so this row only carries
+          the count and the controls. */}
+      <div className="page-toolbar">
+        <p className="text-sm text-zinc-500">
+          <span className="font-semibold text-zinc-900 dark:text-zinc-100">{orders.length}</span>{" "}
+          order{orders.length === 1 ? "" : "s"}
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value as "" | OrderStatus)}
-            className="rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
+            className="min-w-0 flex-1 rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm sm:flex-none dark:border-zinc-700"
           >
             <option value="" className="dark:bg-zinc-900">All statuses</option>
             {STATUSES.map((s) => (
@@ -95,18 +98,18 @@ export default function OrdersPage() {
       ) : orders.length === 0 ? (
         <p className="mt-6 text-zinc-500">No orders yet.</p>
       ) : (
-        <div className="mt-6 grid gap-4 lg:grid-cols-2">
+        <div className="mt-2 grid grid-cols-1 gap-4 xl:grid-cols-2">
           {orders.map((o) => (
             <div
               key={o._id}
               className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950"
             >
               {/* Farmer + date */}
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <div className="flex items-center gap-2 font-semibold">
-                    <User size={15} className="text-zinc-400" />
-                    {o.farmerName || "Unknown farmer"}
+              <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
+                <div className="min-w-0">
+                  <div className="flex min-w-0 items-center gap-2 font-semibold">
+                    <User size={15} className="shrink-0 text-zinc-400" />
+                    <span className="truncate">{o.farmerName || "Unknown farmer"}</span>
                   </div>
                   <a
                     href={`tel:${o.farmerMobile}`}
@@ -126,21 +129,21 @@ export default function OrdersPage() {
                     <img
                       src={it.imageUrl || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E"}
                       alt={it.name}
-                      className="h-10 w-10 rounded bg-zinc-100 object-cover dark:bg-zinc-900"
+                      className="h-10 w-10 shrink-0 rounded bg-zinc-100 object-cover dark:bg-zinc-900"
                     />
-                    <div className="flex-1 text-sm">
-                      <div className="font-medium">{it.name}</div>
+                    <div className="min-w-0 flex-1 text-sm">
+                      <div className="break-words font-medium">{it.name}</div>
                       <div className="text-zinc-500">
                         ₹{it.price} {it.unit} × {it.qty}
                       </div>
                     </div>
-                    <div className="text-sm font-medium">₹{it.price * it.qty}</div>
+                    <div className="shrink-0 text-sm font-medium tabular-nums">₹{it.price * it.qty}</div>
                   </div>
                 ))}
               </div>
 
               {/* Footer: total + status */}
-              <div className="mt-3 flex items-center justify-between">
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
                 <div className="text-sm">
                   Total: <span className="font-semibold text-green-600">₹{o.total}</span>
                 </div>

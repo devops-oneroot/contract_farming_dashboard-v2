@@ -86,53 +86,49 @@ export default function StockPage() {
         <Stat label="Staff with shortages" value={String(totals.short)} warn={totals.short > 0} />
       </div>
 
-      <div className="rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
-        <div className="flex flex-wrap items-center gap-2 border-b border-zinc-100 px-4 py-3 dark:border-zinc-900">
+      <div>
+        <div className="page-toolbar">
           <h2 className="flex items-center gap-2 font-semibold">
             <Boxes size={18} className="text-green-600" /> Stock by staff
           </h2>
-          <div className="relative ml-auto">
+          <div className="relative w-full sm:w-64">
             <Search size={14} className="absolute left-2.5 top-2.5 text-zinc-400" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search name, mobile, region"
-              className="w-64 rounded-lg border border-zinc-200 py-1.5 pl-8 pr-3 text-sm dark:border-zinc-800 dark:bg-zinc-900"
+              className="w-full rounded-lg border border-zinc-200 bg-white py-1.5 pl-8 pr-3 text-sm dark:border-zinc-800 dark:bg-zinc-900"
             />
           </div>
         </div>
 
-        {error && <p className="px-4 py-3 text-sm text-red-600">{error}</p>}
-        {!rows && !error && <p className="px-4 py-6 text-sm text-zinc-500">Loading…</p>}
+        {error && <p className="py-3 text-sm text-red-600">{error}</p>}
+        {!rows && !error && <p className="py-6 text-sm text-zinc-500">Loading…</p>}
 
         {rows && (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-zinc-50 text-left text-xs uppercase tracking-wide text-zinc-500 dark:bg-zinc-900">
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead>
                 <tr>
-                  <th className="px-4 py-2">Staff</th>
-                  <th className="px-4 py-2">Region</th>
-                  <th className="px-4 py-2 text-right">Products</th>
-                  <th className="px-4 py-2 text-right">Units in hand</th>
-                  <th className="px-4 py-2 text-right">Value</th>
-                  <th className="px-4 py-2">Counting since</th>
-                  <th className="px-4 py-2" />
+                  <th>Staff</th>
+                  <th>Region</th>
+                  <th className="num">Products</th>
+                  <th className="num">Units in hand</th>
+                  <th className="num">Value</th>
+                  <th>Counting since</th>
+                  <th />
                 </tr>
               </thead>
               <tbody>
                 {shown.map((r) => (
-                  <tr
-                    key={r._id}
-                    onClick={() => setOpenId(r._id)}
-                    className="cursor-pointer border-t border-zinc-100 hover:bg-zinc-50 dark:border-zinc-900 dark:hover:bg-zinc-900"
-                  >
-                    <td className="px-4 py-2.5">
+                  <tr key={r._id} onClick={() => setOpenId(r._id)} className="cursor-pointer">
+                    <td>
                       <div className="font-medium">{r.name}</div>
                       <div className="text-xs text-zinc-500">{r.mobile}</div>
                     </td>
-                    <td className="px-4 py-2.5 text-zinc-600 dark:text-zinc-400">{r.region || "—"}</td>
-                    <td className="px-4 py-2.5 text-right">{r.products}</td>
-                    <td className="px-4 py-2.5 text-right font-medium">
+                    <td className="text-zinc-600 dark:text-zinc-400">{r.region || "—"}</td>
+                    <td className="num">{r.products}</td>
+                    <td className="num font-medium">
                       {r.units.toLocaleString("en-IN")}
                       {r.short > 0 && (
                         <span
@@ -143,11 +139,11 @@ export default function StockPage() {
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-2.5 text-right">{inr(r.value)}</td>
-                    <td className="px-4 py-2.5 text-zinc-600 dark:text-zinc-400">
+                    <td className="num">{inr(r.value)}</td>
+                    <td className="text-zinc-600 dark:text-zinc-400">
                       {r.since ? fmtDate(r.since) : <span className="text-zinc-400">Not started</span>}
                     </td>
-                    <td className="px-4 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
+                    <td className="text-right" onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={() => setEntry({ staff: r._id, type: r.since ? "issue" : "opening" })}
                         className="rounded-lg bg-brand-500 px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-600"
@@ -159,7 +155,7 @@ export default function StockPage() {
                 ))}
                 {!shown.length && (
                   <tr>
-                    <td colSpan={7} className="px-4 py-6 text-center text-zinc-500">
+                    <td colSpan={7} className="py-6 text-center text-zinc-500">
                       No staff match.
                     </td>
                   </tr>
@@ -196,9 +192,9 @@ export default function StockPage() {
 
 function Stat({ label, value, warn }: { label: string; value: string; warn?: boolean }) {
   return (
-    <div className="rounded-xl border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950">
+    <div className="min-w-0 rounded-xl border border-zinc-200 bg-white px-3 py-3 sm:px-4 dark:border-zinc-800 dark:bg-zinc-950">
       <div className="text-xs text-zinc-500">{label}</div>
-      <div className={`mt-1 text-xl font-semibold ${warn ? "text-red-600" : ""}`}>{value}</div>
+      <div className={`mt-1 break-words text-lg font-semibold tabular-nums sm:text-xl ${warn ? "text-red-600" : ""}`}>{value}</div>
     </div>
   );
 }
@@ -237,20 +233,20 @@ function StaffPanel({
         className="h-full w-full max-w-3xl overflow-y-auto bg-white shadow-xl dark:bg-zinc-950"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 flex items-start gap-3 border-b border-zinc-100 bg-white px-5 py-4 dark:border-zinc-900 dark:bg-zinc-950">
-          <div>
-            <h2 className="text-lg font-semibold">{data?.staff.name ?? "…"}</h2>
+        <div className="sticky top-0 z-10 flex items-start gap-3 border-b border-zinc-100 bg-white px-4 py-4 sm:px-5 dark:border-zinc-900 dark:bg-zinc-950">
+          <div className="min-w-0">
+            <h2 className="truncate text-lg font-semibold">{data?.staff.name ?? "…"}</h2>
             <p className="text-xs text-zinc-500">
               {data?.staff.mobile}
               {data?.since && ` · counting since ${fmtDate(data.since)}`}
             </p>
           </div>
-          <button onClick={onClose} className="ml-auto rounded-lg p-1 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-900">
+          <button onClick={onClose} className="ml-auto shrink-0 rounded-lg p-1 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-900">
             <X size={18} />
           </button>
         </div>
 
-        <div className="flex flex-wrap gap-2 px-5 pt-4">
+        <div className="flex flex-wrap gap-2 px-4 pt-4 sm:px-5">
           {!data?.since && (
             <ActionBtn onClick={() => onEntry("opening")} icon={<Plus size={14} />} label="Opening stock" primary />
           )}
@@ -259,43 +255,43 @@ function StaffPanel({
           <ActionBtn onClick={() => onEntry("adjust")} icon={<Minus size={14} />} label="Adjust" />
         </div>
 
-        {error && <p className="px-5 py-3 text-sm text-red-600">{error}</p>}
+        {error && <p className="px-4 py-3 text-sm text-red-600 sm:px-5">{error}</p>}
 
-        <div className="px-5 py-4">
+        <div className="px-4 py-4 sm:px-5">
           <h3 className="mb-2 text-sm font-semibold">In hand</h3>
           {data && !lines.length && <p className="text-sm text-zinc-500">No stock recorded yet.</p>}
           {!!lines.length && (
-            <div className="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-800">
-              <table className="w-full text-sm">
-                <thead className="bg-zinc-50 text-left text-xs text-zinc-500 dark:bg-zinc-900">
+            <div className="scroll-thin overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-800">
+              <table className="data-table compact">
+                <thead>
                   <tr>
-                    <th className="px-3 py-2">Product</th>
-                    <th className="px-3 py-2 text-right">Opening</th>
-                    <th className="px-3 py-2 text-right">Issued</th>
-                    <th className="px-3 py-2 text-right">Returned</th>
-                    <th className="px-3 py-2 text-right">Adjusted</th>
-                    <th className="px-3 py-2 text-right">Sold</th>
-                    <th className="px-3 py-2 text-right">In hand</th>
-                    <th className="px-3 py-2 text-right">Value</th>
+                    <th>Product</th>
+                    <th className="num">Opening</th>
+                    <th className="num">Issued</th>
+                    <th className="num">Returned</th>
+                    <th className="num">Adjusted</th>
+                    <th className="num">Sold</th>
+                    <th className="num">In hand</th>
+                    <th className="num">Value</th>
                   </tr>
                 </thead>
                 <tbody>
                   {lines.map((l) => (
-                    <tr key={`${l.product}:${l.variant}`} className="border-t border-zinc-100 dark:border-zinc-900">
-                      <td className="px-3 py-2">
+                    <tr key={`${l.product}:${l.variant}`}>
+                      <td>
                         <div className="font-medium">{l.name}</div>
                         {l.unit && <div className="text-xs text-zinc-500">{l.unit}</div>}
                       </td>
-                      <td className="px-3 py-2 text-right">{l.opening || "—"}</td>
-                      <td className="px-3 py-2 text-right">{l.issued || "—"}</td>
-                      <td className="px-3 py-2 text-right">{l.returned || "—"}</td>
-                      <td className="px-3 py-2 text-right">{l.adjusted ? (l.adjusted > 0 ? `+${l.adjusted}` : l.adjusted) : "—"}</td>
-                      <td className="px-3 py-2 text-right">{l.sold || "—"}</td>
-                      <td className={`px-3 py-2 text-right font-semibold ${l.inHand < 0 ? "text-red-600" : ""}`}>
+                      <td className="num">{l.opening || "—"}</td>
+                      <td className="num">{l.issued || "—"}</td>
+                      <td className="num">{l.returned || "—"}</td>
+                      <td className="num">{l.adjusted ? (l.adjusted > 0 ? `+${l.adjusted}` : l.adjusted) : "—"}</td>
+                      <td className="num">{l.sold || "—"}</td>
+                      <td className={`num font-semibold ${l.inHand < 0 ? "text-red-600" : ""}`}>
                         {l.inHand}
                         {l.inHand < 0 && <div className="text-[10px] font-normal">sold more than given</div>}
                       </td>
-                      <td className="px-3 py-2 text-right">{inr(l.value)}</td>
+                      <td className="num">{inr(l.value)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -304,7 +300,7 @@ function StaffPanel({
           )}
         </div>
 
-        <div className="px-5 pb-6">
+        <div className="px-4 pb-6 sm:px-5">
           <h3 className="mb-2 text-sm font-semibold">History</h3>
           {data && !data.history.length && <p className="text-sm text-zinc-500">No entries yet.</p>}
           <ul className="divide-y divide-zinc-100 text-sm dark:divide-zinc-900">
@@ -315,18 +311,21 @@ function StaffPanel({
                   <span className={`mt-0.5 shrink-0 rounded px-1.5 py-0.5 text-xs ${TYPE_STYLE[m.type]}`}>
                     {TYPE_LABEL[m.type]}
                   </span>
-                  <div className="min-w-0 flex-1">
+                  <div className="min-w-0 flex-1 break-words">
                     <div>
                       {m.productName} {m.unit && <span className="text-zinc-500">· {m.unit}</span>}
                     </div>
                     {m.note && <div className="text-xs text-zinc-500">{m.note}</div>}
                   </div>
-                  <div className={`w-12 text-right font-medium ${q < 0 ? "text-red-600" : "text-green-700"}`}>
-                    {q > 0 ? `+${q}` : q}
-                  </div>
-                  <div className="w-28 text-right text-xs text-zinc-500">
-                    {fmtDate(m.at)}
-                    {m.by && <div>by {m.by}</div>}
+                  {/* Quantity over date on a phone, side by side from sm up. */}
+                  <div className="flex shrink-0 flex-col items-end gap-0.5 sm:flex-row sm:items-start sm:gap-3">
+                    <div className={`text-right font-medium sm:w-12 ${q < 0 ? "text-red-600" : "text-green-700 dark:text-green-400"}`}>
+                      {q > 0 ? `+${q}` : q}
+                    </div>
+                    <div className="max-w-28 text-right text-xs text-zinc-500 sm:w-28">
+                      {fmtDate(m.at)}
+                      {m.by && <div className="truncate">by {m.by}</div>}
+                    </div>
                   </div>
                 </li>
               );
@@ -426,19 +425,19 @@ function EntryDialog({
   const types: StockEntryType[] = ["opening", "issue", "return", "adjust"];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4">
-      <div className="my-8 w-full max-w-2xl rounded-xl border border-zinc-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-950">
-        <div className="flex items-start gap-3 border-b border-zinc-100 px-5 py-4 dark:border-zinc-900">
-          <div>
+    <div className="modal-backdrop">
+      <div className="modal-panel sm:max-w-2xl">
+        <div className="flex items-start gap-3 border-b border-zinc-100 px-4 py-4 sm:px-5 dark:border-zinc-900">
+          <div className="min-w-0">
             <h2 className="text-lg font-semibold">Stock entry</h2>
-            <p className="text-xs text-zinc-500">{staff?.name}</p>
+            <p className="truncate text-xs text-zinc-500">{staff?.name}</p>
           </div>
-          <button onClick={onClose} className="ml-auto rounded-lg p-1 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-900">
+          <button onClick={onClose} className="ml-auto shrink-0 rounded-lg p-1 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-900">
             <X size={18} />
           </button>
         </div>
 
-        <div className="space-y-4 px-5 py-4">
+        <div className="space-y-4 px-4 py-4 sm:px-5">
           <div className="flex flex-wrap gap-2">
             {types.map((t) => (
               <button
@@ -469,7 +468,7 @@ function EntryDialog({
                   <select
                     value={l.product}
                     onChange={(e) => set(l.key, { product: e.target.value, variant: "" })}
-                    className="min-w-0 flex-1 rounded-lg border border-zinc-200 px-2 py-1.5 text-sm dark:border-zinc-800 dark:bg-zinc-900"
+                    className="w-full min-w-0 rounded-lg border border-zinc-200 px-2 py-1.5 text-sm sm:w-auto sm:flex-1 dark:border-zinc-800 dark:bg-zinc-900"
                   >
                     <option value="">Product…</option>
                     {products.map((x) => (
@@ -482,7 +481,7 @@ function EntryDialog({
                     <select
                       value={l.variant}
                       onChange={(e) => set(l.key, { variant: e.target.value })}
-                      className="w-32 rounded-lg border border-zinc-200 px-2 py-1.5 text-sm dark:border-zinc-800 dark:bg-zinc-900"
+                      className="min-w-0 flex-1 rounded-lg border sm:w-32 sm:flex-none border-zinc-200 px-2 py-1.5 text-sm dark:border-zinc-800 dark:bg-zinc-900"
                     >
                       <option value="">Size…</option>
                       {(p.variants ?? []).map((v) => (
@@ -519,7 +518,7 @@ function EntryDialog({
             </button>
           </div>
 
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row">
             <label className="text-sm">
               <span className="mb-1 block text-xs text-zinc-500">Date</span>
               <input
@@ -527,7 +526,7 @@ function EntryDialog({
                 value={date}
                 max={localDay()}
                 onChange={(e) => setDate(e.target.value)}
-                className="rounded-lg border border-zinc-200 px-2 py-1.5 text-sm dark:border-zinc-800 dark:bg-zinc-900"
+                className="w-full rounded-lg border border-zinc-200 px-2 py-1.5 text-sm sm:w-auto dark:border-zinc-800 dark:bg-zinc-900"
               />
             </label>
             <label className="min-w-0 flex-1 text-sm">
@@ -547,7 +546,7 @@ function EntryDialog({
           <p className="text-xs text-zinc-400">Entries cannot be edited or deleted. Fix a mistake with an Adjustment.</p>
         </div>
 
-        <div className="flex justify-end gap-2 border-t border-zinc-100 px-5 py-3 dark:border-zinc-900">
+        <div className="flex flex-col-reverse gap-2 border-t border-zinc-100 px-4 py-3 sm:flex-row sm:justify-end sm:px-5 dark:border-zinc-900">
           <button onClick={onClose} className="rounded-lg px-3 py-1.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-900">
             Cancel
           </button>

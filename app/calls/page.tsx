@@ -59,22 +59,22 @@ export default function CallsPage() {
           No calls yet. Calls appear here when an agronomist taps the call button in the app.
         </p>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
-          <table className="w-full min-w-[820px] text-sm">
+        <div className="table-wrap">
+          <table className="data-table">
             <thead>
-              <tr className="border-b border-zinc-200 text-left text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-800">
-                <th className="px-4 py-3 font-medium">From (Agronomist)</th>
-                <th className="px-4 py-3 font-medium">To (Farmer)</th>
-                <th className="px-4 py-3 font-medium">Time</th>
-                <th className="px-4 py-3 font-medium">Duration</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium">Recording</th>
+              <tr>
+                <th>From (Agronomist)</th>
+                <th>To (Farmer)</th>
+                <th>Time</th>
+                <th>Duration</th>
+                <th>Status</th>
+                <th>Recording</th>
               </tr>
             </thead>
             <tbody>
               {logs.map((l) => (
-                <tr key={l._id} className="border-b border-zinc-100 last:border-0 dark:border-zinc-900">
-                  <td className="px-4 py-3">
+                <tr key={l._id}>
+                  <td>
                     <div className="flex items-center gap-2">
                       <PhoneOutgoing size={15} className="shrink-0 text-green-600" />
                       <div>
@@ -85,7 +85,7 @@ export default function CallsPage() {
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-3">
+                  <td>
                     <div className="flex items-center gap-2">
                       <Sprout size={15} className="shrink-0 text-green-600" />
                       <div>
@@ -94,9 +94,9 @@ export default function CallsPage() {
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-zinc-500">{fmtTime(l.calledAt)}</td>
-                  <td className="px-4 py-3 whitespace-nowrap">{fmtDuration(l.duration)}</td>
-                  <td className="px-4 py-3">
+                  <td className="text-zinc-500">{fmtTime(l.calledAt)}</td>
+                  <td className="tabular-nums">{fmtDuration(l.duration)}</td>
+                  <td>
                     <span
                       className={`rounded-full px-2.5 py-1 text-xs font-medium capitalize ${
                         STATUS_STYLE[l.status ?? ""] ?? "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300"
@@ -105,7 +105,7 @@ export default function CallsPage() {
                       {(l.status ?? "—").replace("_", " ")}
                     </span>
                   </td>
-                  <td className="px-4 py-3">
+                  <td>
                     {l.recordingUrl ? (
                       // Plivo recording URLs are directly playable.
                       // eslint-disable-next-line jsx-a11y/media-has-caption

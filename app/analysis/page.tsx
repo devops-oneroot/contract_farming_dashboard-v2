@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   BarChart3,
-  CalendarDays,
   PieChart,
   RefreshCw,
   Repeat,
@@ -442,7 +441,8 @@ export default function AnalysisPage() {
           >
             <RefreshCw size={15} /> Refresh
           </button>
-          <div className="relative min-w-[220px] flex-1">
+          {/* Search leads on phones, with Refresh and the export sharing the row below. */}
+          <div className="relative order-first w-full sm:order-none sm:w-auto sm:min-w-[220px] sm:flex-1">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
             <input
               value={query}
@@ -454,84 +454,82 @@ export default function AnalysisPage() {
           <ExcelExport id="sales-analysis" fileName="sales" columns={SALE_COLUMNS} rows={() => saleLines(rows)} />
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 px-3 py-2 text-sm">
-          <span className="text-zinc-500">Sold to</span>
-          <select
-            value={buyerKind}
-            onChange={(e) => setBuyerKind(e.target.value as "" | "farmer" | "fpo")}
-            className="rounded-lg border border-zinc-300 bg-transparent px-2 py-1 dark:border-zinc-700"
-          >
-            <option value="">All</option>
-            <option value="farmer">Farmers</option>
-            <option value="fpo">FPOs</option>
-          </select>
-
-          <span className="text-zinc-500">Agronomist</span>
-          <AgronomistMultiSelect agronomists={agronomists} value={who} onChange={setWho} allLabel="All" />
-
-          <span className="text-zinc-500">Product</span>
-          <select
-            value={product}
-            onChange={(e) => setProduct(e.target.value)}
-            className="rounded-lg border border-zinc-300 bg-transparent px-2 py-1 dark:border-zinc-700"
-          >
-            <option value="">All</option>
-            {options.products.map((p) => (
-              <option key={p} value={p}>
-                {p}
-              </option>
-            ))}
-          </select>
-
-          <span className="text-zinc-500">Region</span>
-          <select
-            value={region}
-            onChange={(e) => setRegion(e.target.value)}
-            className="rounded-lg border border-zinc-300 bg-transparent px-2 py-1 dark:border-zinc-700"
-          >
-            <option value="">All districts</option>
-            {options.regions.map((r) => (
-              <option key={r} value={r}>
-                {r}
-              </option>
-            ))}
-          </select>
-
-          <CalendarDays size={15} className="text-zinc-400" />
-          <input
-            type="date"
-            value={from}
-            onChange={(e) => setFrom(e.target.value)}
-            className="rounded-lg border border-zinc-300 bg-transparent px-2 py-1 dark:border-zinc-700"
-          />
-          <span className="text-zinc-400">to</span>
-          <input
-            type="date"
-            value={to}
-            onChange={(e) => setTo(e.target.value)}
-            className="rounded-lg border border-zinc-300 bg-transparent px-2 py-1 dark:border-zinc-700"
-          />
-          {filtered && (
-            <button
-              onClick={() => {
-                setWho([]);
-                setProduct("");
-                setRegion("");
-                setBuyerKind("");
-                setQuery("");
-              }}
-              className="rounded-lg px-2.5 py-1 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-900"
+        {/* One column per filter: label on top, control below. */}
+        <div className="filter-bar px-3 py-3">
+          <label className="filter-field">
+            <span className="filter-label">Sold to</span>
+            <select
+              value={buyerKind}
+              onChange={(e) => setBuyerKind(e.target.value as "" | "farmer" | "fpo")}
+              className="filter-control"
             >
-              Clear filters
-            </button>
-          )}
+              <option value="">All</option>
+              <option value="farmer">Farmers</option>
+              <option value="fpo">FPOs</option>
+            </select>
+          </label>
 
-          {/* The same lookup the Farmers tab carries, and the same component -
-              two screens answering "acres covered" differently would be worse
-              than either answer alone. */}
-          <div className="ml-auto">
-            <AcresCovered agronomists={agronomists} />
+          <div className="filter-field">
+            <span className="filter-label">Agronomist</span>
+            <AgronomistMultiSelect agronomists={agronomists} value={who} onChange={setWho} allLabel="All" />
           </div>
+
+          <label className="filter-field">
+            <span className="filter-label">Product</span>
+            <select value={product} onChange={(e) => setProduct(e.target.value)} className="filter-control">
+              <option value="">All</option>
+              {options.products.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="filter-field">
+            <span className="filter-label">Region</span>
+            <select value={region} onChange={(e) => setRegion(e.target.value)} className="filter-control">
+              <option value="">All districts</option>
+              {options.regions.map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="filter-field">
+            <span className="filter-label">Sold from</span>
+            <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="filter-control" />
+          </label>
+          <label className="filter-field">
+            <span className="filter-label">Sold to date</span>
+            <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="filter-control" />
+          </label>
+
+          {filtered && (
+            <div className="filter-actions">
+              <button
+                onClick={() => {
+                  setWho([]);
+                  setProduct("");
+                  setRegion("");
+                  setBuyerKind("");
+                  setQuery("");
+                }}
+                className="h-9 rounded-lg px-3 text-zinc-500 hover:bg-zinc-100 hover:text-red-600 dark:hover:bg-zinc-900"
+              >
+                Clear filters
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* The same lookup the Farmers tab carries, and the same component -
+            two screens answering "acres covered" differently would be worse
+            than either answer alone. */}
+        <div className="border-t border-zinc-100 px-3 py-2 dark:border-zinc-800">
+          <AcresCovered agronomists={agronomists} />
         </div>
       </div>
 
@@ -539,7 +537,7 @@ export default function AnalysisPage() {
 
       {/* Headline numbers first: stat tiles, not a chart. A handful of totals is
           exactly the case a bar chart handles worse than plain type. */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 2xl:grid-cols-8">
         {[
           { label: "Revenue", value: money(kpi.revenue), hint: "after discounts" },
           { label: "Sales", value: String(kpi.sales) },
@@ -560,17 +558,17 @@ export default function AnalysisPage() {
         ].map((k) => (
           <div
             key={k.label}
-            className="rounded-xl border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-950"
+            className="min-w-0 rounded-xl border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-950"
           >
             <div className="text-xs uppercase tracking-wide text-zinc-500">{k.label}</div>
-            <div className="mt-1 text-xl font-semibold tabular-nums">{k.value}</div>
+            <div className="mt-1 break-words text-lg font-semibold tabular-nums sm:text-xl">{k.value}</div>
             {k.hint ? <div className="text-[11px] text-zinc-400">{k.hint}</div> : null}
           </div>
         ))}
       </div>
 
       <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
-        <div className="mb-3 flex items-center gap-2">
+        <div className="mb-3 flex flex-wrap items-center gap-2">
           <TrendingUp size={16} className="text-green-600" />
           <h3 className="font-semibold">Sales per day</h3>
           <span className="text-xs text-zinc-500">
@@ -588,7 +586,7 @@ export default function AnalysisPage() {
       {/* Part-to-whole, where the question really is "how does it split". */}
       <div className="grid gap-3 lg:grid-cols-2">
         <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
-          <div className="mb-3 flex items-center gap-2">
+          <div className="mb-3 flex flex-wrap items-center gap-2">
             <PieChart size={16} className="text-green-600" />
             <h3 className="font-semibold">Where the money came from</h3>
             <span className="text-xs text-zinc-500">by product</span>
@@ -601,7 +599,7 @@ export default function AnalysisPage() {
         </div>
 
         <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
-          <div className="mb-3 flex items-center gap-2">
+          <div className="mb-3 flex flex-wrap items-center gap-2">
             <Users size={16} className="text-green-600" />
             <h3 className="font-semibold">Who bought it</h3>
             <span className="text-xs text-zinc-500">farmers against FPOs</span>
@@ -621,7 +619,7 @@ export default function AnalysisPage() {
           <h3 className="font-semibold">Repeat buyers</h3>
           <span className="text-xs text-zinc-500">bought from us more than once</span>
           {repeat.buyers > 0 && (
-            <span className="ml-auto flex items-center gap-2 rounded-lg bg-green-50 px-3 py-1.5 text-sm font-semibold text-green-800 dark:bg-green-950/40 dark:text-green-300">
+            <span className="ml-auto flex flex-wrap items-center gap-x-2 rounded-lg bg-green-50 px-3 py-1.5 text-sm font-semibold text-green-800 dark:bg-green-950/40 dark:text-green-300">
               {repeat.returning.length} of {repeat.buyers} buyers
               <span className="text-xs font-normal text-green-700/70 dark:text-green-400/70">
                 {Math.round((repeat.returning.length / repeat.buyers) * 100)}% came back ·{" "}
@@ -637,20 +635,20 @@ export default function AnalysisPage() {
           </p>
         ) : (
           <div className="grid gap-5 lg:grid-cols-2">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="border-b border-zinc-200 text-xs uppercase text-zinc-500 dark:border-zinc-800">
+            <div className="min-w-0 overflow-x-auto">
+              <table className="data-table compact">
+                <thead>
                   <tr>
-                    <th className="py-2 pr-3 font-medium">Buyer</th>
-                    <th className="px-3 py-2 font-medium">Place</th>
-                    <th className="px-3 py-2 text-right font-medium">Times</th>
-                    <th className="py-2 pl-3 text-right font-medium">Spent</th>
+                    <th>Buyer</th>
+                    <th>Place</th>
+                    <th className="num">Times</th>
+                    <th className="num">Spent</th>
                   </tr>
                 </thead>
                 <tbody>
                   {repeat.returning.slice(0, 10).map((b, i) => (
-                    <tr key={i} className="border-b border-zinc-100 last:border-0 dark:border-zinc-900">
-                      <td className="py-2 pr-3">
+                    <tr key={i}>
+                      <td>
                         <span className="font-medium">{b.name}</span>
                         {b.kind === "fpo" && (
                           <span className="ml-1.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
@@ -658,9 +656,9 @@ export default function AnalysisPage() {
                           </span>
                         )}
                       </td>
-                      <td className="px-3 py-2 text-zinc-500">{b.place}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{b.times}</td>
-                      <td className="py-2 pl-3 text-right tabular-nums">{money(b.value)}</td>
+                      <td className="text-zinc-500">{b.place}</td>
+                      <td className="num">{b.times}</td>
+                      <td className="num">{money(b.value)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -689,7 +687,7 @@ export default function AnalysisPage() {
         )}
       </div>
 
-      <div className="grid gap-3 lg:grid-cols-3">
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {[
           { title: "By agronomist", rows: cuts.byPerson, empty: "No sales by anyone yet" },
           { title: "By product", rows: cuts.byProduct, empty: "No products sold yet" },
@@ -697,7 +695,7 @@ export default function AnalysisPage() {
         ].map((c) => (
           <div
             key={c.title}
-            className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950"
+            className="min-w-0 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950"
           >
             <h3 className="mb-3 font-semibold">{c.title}</h3>
             <RankedBars
@@ -720,31 +718,31 @@ export default function AnalysisPage() {
       </div>
 
       {/* The rows behind every figure above. */}
-      <div className="overflow-x-auto rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
-        <table className="w-full min-w-[900px] text-sm">
+      <div className="table-wrap">
+        <table className="data-table">
           <thead>
-            <tr className="border-b border-zinc-200 text-left text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-800">
-              <th className="px-4 py-3 font-medium">Date</th>
-              <th className="px-4 py-3 font-medium">Buyer</th>
-              <th className="px-4 py-3 font-medium">Region</th>
-              <th className="px-4 py-3 text-right font-medium">Acres</th>
-              <th className="px-4 py-3 font-medium">Agronomist</th>
-              <th className="px-4 py-3 font-medium">Products</th>
-              <th className="px-4 py-3 text-right font-medium">Units</th>
-              <th className="px-4 py-3 text-right font-medium">Discount</th>
-              <th className="px-4 py-3 text-right font-medium">Total</th>
+            <tr>
+              <th>Date</th>
+              <th>Buyer</th>
+              <th>Region</th>
+              <th className="num">Acres</th>
+              <th>Agronomist</th>
+              <th>Products</th>
+              <th className="num">Units</th>
+              <th className="num">Discount</th>
+              <th className="num">Total</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={9} className="px-4 py-10 text-center text-zinc-500">
+                <td colSpan={9} className="py-10 text-center text-zinc-500">
                   Loading…
                 </td>
               </tr>
             ) : rows.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-4 py-10 text-center text-zinc-500">
+                <td colSpan={9} className="py-10 text-center text-zinc-500">
                   No sales match these filters.
                 </td>
               </tr>
@@ -756,11 +754,8 @@ export default function AnalysisPage() {
                   s.items.reduce((n, i) => n + (i.discountAmount ?? 0), 0) +
                   (s.discountAmount ?? 0);
                 return (
-                  <tr
-                    key={s._id}
-                    className="border-b border-zinc-100 align-top last:border-0 dark:border-zinc-900"
-                  >
-                    <td className="whitespace-nowrap px-4 py-3 text-zinc-500">
+                  <tr key={s._id} className="[&>td]:align-top">
+                    <td className="text-zinc-500">
                       {new Date(s.soldAt).toLocaleDateString(undefined, {
                         day: "2-digit",
                         month: "short",
@@ -780,14 +775,14 @@ export default function AnalysisPage() {
                         </div>
                       ) : null}
                     </td>
-                    <td className="px-4 py-3">
+                    <td>
                       <div className="font-medium">{b.name}</div>
                       <div className="text-xs text-zinc-500">
                         {b.kind === "fpo" ? "FPO" : "Farmer"}
                         {b.mobile ? ` · ${b.mobile}` : ""}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-zinc-600 dark:text-zinc-300">
+                    <td className="text-zinc-600 dark:text-zinc-300">
                       {[a?.village, a?.district].filter(Boolean).join(", ") || (
                         <span className="text-zinc-400">—</span>
                       )}
@@ -796,26 +791,26 @@ export default function AnalysisPage() {
                         farms nothing itself, and on a farmer with no area
                         recorded — the two are told apart by the buyer type
                         beside the name. */}
-                    <td className="px-4 py-3 text-right tabular-nums">
+                    <td className="num">
                       {typeof s.farmerAcres === "number" && s.farmerAcres > 0 ? (
                         s.farmerAcres
                       ) : (
                         <span className="text-zinc-400">—</span>
                       )}
                     </td>
-                    <td className="px-4 py-3">{s.agronomist?.name || s.agronomistName || "—"}</td>
-                    <td className="px-4 py-3">
-                      <span className="line-clamp-2 max-w-[260px]">
+                    <td>{s.agronomist?.name || s.agronomistName || "—"}</td>
+                    <td className="cell-wrap">
+                      <span className="line-clamp-2">
                         {s.items.map((i) => `${i.name} ×${i.qty}`).join(", ")}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-right tabular-nums">
+                    <td className="num">
                       {s.items.reduce((n, i) => n + i.qty, 0)}
                     </td>
-                    <td className="px-4 py-3 text-right tabular-nums text-red-600">
+                    <td className="num text-red-600">
                       {off > 0 ? `− ${money(off)}` : "—"}
                     </td>
-                    <td className="px-4 py-3 text-right font-semibold tabular-nums">
+                    <td className="num font-semibold">
                       {money(s.total ?? 0)}
                     </td>
                   </tr>
@@ -826,24 +821,24 @@ export default function AnalysisPage() {
           {rows.length > 0 ? (
             <tfoot>
               <tr className="border-t border-zinc-200 font-semibold dark:border-zinc-800">
-                <td className="px-4 py-3" colSpan={3}>
+                <td colSpan={3}>
                   {rows.length} sale{rows.length === 1 ? "" : "s"}
                 </td>
                 {/* Not the column added up: a farmer who bought three times
                     shows their holding on all three rows but is counted once
                     here, so the total is land reached, not land re-counted. */}
                 <td
-                  className="px-4 py-3 text-right tabular-nums"
+                  className="num"
                   title="Land of the farmers sold to, each counted once"
                 >
                   {kpi.acres ? kpi.acres : "—"}
                 </td>
-                <td className="px-4 py-3" colSpan={2} />
-                <td className="px-4 py-3 text-right tabular-nums">{kpi.units}</td>
-                <td className="px-4 py-3 text-right tabular-nums text-red-600">
+                <td colSpan={2} />
+                <td className="num">{kpi.units}</td>
+                <td className="num text-red-600">
                   {kpi.discounts > 0 ? `− ${money(kpi.discounts)}` : "—"}
                 </td>
-                <td className="px-4 py-3 text-right tabular-nums text-green-600">
+                <td className="num text-green-600">
                   {money(kpi.revenue)}
                 </td>
               </tr>

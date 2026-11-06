@@ -27,7 +27,8 @@ import {
   X,
 } from "lucide-react";
 import { useAuth } from "../lib/auth";
-import { AccentPicker, ThemeToggle } from "./theme-toggle";
+import { ProfileMenu } from "./profile-menu";
+import { ThemeToggle } from "./theme-toggle";
 
 const NAV_GROUPS = [
   {
@@ -275,20 +276,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
             <p className="text-xs text-zinc-500">{today}</p>
           </div>
           <div className="ml-auto flex items-center gap-2">
-            <span className="hidden items-center gap-2 rounded-full border border-zinc-200 bg-white py-1 pl-1 pr-3 text-sm md:flex dark:border-zinc-800 dark:bg-zinc-900">
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-brand-400 to-brand-600 text-xs font-semibold text-white">
-                {initials(admin?.name)}
-              </span>
-              <span className="max-w-40 truncate font-medium">{admin?.name}</span>
-            </span>
-            <button
-              onClick={logout}
-              className="flex items-center gap-1.5 rounded-full border border-zinc-200 px-3 py-1.5 text-sm font-medium text-zinc-600 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600 dark:border-zinc-800 dark:text-zinc-300 dark:hover:border-red-900 dark:hover:bg-red-950/40"
-            >
-              <LogOut size={15} /> <span className="hidden sm:inline">Logout</span>
-            </button>
-            <AccentPicker />
             <ThemeToggle />
+            <ProfileMenu />
           </div>
         </header>
 

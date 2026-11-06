@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 /**
  * Charts drawn as inline SVG, deliberately without a charting library.
@@ -56,11 +56,29 @@ export function TrendChart({
   const gid = useId();
   const [hover, setHover] = useState<number | null>(null);
 
-  if (points.length === 0) {
+  /**
+   * The drawing is as wide as its card, measured, rather than a fixed 800-wide
+   * viewBox scaled to fit: scaled down to a phone, that shrank the axis labels
+   * to an unreadable 4px. Drawn at the real width, text stays at 11px and only
+   * the number of date labels changes.
+   */
+  const box = useRef<HTMLDivElement>(null);
+  const [W, setW] = useState(800);
+  const empty = points.length === 0;
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([entry]) => {
+      setW(Math.max(260, Math.round(entry.contentRect.width)));
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [empty]);
+
+  if (empty) {
     return <Empty height={height} />;
   }
 
-  const W = 800;
   const H = height;
   const PAD = { top: 16, right: 16, bottom: 26, left: 52 };
   const iw = W - PAD.left - PAD.right;
@@ -77,12 +95,19 @@ export function TrendChart({
 
   // Four ticks is enough to read a magnitude; more is grid for its own sake.
   const ticks = [0, 0.25, 0.5, 0.75, 1].map((f) => max * f);
-  // Labels thin out rather than overlap — measured by count, not by guessing.
-  const every = Math.max(1, Math.ceil(points.length / 8));
+  // Labels thin out rather than overlap — as many as fit at ~60px each, and
+  // never more than eight.
+  const fit = Math.max(2, Math.min(8, Math.floor(iw / 60)));
+  const every = Math.max(1, Math.ceil(points.length / fit));
+
+  // Near either edge the tooltip hangs inward, so it never pokes out of the
+  // card and pushes the page sideways on a phone.
+  const tipAt = hover === null ? 0.5 : x(hover) / W;
+  const tipShift = tipAt < 0.25 ? "" : tipAt > 0.75 ? "-translate-x-full" : "-translate-x-1/2";
 
   return (
-    <div className="relative">
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" style={{ height }}>
+    <div ref={box} className="relative w-full">
+      <svg viewBox={`0 0 ${W} ${H}`} className="block w-full" role="img" style={{ height }}>
         <defs>
           <linearGradient id={`${gid}-fill`} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={BLUE} stopOpacity="0.18" />
@@ -175,8 +200,8 @@ export function TrendChart({
 
       {hover !== null ? (
         <div
-          className="pointer-events-none absolute -translate-x-1/2 rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-xs shadow-lg dark:border-zinc-700 dark:bg-zinc-900"
-          style={{ left: `${(x(hover) / W) * 100}%`, top: 0 }}
+          className={`pointer-events-none absolute w-max max-w-[16rem] ${tipShift} rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-xs shadow-lg dark:border-zinc-700 dark:bg-zinc-900`}
+          style={{ left: `${tipAt * 100}%`, top: 0 }}
         >
           <div className="font-semibold">{points[hover].label}</div>
           <div className="text-zinc-500">
@@ -220,7 +245,7 @@ export function RankedBars({
       {rows.map((r) => (
         <div key={r.label} className="group">
           <div className="mb-1 flex items-baseline justify-between gap-3 text-sm">
-            <span className="truncate" title={r.label}>
+            <span className="min-w-0 truncate" title={r.label}>
               {r.label}
             </span>
             {/* Direct label on every row is legitimate here: the rows are few

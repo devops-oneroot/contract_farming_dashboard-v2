@@ -95,34 +95,34 @@ export function AgronomistMultiSelect({
       <button
         type="button"
         onClick={toggleOpen}
-        className={`flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-sm ${
+        className={`flex h-9 w-full items-center justify-between gap-1.5 rounded-lg border px-2.5 text-sm ${
           value.length
-            ? "border-green-600 bg-green-50 text-green-800 dark:bg-green-950 dark:text-green-200"
-            : "border-zinc-300 dark:border-zinc-700"
+            ? "border-brand-500 bg-brand-50 text-brand-800 dark:bg-brand-500/10 dark:text-brand-200"
+            : "border-zinc-300 bg-white dark:border-zinc-700 dark:bg-zinc-900"
         }`}
       >
-        <span className="max-w-44 truncate">{label}</span>
+        <span className="min-w-0 flex-1 truncate text-left">{label}</span>
         {value.length > 0 ? (
           <X
             size={14}
-            className="text-zinc-500 hover:text-red-600"
+            className="shrink-0 text-zinc-500 hover:text-red-600"
             onClick={(e) => {
               e.stopPropagation();
               onChange([]);
             }}
           />
         ) : (
-          <ChevronDown size={14} className="text-zinc-400" />
+          <ChevronDown size={14} className="shrink-0 text-zinc-400" />
         )}
       </button>
 
       {open && pos && (
         <div
-          style={{ top: pos.top, left: pos.left, width: PANEL_W }}
-          className="fixed z-50 rounded-lg border border-zinc-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-950"
+          style={{ top: pos.top, left: pos.left, width: PANEL_W, maxWidth: "calc(100vw - 16px)" }}
+          className="fixed z-50 max-h-[calc(100dvh-1rem)] overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-950"
         >
           <div className="flex items-center gap-2 border-b border-zinc-100 px-2 dark:border-zinc-900">
-            <Search size={14} className="text-zinc-400" />
+            <Search size={14} className="shrink-0 text-zinc-400" />
             <input
               autoFocus
               value={q}
@@ -158,8 +158,8 @@ export function AgronomistMultiSelect({
                   >
                     {picked.has(a._id) && <Check size={12} />}
                   </span>
-                  <span className={`truncate ${a._id === "none" ? "italic text-zinc-500" : ""}`}>{a.name}</span>
-                  {a.mobile && <span className="ml-auto text-xs text-zinc-400">{a.mobile}</span>}
+                  <span className={`min-w-0 truncate ${a._id === "none" ? "italic text-zinc-500" : ""}`}>{a.name}</span>
+                  {a.mobile && <span className="ml-auto shrink-0 text-xs text-zinc-400">{a.mobile}</span>}
                 </button>
               </li>
             ))}

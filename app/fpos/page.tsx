@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
-  CalendarDays,
   ChevronLeft,
   ChevronRight,
   RefreshCw,
@@ -171,7 +170,7 @@ export default function FposPage() {
   const filtersOn = !!(query || role || crop || district || taluk || onboardedBy || from || to);
 
   return (
-    <div className="rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+    <div className="card overflow-hidden">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-3 border-b border-zinc-100 p-3 dark:border-zinc-800">
         <button
@@ -180,7 +179,7 @@ export default function FposPage() {
         >
           <RefreshCw size={15} /> Refresh
         </button>
-        <div className="relative min-w-[220px] flex-1">
+        <div className="relative min-w-[12rem] flex-1">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
           <input
             value={query}
@@ -195,134 +194,141 @@ export default function FposPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-zinc-100 px-3 py-2 text-sm dark:border-zinc-800">
-        <span className="text-zinc-500">Area</span>
-        <select
-          value={district}
-          onChange={(e) => changeDistrict(e.target.value)}
-          className="rounded-lg border border-zinc-300 bg-transparent px-2 py-1 dark:border-zinc-700"
-        >
-          <option value="">All districts</option>
-          {districtOptions.map((d) => (
-            <option key={d} value={d}>
-              {d}
-            </option>
-          ))}
-        </select>
-        {/* Only offered when there is more than one taluk to choose between. */}
-        {talukOptions.length > 1 && (
+      <div className="filter-bar border-b border-zinc-100 px-3 py-3 dark:border-zinc-800">
+        <label className="filter-field">
+          <span className="filter-label">District</span>
           <select
-            value={taluk}
-            onChange={(e) => {
-              setTaluk(e.target.value);
-              setPage(1);
-            }}
-            className="rounded-lg border border-zinc-300 bg-transparent px-2 py-1 dark:border-zinc-700"
+            value={district}
+            onChange={(e) => changeDistrict(e.target.value)}
+            className="filter-control"
           >
-            <option value="">{district ? `All of ${district}` : "All taluks"}</option>
-            {talukOptions.map((t) => (
-              <option key={t} value={t}>
-                {t}
+            <option value="">All districts</option>
+            {districtOptions.map((d) => (
+              <option key={d} value={d}>
+                {d}
               </option>
             ))}
           </select>
+        </label>
+        {/* Only offered when there is more than one taluk to choose between. */}
+        {talukOptions.length > 1 && (
+          <label className="filter-field">
+            <span className="filter-label">Taluk</span>
+            <select
+              value={taluk}
+              onChange={(e) => {
+                setTaluk(e.target.value);
+                setPage(1);
+              }}
+              className="filter-control"
+            >
+              <option value="">{district ? `All of ${district}` : "All taluks"}</option>
+              {talukOptions.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+          </label>
         )}
 
-        <span className="ml-2 text-zinc-500">Role</span>
-        <select
-          value={role}
-          onChange={(e) => {
-            setRole(e.target.value);
-            setPage(1);
-          }}
-          className="rounded-lg border border-zinc-300 bg-transparent px-2 py-1 dark:border-zinc-700"
-        >
-          <option value="">All roles</option>
-          {roleOptions.map((r) => (
-            <option key={r} value={r}>
-              {r}
-            </option>
-          ))}
-        </select>
-
-        <span className="ml-2 text-zinc-500">Crop</span>
-        <select
-          value={crop}
-          onChange={(e) => {
-            setCrop(e.target.value);
-            setPage(1);
-          }}
-          className="rounded-lg border border-zinc-300 bg-transparent px-2 py-1 dark:border-zinc-700"
-        >
-          <option value="">All crops</option>
-          {cropOptions.map((c) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
-        </select>
-
-        <span className="ml-2 text-zinc-500">Onboarded by</span>
-        <select
-          value={onboardedBy}
-          onChange={(e) => {
-            setOnboardedBy(e.target.value);
-            setPage(1);
-          }}
-          className="rounded-lg border border-zinc-300 bg-transparent px-2 py-1 dark:border-zinc-700"
-        >
-          <option value="">All</option>
-          {agronomists.map((a) => (
-            <option key={a._id} value={a._id}>
-              {a.name}
-            </option>
-          ))}
-        </select>
-
-        <CalendarDays size={15} className="ml-2 text-zinc-400" />
-        <span className="text-zinc-500">Onboarded</span>
-        <input
-          type="date"
-          value={from}
-          onChange={(e) => applyFilter(setFrom)(e.target.value)}
-          className="rounded-lg border border-zinc-300 bg-transparent px-2 py-1 dark:border-zinc-700"
-        />
-        <span className="text-zinc-400">to</span>
-        <input
-          type="date"
-          value={to}
-          onChange={(e) => applyFilter(setTo)(e.target.value)}
-          className="rounded-lg border border-zinc-300 bg-transparent px-2 py-1 dark:border-zinc-700"
-        />
-        <button
-          onClick={() => {
-            const today = new Date().toISOString().slice(0, 10);
-            setFrom(today);
-            setTo(today);
-            setPage(1);
-          }}
-          className="rounded-lg border border-zinc-300 px-2.5 py-1 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
-        >
-          Today
-        </button>
-        {filtersOn && (
-          <button
-            onClick={() => {
-              setQuery("");
-              setRole("");
-              setCrop("");
-              setDistrict("");
-              setTaluk("");
-              setOnboardedBy("");
-              setFrom("");
-              setTo("");
+        <label className="filter-field">
+          <span className="filter-label">Role</span>
+          <select
+            value={role}
+            onChange={(e) => {
+              setRole(e.target.value);
               setPage(1);
             }}
-            className="rounded-lg px-2.5 py-1 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-900"
+            className="filter-control"
           >
-            Clear filters
+            <option value="">All roles</option>
+            {roleOptions.map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="filter-field">
+          <span className="filter-label">Crop</span>
+          <select
+            value={crop}
+            onChange={(e) => {
+              setCrop(e.target.value);
+              setPage(1);
+            }}
+            className="filter-control"
+          >
+            <option value="">All crops</option>
+            {cropOptions.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="filter-field">
+          <span className="filter-label">Onboarded by</span>
+          <select
+            value={onboardedBy}
+            onChange={(e) => {
+              setOnboardedBy(e.target.value);
+              setPage(1);
+            }}
+            className="filter-control"
+          >
+            <option value="">All</option>
+            {agronomists.map((a) => (
+              <option key={a._id} value={a._id}>
+                {a.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="filter-field">
+          <span className="filter-label">Onboarded from</span>
+          <input type="date" value={from} onChange={(e) => applyFilter(setFrom)(e.target.value)} className="filter-control" />
+        </label>
+        <label className="filter-field">
+          <span className="filter-label">Onboarded to</span>
+          <input type="date" value={to} onChange={(e) => applyFilter(setTo)(e.target.value)} className="filter-control" />
+        </label>
+
+        <div className="filter-actions">
+          <button
+            onClick={() => {
+              const today = new Date().toISOString().slice(0, 10);
+              setFrom(today);
+              setTo(today);
+              setPage(1);
+            }}
+            className="h-9 rounded-lg border border-zinc-300 px-3 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
+          >
+            Today
           </button>
-        )}
+          {filtersOn && (
+            <button
+              onClick={() => {
+                setQuery("");
+                setRole("");
+                setCrop("");
+                setDistrict("");
+                setTaluk("");
+                setOnboardedBy("");
+                setFrom("");
+                setTo("");
+                setPage(1);
+              }}
+              className="h-9 rounded-lg px-3 text-zinc-500 hover:bg-zinc-100 hover:text-red-600 dark:hover:bg-zinc-900"
+            >
+              Clear
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Table */}
@@ -333,39 +339,39 @@ export default function FposPage() {
           and a large monitor both fill what they have. The 19rem reserved is
           the chrome above and below — header, toolbar, filters and pager — and
           little enough beyond that to keep the pager on screen. */}
-      <div className="max-h-[calc(100vh-19rem)] min-h-[24rem] overflow-auto">
-        <table className="w-full min-w-[1180px] text-left text-sm">
-          <thead className="sticky top-0 z-10 bg-green-50 text-green-800 [&>tr>th]:bg-green-50 dark:bg-green-950 dark:text-green-300 dark:[&>tr>th]:bg-green-950">
+      <div className="scroll-thin overflow-x-auto sm:max-h-[calc(100dvh-19rem)] sm:min-h-[24rem] sm:overflow-auto">
+        <table className="data-table">
+          <thead className="sticky top-0 z-10 [&>tr>th]:bg-zinc-50 dark:[&>tr>th]:bg-zinc-900">
             <tr>
-              <th className="px-4 py-3 font-semibold">Name</th>
-              <th className="px-4 py-3 font-semibold">Onboarded at</th>
-              <th className="px-4 py-3 font-semibold">Mobile Number</th>
-              <th className="px-4 py-3 font-semibold">Role</th>
-              <th className="px-4 py-3 font-semibold">Also at FPO</th>
-              <th className="px-4 py-3 font-semibold">District</th>
-              <th className="px-4 py-3 font-semibold">Taluk</th>
-              <th className="px-4 py-3 font-semibold">Village</th>
-              <th className="px-4 py-3 font-semibold">Crops</th>
-              <th className="px-4 py-3 text-right font-semibold">Farmers</th>
-              <th className="px-4 py-3 font-semibold">Onboarded by</th>
+              <th>Name</th>
+              <th>Onboarded at</th>
+              <th>Mobile Number</th>
+              <th>Role</th>
+              <th>Also at FPO</th>
+              <th>District</th>
+              <th>Taluk</th>
+              <th>Village</th>
+              <th>Crops</th>
+              <th className="num">Farmers</th>
+              <th>Onboarded by</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={11} className="px-4 py-10 text-center text-zinc-500">
+                <td colSpan={11} className="whitespace-normal py-10 text-center text-zinc-500">
                   Loading…
                 </td>
               </tr>
             ) : error ? (
               <tr>
-                <td colSpan={11} className="px-4 py-10 text-center text-red-600">
+                <td colSpan={11} className="whitespace-normal py-10 text-center text-red-600">
                   {error}
                 </td>
               </tr>
             ) : rows.length === 0 ? (
               <tr>
-                <td colSpan={11} className="px-4 py-10 text-center text-zinc-500">
+                <td colSpan={11} className="whitespace-normal py-10 text-center text-zinc-500">
                   {filtersOn
                     ? "No FPO matches these filters."
                     : "No FPOs yet. They appear when a field agent onboards one from the app."}
@@ -376,11 +382,8 @@ export default function FposPage() {
                 const a = f.address;
                 const hasPin = f.location?.latitude != null && f.location?.longitude != null;
                 return (
-                  <tr
-                    key={f._id}
-                    className="border-t border-zinc-100 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900"
-                  >
-                    <td className="px-4 py-3">
+                  <tr key={f._id}>
+                    <td>
                       <div className="flex items-center gap-3">
                         {f.photoUrl ? (
                           <PhotoThumb
@@ -397,12 +400,12 @@ export default function FposPage() {
                         <span className="font-medium">{f.name}</span>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-zinc-500">{fmtDate(f.createdAt)}</td>
-                    <td className="px-4 py-3">{f.mobile}</td>
-                    <td className="px-4 py-3">
+                    <td className="text-zinc-500">{fmtDate(f.createdAt)}</td>
+                    <td>{f.mobile}</td>
+                    <td>
                       {f.role || <span className="text-zinc-400">—</span>}
                     </td>
-                    <td className="px-4 py-3">
+                    <td>
                       {f.members?.length ? (
                         <div className="space-y-0.5">
                           {f.members.map((m, i) => (
@@ -428,7 +431,7 @@ export default function FposPage() {
                         <span className="text-zinc-400">—</span>
                       )}
                     </td>
-                    <td className="px-4 py-3">
+                    <td>
                       {a?.district ? (
                         <>
                           {a.district}
@@ -442,8 +445,8 @@ export default function FposPage() {
                         <NoArea />
                       )}
                     </td>
-                    <td className="px-4 py-3">{a?.taluk || <NoArea />}</td>
-                    <td className="px-4 py-3">
+                    <td>{a?.taluk || <NoArea />}</td>
+                    <td>
                       {a?.village ? (
                         hasPin ? (
                           <a
@@ -461,9 +464,9 @@ export default function FposPage() {
                         <NoArea />
                       )}
                     </td>
-                    <td className="px-4 py-3">
+                    <td>
                       {f.crops.length ? (
-                        <div className="flex flex-wrap gap-1">
+                        <div className="flex max-w-xs flex-wrap gap-1">
                           {f.crops.map((c) => (
                             <span
                               key={c}
@@ -477,10 +480,10 @@ export default function FposPage() {
                         <span className="text-zinc-400">—</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-right font-medium">
+                    <td className="num font-medium">
                       {f.farmerCount ? num(f.farmerCount) : <span className="text-zinc-400">—</span>}
                     </td>
-                    <td className="px-4 py-3">
+                    <td>
                       {agentName(f.agronomist) ? (
                         <span className="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-2.5 py-1 text-xs font-medium text-green-800 dark:bg-green-950/50 dark:text-green-300">
                           {agentName(f.agronomist)}

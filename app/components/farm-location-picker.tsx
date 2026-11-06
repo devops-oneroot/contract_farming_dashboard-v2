@@ -148,9 +148,9 @@ export function FarmLocationPicker({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Or search a village by name…"
-            className="w-full bg-transparent py-2 text-sm outline-none"
+            className="w-full min-w-0 bg-transparent py-2 text-sm outline-none"
           />
-          {searching ? <span className="text-xs text-zinc-400">Searching…</span> : null}
+          {searching ? <span className="shrink-0 text-xs text-zinc-400">Searching…</span> : null}
         </div>
         {q.length >= 3 && (hits.length > 0 || searched) ? (
           <div className="absolute z-10 mt-1 max-h-60 w-full overflow-y-auto rounded-lg border border-zinc-200 bg-white shadow-lg dark:border-zinc-800 dark:bg-zinc-950">
@@ -204,13 +204,13 @@ export function FarmLocationPicker({
         <div>
           <label className="mb-1 block text-sm text-zinc-500">Village</label>
           {typingVillage ? (
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2">
               <input
                 value={value.village}
                 onChange={(e) => set("village", e.target.value)}
                 autoFocus
                 placeholder="New village name"
-                className={FIELD}
+                className={`${FIELD} min-w-0`}
               />
               <button
                 type="button"

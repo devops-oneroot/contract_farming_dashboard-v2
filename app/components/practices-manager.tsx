@@ -161,14 +161,14 @@ export function PracticesManager({ crop }: { crop?: string } = {}) {
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">
+      <div className="page-toolbar">
+        <h2 className="min-w-0 break-words text-lg font-semibold sm:text-xl">
           {scoped ? `${crop} · Package of Practices` : "Package of Practices"}
-        </h1>
+        </h2>
         {!scoped && (
           <button
             onClick={addCrop}
-            className="flex items-center gap-2 rounded-lg bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600"
+            className="flex shrink-0 items-center gap-2 self-start rounded-lg bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600 sm:self-auto"
           >
             <Plus size={16} /> New crop
           </button>
@@ -176,19 +176,19 @@ export function PracticesManager({ crop }: { crop?: string } = {}) {
       </div>
 
       {loading ? (
-        <p className="mt-6 text-zinc-500">Loading…</p>
+        <p className="mt-2 text-zinc-500">Loading…</p>
       ) : practices.length === 0 ? (
-        <p className="mt-6 text-zinc-500">No crops yet. Click “New crop” to add one.</p>
+        <p className="mt-2 text-zinc-500">No crops yet. Click “New crop” to add one.</p>
       ) : (
         <>
           {/* Crop tabs (hidden when scoped to one crop) */}
           {!scoped && (
-            <div className="mt-6 flex flex-wrap gap-2">
+            <div className="scroll-thin -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
               {practices.map((p) => (
                 <button
                   key={p.key}
                   onClick={() => selectCrop(p)}
-                  className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
+                  className={`shrink-0 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium ${
                     activeKey === p.key
                       ? "bg-brand-500 text-white"
                       : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-900 dark:text-zinc-300"
@@ -201,7 +201,7 @@ export function PracticesManager({ crop }: { crop?: string } = {}) {
           )}
 
           {/* Editor */}
-          <div className="mt-6 rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
+          <div className={`${scoped ? "" : "mt-4 "}rounded-xl border border-zinc-200 bg-white p-4 sm:p-5 dark:border-zinc-800 dark:bg-zinc-950`}>
             <div className="flex flex-wrap items-end justify-between gap-4">
               <label className="text-sm">
                 <span className="mb-1 block text-zinc-500">Cycle duration (days)</span>
@@ -229,17 +229,17 @@ export function PracticesManager({ crop }: { crop?: string } = {}) {
               {steps.map((s, i) => (
                 <div
                   key={i}
-                  className="rounded-lg border border-zinc-200 p-3 dark:border-zinc-800"
+                  className="rounded-lg border border-zinc-200 p-2.5 sm:p-3 dark:border-zinc-800"
                 >
-                  <div className="flex items-start gap-3">
-                    <div className="flex flex-col items-center pt-1 text-zinc-400">
+                  <div className="flex items-start gap-2 sm:gap-3">
+                    <div className="flex shrink-0 flex-col items-center pt-1 text-zinc-400">
                       <button onClick={() => move(i, -1)} className="hover:text-zinc-700" title="Move up">▲</button>
                       <GripVertical size={16} />
                       <button onClick={() => move(i, 1)} className="hover:text-zinc-700" title="Move down">▼</button>
                     </div>
 
-                    <div className="grid flex-1 gap-3 sm:grid-cols-2">
-                      <div className="flex items-center gap-2">
+                    <div className="grid min-w-0 flex-1 grid-cols-1 gap-3 sm:grid-cols-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <label className="text-xs text-zinc-500">Day</label>
                         <input
                           type="number"
@@ -310,13 +310,13 @@ export function PracticesManager({ crop }: { crop?: string } = {}) {
                                   return (
                                     <span
                                       key={pid}
-                                      className="inline-flex items-center gap-1 rounded-full bg-brand-500 px-2.5 py-1 text-xs text-white"
+                                      className="inline-flex max-w-full items-center gap-1 break-words rounded-full bg-brand-500 px-2.5 py-1 text-xs text-white"
                                     >
                                       {prod?.name ?? "Product"}
                                       <button
                                         type="button"
                                         onClick={() => toggleStepProduct(i, pid)}
-                                        className="hover:text-red-200"
+                                        className="shrink-0 hover:text-red-200"
                                         title="Remove"
                                       >
                                         <X size={12} />
@@ -333,7 +333,7 @@ export function PracticesManager({ crop }: { crop?: string } = {}) {
 
                     <button
                       onClick={() => removeStep(i)}
-                      className="mt-1 text-red-500 hover:text-red-700"
+                      className="mt-1 shrink-0 text-red-500 hover:text-red-700"
                       title="Remove step"
                     >
                       <Trash2 size={18} />

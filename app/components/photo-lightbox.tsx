@@ -30,11 +30,11 @@ export function PhotoLightbox({
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4"
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-3 sm:p-4"
       onClick={onClose}
     >
       <div
-        className="relative flex max-h-[90vh] max-w-[90vw] flex-col items-center gap-3"
+        className="relative flex max-h-[92dvh] max-w-full flex-col items-center gap-3 sm:max-w-[90vw]"
         // Swallows clicks on the photo itself, which would otherwise reach the
         // backdrop and close it the moment anyone tried to look closely.
         onClick={(e) => e.stopPropagation()}
@@ -42,7 +42,7 @@ export function PhotoLightbox({
         <button
           onClick={onClose}
           aria-label="Close photo"
-          className="absolute -top-2 right-0 translate-x-1/2 -translate-y-1/2 rounded-full bg-white p-1.5 text-zinc-700 shadow-lg hover:bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+          className="absolute right-2 top-2 z-10 rounded-full sm:-top-2 sm:right-0 sm:translate-x-1/2 sm:-translate-y-1/2 bg-white p-1.5 text-zinc-700 shadow-lg hover:bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
         >
           <X size={18} />
         </button>
@@ -54,9 +54,9 @@ export function PhotoLightbox({
         <img
           src={url}
           alt={caption || "Farmer photo"}
-          className="max-h-[80vh] max-w-full rounded-xl object-contain shadow-2xl"
+          className="max-h-[80dvh] max-w-full rounded-xl object-contain shadow-2xl"
         />
-        {caption ? <p className="text-sm font-medium text-white">{caption}</p> : null}
+        {caption ? <p className="max-w-full break-words text-center text-sm font-medium text-white">{caption}</p> : null}
       </div>
     </div>
   );

@@ -81,12 +81,12 @@ export function LightboxProvider({ children }: { children: React.ReactNode }) {
           aria-modal="true"
           aria-label={current.caption ?? "Image"}
           onClick={close}
-          className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/85 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/85 p-2 backdrop-blur-sm sm:p-4"
         >
           {/* Top bar: caption, position in the group, open-original, close. */}
           <div
             onClick={(e) => e.stopPropagation()}
-            className="mb-3 flex w-full max-w-5xl items-center gap-3 text-white"
+            className="mb-2 flex w-full max-w-5xl items-center gap-2 text-white sm:mb-3 sm:gap-3"
           >
             <div className="min-w-0 flex-1 truncate text-sm font-medium">
               {current.caption ?? ""}
@@ -116,13 +116,13 @@ export function LightboxProvider({ children }: { children: React.ReactNode }) {
 
           <div
             onClick={(e) => e.stopPropagation()}
-            className="relative flex max-h-[80vh] w-full max-w-5xl items-center justify-center"
+            className="relative flex max-h-[calc(100dvh-4.5rem)] w-full max-w-5xl items-center justify-center sm:max-h-[85dvh]"
           >
             {images.length > 1 && (
               <button
                 onClick={() => step(-1)}
                 title="Previous"
-                className="absolute left-0 z-10 -translate-x-1 rounded-full bg-black/50 p-2 text-white transition hover:bg-black/70"
+                className="absolute left-1 z-10 rounded-full sm:left-0 sm:-translate-x-1 bg-black/50 p-2 text-white transition hover:bg-black/70"
               >
                 <ChevronLeft size={22} />
               </button>
@@ -132,14 +132,14 @@ export function LightboxProvider({ children }: { children: React.ReactNode }) {
             <img
               src={current.url}
               alt={current.caption ?? "Photo"}
-              className="max-h-[80vh] w-auto max-w-full rounded-lg object-contain shadow-2xl"
+              className="max-h-[calc(100dvh-4.5rem)] w-auto max-w-full rounded-lg object-contain shadow-2xl sm:max-h-[85dvh]"
             />
 
             {images.length > 1 && (
               <button
                 onClick={() => step(1)}
                 title="Next"
-                className="absolute right-0 z-10 translate-x-1 rounded-full bg-black/50 p-2 text-white transition hover:bg-black/70"
+                className="absolute right-1 z-10 rounded-full sm:right-0 sm:translate-x-1 bg-black/50 p-2 text-white transition hover:bg-black/70"
               >
                 <ChevronRight size={22} />
               </button>

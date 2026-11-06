@@ -100,10 +100,10 @@ export function RegionsDialog({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4">
-      <div className="my-8 w-full max-w-2xl rounded-xl border border-zinc-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-950">
-        <div className="flex items-start justify-between gap-3 border-b border-zinc-100 px-5 py-4 dark:border-zinc-900">
-          <div>
+    <div className="modal-backdrop">
+      <div className="modal-panel border border-zinc-200 sm:max-w-2xl dark:border-zinc-800">
+        <div className="flex items-start justify-between gap-3 border-b border-zinc-100 px-4 py-4 sm:px-5 dark:border-zinc-900">
+          <div className="min-w-0">
             <h2 className="flex items-center gap-2 text-lg font-semibold">
               <MapPin size={18} className="text-green-600" /> Regions
             </h2>
@@ -112,12 +112,12 @@ export function RegionsDialog({ onClose }: { onClose: () => void }) {
               Gokak.
             </p>
           </div>
-          <button onClick={onClose} className="rounded-lg p-1 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-900">
+          <button onClick={onClose} className="shrink-0 rounded-lg p-1 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-900">
             <X size={18} />
           </button>
         </div>
 
-        <div className="space-y-4 px-5 py-4">
+        <div className="space-y-4 px-4 py-4 sm:px-5">
           <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto_auto]">
             <input
               list="region-districts"
@@ -148,12 +148,12 @@ export function RegionsDialog({ onClose }: { onClose: () => void }) {
               onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))}
               placeholder="CHM"
               maxLength={6}
-              className="w-24 rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm uppercase dark:border-zinc-700"
+              className="rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm uppercase sm:w-24 dark:border-zinc-700"
             />
             <button
               onClick={add}
               disabled={busy || !district.trim() || !taluk.trim() || code.trim().length < 2}
-              className="inline-flex items-center gap-1 rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-1 rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-50"
             >
               <Plus size={15} /> Add
             </button>
@@ -168,16 +168,16 @@ export function RegionsDialog({ onClose }: { onClose: () => void }) {
 
           {error && <p className="text-sm text-red-600">{error}</p>}
 
-          <div className="overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-800">
-            <table className="w-full text-left text-sm">
-              <thead className="border-b border-zinc-200 text-xs uppercase text-zinc-500 dark:border-zinc-800">
+          <div className="scroll-thin overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-800">
+            <table className="data-table compact">
+              <thead>
                 <tr>
-                  <th className="px-3 py-2 font-medium">Taluk</th>
-                  <th className="px-3 py-2 font-medium">District</th>
-                  <th className="px-3 py-2 font-medium">Code</th>
-                  <th className="px-3 py-2 text-right font-medium">Bills issued</th>
-                  <th className="px-3 py-2 text-right font-medium">Agronomists</th>
-                  <th className="px-3 py-2" />
+                  <th>Taluk</th>
+                  <th>District</th>
+                  <th>Code</th>
+                  <th className="num">Bills issued</th>
+                  <th className="num">Agronomists</th>
+                  <th />
                 </tr>
               </thead>
               <tbody>
@@ -186,8 +186,8 @@ export function RegionsDialog({ onClose }: { onClose: () => void }) {
                   const cell =
                     "w-full rounded-lg border border-zinc-300 bg-transparent px-2 py-1 text-sm dark:border-zinc-700";
                   return (
-                    <tr key={r._id} className="border-b border-zinc-100 last:border-0 dark:border-zinc-900">
-                      <td className="px-3 py-2 font-medium">
+                    <tr key={r._id}>
+                      <td className="font-medium">
                         {open && editing ? (
                           <input
                             value={editing.taluk}
@@ -198,7 +198,7 @@ export function RegionsDialog({ onClose }: { onClose: () => void }) {
                           r.taluk
                         )}
                       </td>
-                      <td className="px-3 py-2 text-zinc-500">
+                      <td className="text-zinc-500">
                         {open && editing ? (
                           <input
                             value={editing.district}
@@ -209,7 +209,7 @@ export function RegionsDialog({ onClose }: { onClose: () => void }) {
                           r.district
                         )}
                       </td>
-                      <td className="px-3 py-2">
+                      <td>
                         {open && editing ? (
                           <input
                             value={editing.code}
@@ -228,9 +228,9 @@ export function RegionsDialog({ onClose }: { onClose: () => void }) {
                           </span>
                         )}
                       </td>
-                      <td className="px-3 py-2 text-right tabular-nums">{r.seq}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{r.agronomists ?? 0}</td>
-                      <td className="whitespace-nowrap px-3 py-2 text-right">
+                      <td className="num">{r.seq}</td>
+                      <td className="num">{r.agronomists ?? 0}</td>
+                      <td className="text-right">
                         {open && editing ? (
                           <>
                             <button
@@ -279,7 +279,7 @@ export function RegionsDialog({ onClose }: { onClose: () => void }) {
                 })}
                 {regions.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-3 py-6 text-center text-sm text-zinc-400">
+                    <td colSpan={6} className="whitespace-normal py-6 text-center text-sm text-zinc-400">
                       No regions yet. Until a taluk is added and an agronomist mapped to it, bills
                       keep the year-based numbering.
                     </td>

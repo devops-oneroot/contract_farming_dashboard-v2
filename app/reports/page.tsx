@@ -47,18 +47,18 @@ export default function ReportsPage() {
           No reports yet. They appear when a field agent submits their daily report in the app.
         </p>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
-          <table className="w-full min-w-[960px] text-sm">
+        <div className="table-wrap">
+          <table className="data-table">
             <thead>
-              <tr className="border-b border-zinc-200 text-left text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-800">
-                <th className="px-4 py-3 font-medium">Field Agent</th>
-                <th className="px-4 py-3 font-medium">Date</th>
-                <th className="px-4 py-3 font-medium">Measured</th>
-                <th className="px-4 py-3 font-medium">Daily Report</th>
-                <th className="px-4 py-3 font-medium">Today&apos;s Expenses</th>
-                <th className="px-4 py-3 font-medium">Expected (Tomorrow)</th>
-                <th className="px-4 py-3 font-medium">Plan (Tomorrow)</th>
-                <th className="px-4 py-3 font-medium">Day</th>
+              <tr>
+                <th>Field Agent</th>
+                <th>Date</th>
+                <th>Measured</th>
+                <th>Daily Report</th>
+                <th>Today&apos;s Expenses</th>
+                <th>Expected (Tomorrow)</th>
+                <th>Plan (Tomorrow)</th>
+                <th>Day</th>
               </tr>
             </thead>
             <tbody>
@@ -68,15 +68,15 @@ export default function ReportsPage() {
                   <span className={v ? "" : "italic text-zinc-400"}>{v || "—"}</span>
                 );
                 return (
-                  <tr key={r._id} className="border-b border-zinc-100 last:border-0 align-top dark:border-zinc-900">
-                    <td className="px-4 py-3">
+                  <tr key={r._id} className="[&>td]:align-top">
+                    <td>
                       <div className="font-medium">{name}</div>
                       {r.user?.mobile ? <div className="text-xs text-zinc-500">{r.user.mobile}</div> : null}
                     </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-zinc-500">{fmtDate(r.date)}</td>
+                    <td className="text-zinc-500">{fmtDate(r.date)}</td>
                     {/* Recorded by the app, not typed by the agent. Reports filed
                         before tracking existed simply have none. */}
-                    <td className="px-4 py-3">
+                    <td>
                       {r.stats ? (
                         <div className="flex flex-col gap-0.5 text-xs">
                           <span className="font-semibold text-green-600">{r.stats.distanceKm} km</span>
@@ -102,10 +102,11 @@ export default function ReportsPage() {
                         <span className="text-xs italic text-zinc-400">—</span>
                       )}
                     </td>
-                    <td className="px-4 py-3"><div className="max-w-[240px]">{cell(r.dailyReport)}</div></td>
-                    <td className="px-4 py-3"><div className="max-w-[150px]">{cell(r.dailyExpenses)}</div></td>
-                    <td className="px-4 py-3"><div className="max-w-[150px]">{cell(r.expectedExpensesTomorrow)}</div></td>
-                    <td className="px-4 py-3"><div className="max-w-[240px]">{cell(r.planOfActionTomorrow)}</div></td>
+                    {/* Free text the agent typed: wraps instead of widening the table. */}
+                    <td className="cell-wrap">{cell(r.dailyReport)}</td>
+                    <td className="cell-wrap">{cell(r.dailyExpenses)}</td>
+                    <td className="cell-wrap">{cell(r.expectedExpensesTomorrow)}</td>
+                    <td className="cell-wrap">{cell(r.planOfActionTomorrow)}</td>
                     {/* The columns above are what the agent typed. This opens
                         what actually happened: every farmer registered, met,
                         visited and sold to on that day, by name.
@@ -113,7 +114,7 @@ export default function ReportsPage() {
                         Needs the user id — a report filed by someone since
                         deleted has only their name snapshot, and there is no
                         day to fetch without an id to fetch it for. */}
-                    <td className="px-4 py-3">
+                    <td>
                       {r.user?._id ? (
                         <button
                           onClick={() =>

@@ -144,10 +144,85 @@ body {
   .card {
     @apply rounded-2xl border border-zinc-200/80 bg-white shadow-[0_1px_2px_rgba(16,16,16,0.04)] dark:border-zinc-800 dark:bg-zinc-950;
   }
+
+  /*
+   * Tables size their columns to the content (auto layout, no fixed min-widths).
+   * Headers and short values never wrap; a long free-text cell opts in with
+   * .cell-wrap. When the content is wider than the screen, .table-wrap scrolls
+   * sideways inside its card instead of stretching the page.
+   */
+  .table-wrap {
+    @apply scroll-thin max-w-full overflow-x-auto rounded-2xl border border-zinc-200/80 bg-white shadow-[0_1px_2px_rgba(16,16,16,0.04)] dark:border-zinc-800 dark:bg-zinc-950;
+  }
+  .data-table {
+    @apply w-full border-collapse text-left text-sm;
+  }
+  .data-table > thead > tr > th {
+    @apply whitespace-nowrap border-b border-zinc-200 bg-zinc-50/80 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-zinc-400;
+  }
+  .data-table > tbody > tr > td,
+  .data-table > tfoot > tr > td {
+    @apply whitespace-nowrap px-4 py-3 align-middle;
+  }
+  .data-table > tbody > tr {
+    @apply border-b border-zinc-100 transition-colors last:border-0 hover:bg-zinc-50/70 dark:border-zinc-800/70 dark:hover:bg-zinc-900/50;
+  }
+  .data-table.compact > thead > tr > th,
+  .data-table.compact > tbody > tr > td,
+  .data-table.compact > tfoot > tr > td {
+    @apply px-3 py-2;
+  }
+  .data-table .cell-wrap {
+    @apply min-w-48 max-w-md whitespace-normal break-words;
+  }
+  .data-table .num {
+    @apply text-right tabular-nums;
+  }
+
+  /* Page title row + actions: stacks on phones, one row from sm up. */
+  .page-toolbar {
+    @apply mb-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between;
+  }
+  /*
+   * Filters above a table: one column per filter, label on top, control below.
+   * As many columns as fit (min 11rem each), down to one on phones.
+   *   <div class="filter-bar">
+   *     <label class="filter-field"><span class="filter-label">Region</span><select class="filter-control">…</select></label>
+   *     <div class="filter-field wide">…two dates…</div>    (spans two columns from sm)
+   *   </div>
+   */
+  .filter-bar {
+    @apply grid items-end gap-x-3 gap-y-3 text-sm;
+    grid-template-columns: repeat(auto-fill, minmax(min(11rem, 100%), 1fr));
+  }
+  .filter-field {
+    @apply flex min-w-0 flex-col gap-1.5;
+  }
+  .filter-field.wide {
+    @apply sm:col-span-2;
+  }
+  .filter-label {
+    @apply truncate text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400;
+  }
+  .filter-control {
+    @apply h-9 w-full min-w-0 rounded-lg border border-zinc-300 bg-white px-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-zinc-700 dark:bg-zinc-900;
+  }
+  /* Buttons that sit in the grid (Today, Clear…) line up with the controls. */
+  .filter-actions {
+    @apply flex h-9 items-center gap-2;
+  }
+
+  /* Modal: full-width sheet on phones, centred card from sm up, scrolls inside. */
+  .modal-backdrop {
+    @apply fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 backdrop-blur-sm sm:items-center sm:p-4;
+  }
+  .modal-panel {
+    @apply scroll-thin max-h-[92dvh] w-full overflow-y-auto rounded-t-2xl bg-white shadow-2xl sm:max-w-lg sm:rounded-2xl dark:bg-zinc-950;
+  }
 }
 
-/* Slim, quiet scrollbars for the sidebar and main panes. */
-.scroll-thin {
+/* Slim, quiet scrollbars for the sidebar, main pane and table wrappers. */
+@utility scroll-thin {
   scrollbar-width: thin;
   scrollbar-color: rgb(161 161 170 / 0.4) transparent;
 }

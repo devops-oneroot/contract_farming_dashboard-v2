@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  CalendarDays,
   Download,
   ExternalLink,
   Pencil,
@@ -358,7 +357,7 @@ export default function FieldSalesPage() {
           >
             <RefreshCw size={15} /> Refresh
           </button>
-          <div className="relative min-w-[220px] flex-1">
+          <div className="relative min-w-48 flex-1">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
             <input
               value={query}
@@ -369,100 +368,102 @@ export default function FieldSalesPage() {
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 px-3 py-2 text-sm">
-          <span className="text-zinc-500">Sold to</span>
-          <select
-            value={buyerKind}
-            onChange={(e) => setBuyerKind(e.target.value as "" | "farmer" | "fpo")}
-            className="rounded-lg border border-zinc-300 bg-transparent px-2 py-1 dark:border-zinc-700"
-          >
-            <option value="">All ({sales.length})</option>
-            <option value="farmer">Farmers ({kinds.farmer})</option>
-            <option value="fpo">FPOs ({kinds.fpo})</option>
-          </select>
+        {/* One column per filter: label on top, control below. */}
+        <div className="filter-bar px-3 py-3">
+          <label className="filter-field">
+            <span className="filter-label">Sold to</span>
+            <select
+              value={buyerKind}
+              onChange={(e) => setBuyerKind(e.target.value as "" | "farmer" | "fpo")}
+              className="filter-control"
+            >
+              <option value="">All ({sales.length})</option>
+              <option value="farmer">Farmers ({kinds.farmer})</option>
+              <option value="fpo">FPOs ({kinds.fpo})</option>
+            </select>
+          </label>
 
-          <span className="text-zinc-500">Code</span>
-          <select
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            className="rounded-lg border border-zinc-300 bg-transparent px-2 py-1 dark:border-zinc-700"
-          >
-            <option value="">All</option>
-            {regions.map((r) => (
-              <option key={r._id} value={r.code}>
-                ENP-{r.code} · {r.taluk} ({codeCounts[r.code] ?? 0})
-              </option>
-            ))}
-            {/* The sales numbered before the taluk series existed still have to
-                be findable, and they are the ones an office is most likely to
-                be chasing. */}
-            <option value="__">Older numbering ({codeCounts.__ ?? 0})</option>
-          </select>
+          <label className="filter-field">
+            <span className="filter-label">Code</span>
+            <select value={code} onChange={(e) => setCode(e.target.value)} className="filter-control">
+              <option value="">All</option>
+              {regions.map((r) => (
+                <option key={r._id} value={r.code}>
+                  ENP-{r.code} · {r.taluk} ({codeCounts[r.code] ?? 0})
+                </option>
+              ))}
+              {/* The sales numbered before the taluk series existed still have to
+                  be findable, and they are the ones an office is most likely to
+                  be chasing. */}
+              <option value="__">Older numbering ({codeCounts.__ ?? 0})</option>
+            </select>
+          </label>
 
-          <span className="text-zinc-500">Agronomist</span>
-          <AgronomistMultiSelect agronomists={agronomists} value={who} onChange={setWho} allLabel="All" />
+          <div className="filter-field">
+            <span className="filter-label">Agronomist</span>
+            <AgronomistMultiSelect agronomists={agronomists} value={who} onChange={setWho} allLabel="All" />
+          </div>
 
-          <CalendarDays size={15} className="text-zinc-400" />
-          <span className="text-zinc-500">Given</span>
-          <input
-            type="date"
-            value={from}
-            onChange={(e) => setFrom(e.target.value)}
-            className="rounded-lg border border-zinc-300 bg-transparent px-2 py-1 dark:border-zinc-700"
-          />
-          <span className="text-zinc-400">to</span>
-          <input
-            type="date"
-            value={to}
-            onChange={(e) => setTo(e.target.value)}
-            className="rounded-lg border border-zinc-300 bg-transparent px-2 py-1 dark:border-zinc-700"
-          />
+          <label className="filter-field">
+            <span className="filter-label">Given from</span>
+            <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="filter-control" />
+          </label>
+          <label className="filter-field">
+            <span className="filter-label">Given to</span>
+            <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="filter-control" />
+          </label>
+
           {/* One tap for the day, and for the periods worth asking about.
               Each sets BOTH ends — an open-ended window is what made a single
               date read as "everything from then onward". */}
-          {(
-            [
-              { key: "today", label: "Today", days: 0 },
-              { key: "7d", label: "7 days", days: 6 },
-              { key: "30d", label: "30 days", days: 29 },
-            ] as const
-          ).map((o) => {
-            const range = daysBack(o.days);
-            const on = from === range.from && to === range.to;
-            return (
-              <button
-                key={o.key}
-                onClick={() => {
-                  setFrom(on ? "" : range.from);
-                  setTo(on ? "" : range.to);
-                }}
-                className={`rounded-lg border px-2.5 py-1 ${
-                  on
-                    ? "border-brand-500 bg-brand-500 text-white"
-                    : "border-zinc-300 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
-                }`}
-              >
-                {o.label}
-              </button>
-            );
-          })}
+          <div className="filter-field">
+            <span className="filter-label">Quick range</span>
+            <div className="flex h-9 gap-1.5">
+              {(
+                [
+                  { key: "today", label: "Today", days: 0 },
+                  { key: "7d", label: "7 days", days: 6 },
+                  { key: "30d", label: "30 days", days: 29 },
+                ] as const
+              ).map((o) => {
+                const range = daysBack(o.days);
+                const on = from === range.from && to === range.to;
+                return (
+                  <button
+                    key={o.key}
+                    onClick={() => {
+                      setFrom(on ? "" : range.from);
+                      setTo(on ? "" : range.to);
+                    }}
+                    className={`flex-1 whitespace-nowrap rounded-lg border px-2 ${
+                      on
+                        ? "border-brand-500 bg-brand-500 text-white"
+                        : "border-zinc-300 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
+                    }`}
+                  >
+                    {o.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
-          {(who.length || from || to || buyerKind || code || query) && (
-            <button
-              onClick={() => {
-                setWho([]);
-                setFrom("");
-                setTo("");
-                setBuyerKind("");
-                setCode("");
-                setQuery("");
-              }}
-              className="rounded-lg px-2.5 py-1 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-900"
-            >
-              Clear filters
-            </button>
-          )}
-          <div className="ml-auto">
+          <div className="filter-actions">
+            {(who.length || from || to || buyerKind || code || query) && (
+              <button
+                onClick={() => {
+                  setWho([]);
+                  setFrom("");
+                  setTo("");
+                  setBuyerKind("");
+                  setCode("");
+                  setQuery("");
+                }}
+                className="h-9 rounded-lg px-3 text-zinc-500 hover:bg-zinc-100 hover:text-red-600 dark:hover:bg-zinc-900"
+              >
+                Clear
+              </button>
+            )}
             <ExcelExport
               id="field-sales"
               fileName="field-sales"
@@ -489,10 +490,10 @@ export default function FieldSalesPage() {
         ].map((s) => (
           <div
             key={s.label}
-            className="rounded-xl border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-950"
+            className="min-w-0 rounded-xl border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-950"
           >
             <div className="text-xs uppercase tracking-wide text-zinc-500">{s.label}</div>
-            <div className={`mt-1 text-xl font-semibold${s.alert ? " text-red-600" : ""}`}>
+            <div className={`mt-1 break-words text-lg font-semibold tabular-nums sm:text-xl${s.alert ? " text-red-600" : ""}`}>
               {s.value}
             </div>
           </div>
@@ -524,9 +525,9 @@ export default function FieldSalesPage() {
               >
                 {/* Who gave what to whom, and when — the head of a bill. */}
                 <div className="flex flex-wrap items-start justify-between gap-3 border-b border-zinc-100 px-4 py-3 dark:border-zinc-900">
-                  <div>
+                  <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2 font-medium">
-                      {buyer.name}
+                      <span className="min-w-0 break-words">{buyer.name}</span>
                       {/* Said, not implied: without it an FPO sale reads as a
                           farmer sale whose details happen to be missing. */}
                       {buyer.kind === "fpo" ? (
@@ -555,7 +556,7 @@ export default function FieldSalesPage() {
                       dates belong — read at a glance, with nothing to hover. */}
                   <LateEntryNote sale={s} className="min-w-0 flex-1 sm:px-4" />
 
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-3">
                     {hasLoc && (
                       <a
                         href={`https://www.google.com/maps?q=${s.location.latitude},${s.location.longitude}`}
@@ -588,101 +589,109 @@ export default function FieldSalesPage() {
                   </div>
                 </div>
 
-                {/* One row per product: the invoice columns, then the proof. */}
-                <div className="hidden px-4 pt-3 text-[10px] uppercase tracking-wide text-zinc-500 sm:flex">
-                  <span className="flex-1">Product</span>
-                  <span className="w-16 text-right">Qty</span>
-                  <span className="w-24 text-right">Rate</span>
-                  <span className="w-28 text-right">Farmer/FPO rate</span>
-                  <span className="w-28 text-right">Amount</span>
-                  <span className="w-28 text-right">Discount</span>
-                  <span className="w-28 text-right">Net</span>
-                  <span className="w-52 pl-4">Proof</span>
-                </div>
-                <div className="divide-y divide-zinc-100 px-4 dark:divide-zinc-900">
-                  {s.items.map((it, i) => {
-                    const gross = round2(it.qty * it.unitPrice);
-                    const off = round2(it.discountAmount ?? 0);
-                    return (
-                      <div
-                        key={`${it.product}-${i}`}
-                        className="flex flex-wrap items-center gap-y-2 py-3 sm:flex-nowrap"
-                      >
-                        <div className="flex min-w-[180px] flex-1 items-center gap-3">
-                          {it.imageUrl ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              src={it.imageUrl}
-                              alt={it.name}
-                              className="h-11 w-11 rounded-md object-cover ring-1 ring-zinc-200 dark:ring-zinc-700"
-                            />
-                          ) : (
-                            <div className="h-11 w-11 rounded-md bg-zinc-100 dark:bg-zinc-900" />
-                          )}
-                          <div className="min-w-0">
-                            <div className="truncate font-medium">{it.name}</div>
-                            {it.unit ? (
-                              <div className="text-xs text-zinc-500">{it.unit}</div>
-                            ) : null}
-                          </div>
-                        </div>
-                        <span className="w-16 text-right text-sm">{it.qty}</span>
-                        {/* Rate is the catalogue; Farmer/FPO rate is what was
-                            actually charged, shown only when it differs — a dash
-                            says "no special rate", which is the ordinary case.
-                            Older sales kept no catalogue snapshot, so for them
-                            the rate charged stands in and the second column
-                            cannot say either way. */}
-                        {(() => {
-                          const overridden =
-                            it.listPrice != null && round2(it.unitPrice) !== round2(it.listPrice);
-                          return (
-                            <>
-                              {/* Struck through in red once a farmer/FPO rate
-                                  replaced it — the eye should land on the
-                                  price that was charged, not the one that
-                                  wasn't. */}
-                              <span
-                                className={`w-24 text-right text-sm ${
-                                  overridden ? "text-zinc-400 line-through decoration-red-500" : ""
-                                }`}
-                              >
-                                {money(it.listPrice ?? it.unitPrice)}
-                              </span>
-                              <span className="w-28 text-right text-sm font-medium text-green-600">
-                                {overridden ? money(it.unitPrice) : "—"}
-                              </span>
-                            </>
-                          );
-                        })()}
-                        {/* Stated ex-tax, the way the app states it and the way
-                            a GST bill reads — the tax is added once at the end,
-                            so this will not equal qty x rate. */}
-                        <span className="w-28 text-right text-sm">{money(exOf(it, gross))}</span>
-                        <span className="w-28 text-right text-sm text-red-600">
-                          {off > 0
-                            ? `${it.discountType === "pct" ? `${it.discount}% ` : ""}− ${money(off)}`
-                            : "—"}
-                        </span>
-                        <span className="w-28 text-right text-sm font-semibold">
-                          {money(exOf(it, round2(gross - off)))}
-                        </span>
-                        <div className="w-52 pl-4">
-                          <ProofPhotos
-                            before={it.beforePhotoUrl}
-                            after={it.afterPhotoUrl}
-                            dueAt={s.afterDueAt}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
+                {/* One row per product: the invoice columns, then the proof.
+                    A real table, so each column is as wide as its figures and
+                    a narrow screen scrolls it sideways rather than scattering
+                    the numbers without their headings. */}
+                <div className="scroll-thin overflow-x-auto">
+                  <table className="data-table compact">
+                    <thead>
+                      <tr>
+                        <th>Product</th>
+                        <th className="num">Qty</th>
+                        <th className="num">Rate</th>
+                        <th className="num">Farmer/FPO rate</th>
+                        <th className="num">Amount</th>
+                        <th className="num">Discount</th>
+                        <th className="num">Net</th>
+                        <th>Proof</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {s.items.map((it, i) => {
+                        const gross = round2(it.qty * it.unitPrice);
+                        const off = round2(it.discountAmount ?? 0);
+                        return (
+                          <tr key={`${it.product}-${i}`}>
+                            <td className="cell-wrap">
+                              <div className="flex items-center gap-3">
+                                {it.imageUrl ? (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img
+                                    src={it.imageUrl}
+                                    alt={it.name}
+                                    className="h-11 w-11 shrink-0 rounded-md object-cover ring-1 ring-zinc-200 dark:ring-zinc-700"
+                                  />
+                                ) : (
+                                  <div className="h-11 w-11 shrink-0 rounded-md bg-zinc-100 dark:bg-zinc-900" />
+                                )}
+                                <div className="min-w-0">
+                                  <div className="font-medium">{it.name}</div>
+                                  {it.unit ? (
+                                    <div className="text-xs text-zinc-500">{it.unit}</div>
+                                  ) : null}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="num">{it.qty}</td>
+                            {/* Rate is the catalogue; Farmer/FPO rate is what was
+                                actually charged, shown only when it differs — a dash
+                                says "no special rate", which is the ordinary case.
+                                Older sales kept no catalogue snapshot, so for them
+                                the rate charged stands in and the second column
+                                cannot say either way. */}
+                            {(() => {
+                              const overridden =
+                                it.listPrice != null && round2(it.unitPrice) !== round2(it.listPrice);
+                              return (
+                                <>
+                                  {/* Struck through in red once a farmer/FPO rate
+                                      replaced it — the eye should land on the
+                                      price that was charged, not the one that
+                                      wasn't. */}
+                                  <td
+                                    className={`num ${
+                                      overridden ? "text-zinc-400 line-through decoration-red-500" : ""
+                                    }`}
+                                  >
+                                    {money(it.listPrice ?? it.unitPrice)}
+                                  </td>
+                                  <td className="num font-medium text-green-600">
+                                    {overridden ? money(it.unitPrice) : "—"}
+                                  </td>
+                                </>
+                              );
+                            })()}
+                            {/* Stated ex-tax, the way the app states it and the way
+                                a GST bill reads — the tax is added once at the end,
+                                so this will not equal qty x rate. */}
+                            <td className="num">{money(exOf(it, gross))}</td>
+                            <td className="num text-red-600">
+                              {off > 0
+                                ? `${it.discountType === "pct" ? `${it.discount}% ` : ""}− ${money(off)}`
+                                : "—"}
+                            </td>
+                            <td className="num font-semibold">
+                              {money(exOf(it, round2(gross - off)))}
+                            </td>
+                            <td>
+                              <ProofPhotos
+                                before={it.beforePhotoUrl}
+                                after={it.afterPhotoUrl}
+                                dueAt={s.afterDueAt}
+                              />
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
 
                 {/* The bill, in the same order the app shows it: what the items
                     come to, what came off, what is taxable, the tax, the total. */}
                 <div className="flex flex-wrap items-start justify-between gap-4 border-t border-zinc-100 bg-zinc-50/60 px-4 py-3 dark:border-zinc-900 dark:bg-zinc-900/40">
-                  <div className="min-w-[180px] flex-1 text-sm text-zinc-600 dark:text-zinc-300">
+                  <div className="min-w-48 flex-1 break-words text-sm text-zinc-600 dark:text-zinc-300">
                     {s.notes ? s.notes : <span className="italic text-zinc-400">No notes</span>}
                   </div>
                   <div className="w-full max-w-xs space-y-1 text-sm sm:w-auto">

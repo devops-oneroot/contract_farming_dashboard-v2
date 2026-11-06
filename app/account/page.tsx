@@ -109,7 +109,7 @@ export default function AccountPage() {
           <UserPlus size={16} className="text-green-600" /> Add an admin
         </h3>
         <div className="flex flex-wrap items-end gap-3">
-          <label className="min-w-40 flex-1 text-sm">
+          <label className="w-full min-w-40 flex-1 text-sm sm:w-auto">
             <span className="mb-1 block text-zinc-500">Name</span>
             <input
               value={name}
@@ -118,7 +118,7 @@ export default function AccountPage() {
               className="w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700"
             />
           </label>
-          <label className="min-w-40 flex-1 text-sm">
+          <label className="w-full min-w-40 flex-1 text-sm sm:w-auto">
             <span className="mb-1 block text-zinc-500">Mobile number</span>
             <input
               value={mobile}
@@ -128,7 +128,7 @@ export default function AccountPage() {
               className="w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700"
             />
           </label>
-          <label className="min-w-40 flex-1 text-sm">
+          <label className="w-full min-w-40 flex-1 text-sm sm:w-auto">
             <span className="mb-1 block text-zinc-500">Password</span>
             <input
               type="password"
@@ -141,7 +141,7 @@ export default function AccountPage() {
           <button
             type="submit"
             disabled={busy}
-            className="rounded-lg bg-brand-500 px-4 py-2.5 font-medium text-white hover:bg-brand-600 disabled:opacity-60"
+            className="w-full rounded-lg bg-brand-500 px-4 py-2.5 font-medium text-white hover:bg-brand-600 disabled:opacity-60 sm:w-auto"
           >
             {busy ? "Adding…" : "Add admin"}
           </button>
@@ -162,8 +162,8 @@ export default function AccountPage() {
       )}
 
       {/* Current admins */}
-      <div className="rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
-        <div className="flex items-center gap-3 border-b border-zinc-100 p-3 dark:border-zinc-800">
+      <div className="card overflow-hidden">
+        <div className="flex flex-wrap items-center gap-3 border-b border-zinc-100 p-3 dark:border-zinc-800">
           <span className="text-sm font-medium">
             {loading ? "Loading…" : `${admins.length} admin${admins.length === 1 ? "" : "s"}`}
           </span>
@@ -175,20 +175,21 @@ export default function AccountPage() {
           </button>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-green-50 text-green-800 dark:bg-green-950/40 dark:text-green-300">
+        {/* Already inside a card, so just the sideways scroll — not a second card. */}
+        <div className="scroll-thin overflow-x-auto">
+          <table className="data-table">
+            <thead>
               <tr>
-                <th className="px-4 py-2.5 font-medium">Name</th>
-                <th className="px-4 py-2.5 font-medium">Mobile</th>
-                <th className="px-4 py-2.5 font-medium">Added</th>
-                <th className="px-4 py-2.5 font-medium"></th>
+                <th>Name</th>
+                <th>Mobile</th>
+                <th>Added</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
               {!loading && admins.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-4 py-6 text-center text-zinc-500">
+                  <td colSpan={4} className="py-6 text-center text-zinc-500">
                     No admins yet.
                   </td>
                 </tr>
@@ -196,14 +197,14 @@ export default function AccountPage() {
               {admins.map((a) => {
                 const isSelf = a._id === current?._id;
                 return (
-                  <tr key={a._id} className="border-t border-zinc-100 dark:border-zinc-800">
-                    <td className="px-4 py-2.5">
+                  <tr key={a._id}>
+                    <td>
                       {a.name}
                       {isSelf && <span className="ml-2 text-xs text-zinc-500">(you)</span>}
                     </td>
-                    <td className="px-4 py-2.5">{a.mobile}</td>
-                    <td className="px-4 py-2.5 text-zinc-500">{formatDate(a.createdAt)}</td>
-                    <td className="px-4 py-2.5">
+                    <td>{a.mobile}</td>
+                    <td className="text-zinc-500">{formatDate(a.createdAt)}</td>
+                    <td>
                       <div className="flex justify-end gap-2">
                         <button
                           onClick={() => onResetPassword(a)}

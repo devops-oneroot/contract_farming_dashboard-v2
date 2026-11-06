@@ -141,7 +141,7 @@ export default function AccountPage() {
           <button
             type="submit"
             disabled={busy}
-            className="rounded-lg bg-green-600 px-4 py-2.5 font-medium text-white hover:bg-green-700 disabled:opacity-60"
+            className="rounded-lg bg-brand-500 px-4 py-2.5 font-medium text-white hover:bg-brand-600 disabled:opacity-60"
           >
             {busy ? "Adding…" : "Add admin"}
           </button>

@@ -168,7 +168,7 @@ export function PracticesManager({ crop }: { crop?: string } = {}) {
         {!scoped && (
           <button
             onClick={addCrop}
-            className="flex items-center gap-2 rounded-lg bg-green-600 px-3 py-2 text-sm font-medium text-white hover:bg-green-700"
+            className="flex items-center gap-2 rounded-lg bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600"
           >
             <Plus size={16} /> New crop
           </button>
@@ -190,7 +190,7 @@ export function PracticesManager({ crop }: { crop?: string } = {}) {
                   onClick={() => selectCrop(p)}
                   className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
                     activeKey === p.key
-                      ? "bg-green-600 text-white"
+                      ? "bg-brand-500 text-white"
                       : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-900 dark:text-zinc-300"
                   }`}
                 >
@@ -310,7 +310,7 @@ export function PracticesManager({ crop }: { crop?: string } = {}) {
                                   return (
                                     <span
                                       key={pid}
-                                      className="inline-flex items-center gap-1 rounded-full bg-green-600 px-2.5 py-1 text-xs text-white"
+                                      className="inline-flex items-center gap-1 rounded-full bg-brand-500 px-2.5 py-1 text-xs text-white"
                                     >
                                       {prod?.name ?? "Product"}
                                       <button
@@ -353,7 +353,7 @@ export function PracticesManager({ crop }: { crop?: string } = {}) {
               <button
                 onClick={save}
                 disabled={saving}
-                className="flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-60"
+                className="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-60"
               >
                 <Save size={16} /> {saving ? "Saving…" : "Save changes"}
               </button>

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
@@ -8,7 +9,6 @@ import {
   Leaf,
   Package,
   ShoppingCart,
-  Plus,
   ArrowRight,
   Clock,
   TrendingUp,
@@ -22,6 +22,11 @@ const STATUS_STYLE: Record<OrderStatus, string> = {
   delivered: "bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-300",
   cancelled: "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-300",
 };
+
+function greeting() {
+  const h = new Date().getHours();
+  return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
+}
 
 function fmtDate(s: string) {
   return new Date(s).toLocaleDateString(undefined, { day: "2-digit", month: "short" });
@@ -78,13 +83,40 @@ export default function Home() {
   ];
 
   return (
-    <div className="mx-auto max-w-6xl space-y-8">
-      {/* Welcome */}
-      <div>
-        <h1 className="text-2xl font-semibold">
-          Welcome back{admin?.name ? `, ${admin.name}` : ""} 👋
-        </h1>
-        <p className="mt-1 text-zinc-500">Here’s what’s happening across the OneRoot app today.</p>
+    <div className="mx-auto max-w-7xl space-y-8">
+      {/* Welcome hero */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-500 via-brand-600 to-brand-700 p-6 text-white shadow-lg shadow-brand-500/20 sm:p-8">
+        <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/10 blur-2xl" />
+        <div className="pointer-events-none absolute -bottom-24 left-1/3 h-64 w-64 rounded-full bg-amber-300/20 blur-3xl" />
+        <Image
+          src="/logo-mark-white.png"
+          alt=""
+          width={169}
+          height={221}
+          className="pointer-events-none absolute -bottom-6 right-6 hidden h-44 w-auto opacity-15 sm:block"
+        />
+        <div className="relative">
+          <p className="text-sm font-medium text-white/80">{greeting()}</p>
+          <h1 className="mt-1 text-2xl font-semibold sm:text-3xl">
+            Welcome back{admin?.name ? `, ${admin.name}` : ""} 👋
+          </h1>
+          <p className="mt-2 max-w-xl text-white/85">Here’s what’s happening across the OneRoot app today.</p>
+          <div className="mt-6 flex flex-wrap gap-2">
+            {actions.map((a) => {
+              const Icon = a.icon;
+              return (
+                <Link
+                  key={a.label}
+                  href={a.href}
+                  className="inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-sm font-medium backdrop-blur transition hover:bg-white hover:text-brand-700"
+                >
+                  <Icon size={15} />
+                  {a.label}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
       {/* KPI cards */}
@@ -95,15 +127,18 @@ export default function Home() {
             <Link
               key={s.label}
               href={s.href}
-              className="group rounded-2xl border border-zinc-200 bg-white p-4 transition-all hover:-translate-y-0.5 hover:border-green-400 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-950"
+              className="card group relative overflow-hidden p-5 transition-all hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-lg hover:shadow-brand-500/10"
             >
-              <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${s.color}`}>
+              <span className={`absolute -right-6 -top-6 h-20 w-20 rounded-full opacity-60 ${s.color}`} />
+              <span className={`relative flex h-11 w-11 items-center justify-center rounded-xl ${s.color}`}>
                 <Icon size={20} />
               </span>
-              <div className="mt-3 text-3xl font-bold tabular-nums">{loading ? "—" : s.value}</div>
-              <div className="mt-0.5 flex items-center gap-1 text-sm text-zinc-500">
+              <div className="relative mt-4 text-3xl font-bold tabular-nums">
+                {loading ? <span className="inline-block h-8 w-12 animate-pulse rounded-md bg-zinc-200 dark:bg-zinc-800" /> : s.value}
+              </div>
+              <div className="relative mt-0.5 flex items-center gap-1 text-sm text-zinc-500">
                 {s.label}
-                <ArrowRight size={13} className="opacity-0 transition-opacity group-hover:opacity-100" />
+                <ArrowRight size={13} className="-translate-x-1 opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100" />
               </div>
             </Link>
           );
@@ -206,36 +241,15 @@ export default function Home() {
         </div>
       )}
 
-      {/* Quick actions */}
-      <div>
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-zinc-400">Quick actions</h2>
-        <div className="flex flex-wrap gap-3">
-          {actions.map((a) => {
-            const Icon = a.icon;
-            return (
-              <Link
-                key={a.label}
-                href={a.href}
-                className="inline-flex items-center gap-2 rounded-xl bg-green-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-green-700"
-              >
-                <Plus size={15} />
-                <Icon size={15} />
-                {a.label}
-              </Link>
-            );
-          })}
-        </div>
-      </div>
-
       {/* Recent activity */}
       <div className="grid gap-4 lg:grid-cols-2">
         {/* Recent farmers */}
-        <div className="rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+        <div className="card overflow-hidden">
           <div className="flex items-center justify-between border-b border-zinc-100 p-4 dark:border-zinc-800">
             <h3 className="flex items-center gap-2 font-semibold">
-              <Users size={16} className="text-green-600" /> Recent farmers
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-50 text-brand-600 dark:bg-brand-500/10"><Users size={15} /></span> Recent farmers
             </h3>
-            <Link href="/farmers" className="text-sm text-green-600 hover:underline">
+            <Link href="/farmers" className="text-sm font-medium text-brand-600 hover:text-brand-700 hover:underline">
               View all
             </Link>
           </div>
@@ -249,9 +263,9 @@ export default function Home() {
                 <Link
                   key={f._id}
                   href={`/farmers/${f._id}`}
-                  className="flex items-center gap-3 p-3 hover:bg-zinc-50 dark:hover:bg-zinc-900"
+                  className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-brand-50/50 dark:hover:bg-zinc-900"
                 >
-                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-green-600 text-sm font-semibold text-white">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-green-500 to-green-700 text-sm font-semibold text-white">
                     {f.name?.charAt(0)?.toUpperCase() ?? "?"}
                   </span>
                   <div className="flex-1">
@@ -268,12 +282,12 @@ export default function Home() {
         </div>
 
         {/* Recent orders */}
-        <div className="rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+        <div className="card overflow-hidden">
           <div className="flex items-center justify-between border-b border-zinc-100 p-4 dark:border-zinc-800">
             <h3 className="flex items-center gap-2 font-semibold">
-              <TrendingUp size={16} className="text-green-600" /> Recent orders
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-50 text-brand-600 dark:bg-brand-500/10"><TrendingUp size={15} /></span> Recent orders
             </h3>
-            <Link href="/orders" className="text-sm text-green-600 hover:underline">
+            <Link href="/orders" className="text-sm font-medium text-brand-600 hover:text-brand-700 hover:underline">
               View all
             </Link>
           </div>
@@ -284,7 +298,7 @@ export default function Home() {
               <p className="p-4 text-sm text-zinc-500">No orders yet.</p>
             ) : (
               orders.slice(0, 5).map((o) => (
-                <div key={o._id} className="flex items-center gap-3 p-3">
+                <div key={o._id} className="flex items-center gap-3 px-4 py-3">
                   <div className="flex-1">
                     <div className="text-sm font-medium">{o.farmerName || "Farmer"}</div>
                     <div className="text-xs text-zinc-500">

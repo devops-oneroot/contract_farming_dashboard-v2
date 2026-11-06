@@ -19,6 +19,8 @@ type FormState = {
   unit: string;
   /** Pack sizes. Empty = the product is sold in one size, at `price`. */
   variants: VariantRow[];
+  /** Split 5% GST out of this product's price on a field sale. */
+  gstEnabled: boolean;
   crops: string[]; // crop names this product is mapped to
   file: File | null;
   preview: string; // existing imageUrl or object URL of a new file
@@ -31,6 +33,7 @@ const emptyForm = (): FormState => ({
   price: "",
   unit: "",
   variants: [],
+  gstEnabled: false,
   crops: [],
   file: null,
   preview: "",
@@ -117,6 +120,7 @@ export function ProductsManager() {
       price: String(p.price),
       unit: p.unit,
       variants: (p.variants ?? []).map((v) => ({ _id: v._id, label: v.label, price: String(v.price) })),
+      gstEnabled: !!p.gstEnabled,
       crops: p.crops ?? [],
       file: null,
       preview: p.imageUrl,
@@ -166,6 +170,7 @@ export function ProductsManager() {
           form.variants.map((v) => ({ _id: v._id, label: v.label.trim(), price: Number(v.price) || 0 }))
         )
       );
+      data.append("gstEnabled", String(form.gstEnabled));
       data.append("crops", JSON.stringify(form.crops));
       if (form.file) data.append("image", form.file);
 
@@ -212,7 +217,7 @@ export function ProductsManager() {
         </div>
         <button
           onClick={openNew}
-          className="flex items-center gap-2 rounded-lg bg-green-600 px-3 py-2 text-sm font-medium text-white hover:bg-green-700"
+          className="flex items-center gap-2 rounded-lg bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600"
         >
           <Plus size={16} /> Add product
         </button>
@@ -264,6 +269,11 @@ export function ProductsManager() {
                   </div>
                 )}
                 <div className="mt-2 flex flex-wrap gap-1">
+                  {p.gstEnabled && (
+                    <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
+                      GST 5%
+                    </span>
+                  )}
                   {p.crops && p.crops.length > 0 ? (
                     p.crops.map((c) => (
                       <span
@@ -440,6 +450,34 @@ export function ProductsManager() {
                 )}
               </div>
 
+              {/* GST on a field sale. Off by default: the price is then the
+                  price, with no CGST/SGST taken out of it on the bill. */}
+              <div className="text-sm">
+                <span className="mb-1 block text-zinc-500">GST (5%) on field sales</span>
+                <div className="flex gap-4">
+                  {[
+                    { value: true, label: "Enabled" },
+                    { value: false, label: "Disabled" },
+                  ].map((o) => (
+                    <label key={o.label} className="flex cursor-pointer items-center gap-1.5">
+                      <input
+                        type="radio"
+                        name="gstEnabled"
+                        checked={form.gstEnabled === o.value}
+                        onChange={() => setForm({ ...form, gstEnabled: o.value })}
+                        className="accent-brand-500"
+                      />
+                      {o.label}
+                    </label>
+                  ))}
+                </div>
+                <p className="mt-1 text-xs text-zinc-400">
+                  {form.gstEnabled
+                    ? "The price includes 5% GST; the bill splits it into CGST 2.5% + SGST 2.5%."
+                    : "No GST split on the bill for this product."}
+                </p>
+              </div>
+
               <div className="text-sm">
                 <span className="mb-1 block text-zinc-500">Image</span>
                 <div className="flex items-center gap-3">
@@ -479,7 +517,7 @@ export function ProductsManager() {
                           onClick={() => toggleCrop(crop)}
                           className={`rounded-full border px-3 py-1 text-sm transition-colors ${
                             on
-                              ? "border-green-600 bg-green-600 text-white"
+                              ? "border-brand-500 bg-brand-500 text-white"
                               : "border-zinc-300 text-zinc-600 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900"
                           }`}
                         >
@@ -509,7 +547,7 @@ export function ProductsManager() {
               <button
                 onClick={submit}
                 disabled={saving}
-                className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-60"
+                className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-60"
               >
                 {saving ? "Saving…" : "Save"}
               </button>

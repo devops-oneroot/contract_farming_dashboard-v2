@@ -153,7 +153,7 @@ export function AgronomistMultiSelect({
                 >
                   <span
                     className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
-                      picked.has(a._id) ? "border-green-600 bg-green-600 text-white" : "border-zinc-300 dark:border-zinc-700"
+                      picked.has(a._id) ? "border-brand-500 bg-brand-500 text-white" : "border-zinc-300 dark:border-zinc-700"
                     }`}
                   >
                     {picked.has(a._id) && <Check size={12} />}

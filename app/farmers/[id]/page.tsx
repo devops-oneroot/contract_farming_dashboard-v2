@@ -290,7 +290,7 @@ export default function FarmerDetailPage() {
 
       {/* Identity */}
       <div className="flex flex-wrap items-center gap-4 rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
-        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-green-600 text-xl font-semibold text-white">
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-500 text-xl font-semibold text-white">
           {farmer.name?.charAt(0)?.toUpperCase() ?? "?"}
         </div>
         <div className="flex-1">
@@ -488,7 +488,7 @@ export default function FarmerDetailPage() {
           </h2>
           <button
             onClick={openEdit}
-            className="flex items-center gap-2 rounded-lg bg-green-600 px-3 py-2 text-sm font-medium text-white hover:bg-green-700"
+            className="flex items-center gap-2 rounded-lg bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600"
           >
             <Plus size={15} /> Add crop
           </button>
@@ -962,7 +962,7 @@ export default function FarmerDetailPage() {
               <button
                 type="submit"
                 disabled={saving}
-                className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-60"
+                className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-60"
               >
                 {saving ? "Saving…" : "Save changes"}
               </button>

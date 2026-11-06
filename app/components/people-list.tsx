@@ -400,7 +400,7 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
         {showDetail && (
           <button
             onClick={openAdd}
-            className="flex items-center gap-2 rounded-lg bg-green-600 px-3 py-2 text-sm font-medium text-white hover:bg-green-700"
+            className="flex items-center gap-2 rounded-lg bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600"
           >
             <Plus size={15} /> Add farmer
           </button>
@@ -609,7 +609,7 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
                         <button
                           onClick={() => setPhoto({ url: p.photoUrl!, name: p.name })}
                           title={`View ${p.name}'s photo`}
-                          className="block overflow-hidden rounded-lg ring-1 ring-zinc-200 transition hover:ring-2 hover:ring-green-500 dark:ring-zinc-700"
+                          className="block overflow-hidden rounded-lg ring-1 ring-zinc-200 transition hover:ring-2 hover:ring-brand-400 dark:ring-zinc-700"
                         >
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
@@ -896,7 +896,7 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
                     <td className="px-4 py-2 text-right">
                       <Link
                         href={`/farmers/${p._id}`}
-                        className="inline-flex items-center gap-1.5 rounded-lg bg-green-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-green-700"
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-brand-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-600"
                       >
                         Detail <ArrowRight size={14} />
                       </Link>
@@ -1129,7 +1129,7 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
               <button
                 type="submit"
                 disabled={saving}
-                className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-60"
+                className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-60"
               >
                 {saving ? "Adding…" : "Add farmer"}
               </button>

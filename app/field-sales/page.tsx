@@ -65,6 +65,14 @@ function daysBack(days: number) {
 const taxableOf = (inclusive: number) => round2(inclusive / 1.05);
 /** Courier and packaging carry 18%, their own supply at their own rate. */
 const chargesTaxableOf = (inclusive: number) => round2(inclusive / 1.18);
+/**
+ * Whether a line's price carries the 5%. Set per product by the office; a line
+ * saved before that switch existed has no flag and was billed with GST.
+ */
+const hasGst = (it: ProductSale["items"][number]) => it.gst !== false;
+/** A line's figure net of its tax — the figure itself when it carries none. */
+const exOf = (it: ProductSale["items"][number], inclusive: number) =>
+  hasGst(it) ? taxableOf(inclusive) : round2(inclusive);
 
 /**
  * The bill behind one sale.
@@ -76,6 +84,7 @@ const chargesTaxableOf = (inclusive: number) => round2(inclusive / 1.18);
  */
 function billOf(s: ProductSale) {
   const subtotalInclusive = round2(s.items.reduce((n, i) => n + (i.lineTotal ?? 0), 0));
+  const taxedInclusive = round2(s.items.filter(hasGst).reduce((n, i) => n + (i.lineTotal ?? 0), 0));
   const total = round2(s.total ?? 0);
   // The courier is taxed at 18%, apart from the products at 5%, so it is
   // split off first and the products' figures are worked out on what is left.
@@ -84,17 +93,23 @@ function billOf(s: ProductSale) {
   const cgst18 = round2(chargesEx * 0.09);
   const sgst18 = round2(charges - chargesEx - cgst18);
   const goods = round2(total - charges);
-  const goodsTaxable = taxableOf(goods);
-  const cgst = round2(goodsTaxable * 0.025);
-  const subtotalEx = taxableOf(subtotalInclusive);
+  // Only the GST lines' share of the products is taxed; a basket discount
+  // comes off both shares in proportion to what each was worth.
+  const taxedGoods =
+    subtotalInclusive > 0 ? round2((goods * taxedInclusive) / subtotalInclusive) : 0;
+  const gstTaxable = taxableOf(taxedGoods);
+  const goodsTaxable = round2(gstTaxable + goods - taxedGoods);
+  const cgst = round2(gstTaxable * 0.025);
+  const subtotalEx = round2(taxableOf(taxedInclusive) + subtotalInclusive - taxedInclusive);
   return {
+    hasGoodsGst: taxedGoods > 0,
     subtotalEx,
     chargesEx,
     saleOffEx: round2(subtotalEx - goodsTaxable),
     goodsTaxable,
     taxable: round2(goodsTaxable + chargesEx),
     cgst,
-    sgst: round2(goods - goodsTaxable - cgst),
+    sgst: round2(taxedGoods - gstTaxable - cgst),
     cgst18,
     sgst18,
   };
@@ -145,7 +160,7 @@ function ProofPhotos({
             group={pair}
             index={0}
             alt="Before photo"
-            className="h-24 w-24 rounded-lg object-cover ring-1 ring-zinc-200 hover:ring-green-500 dark:ring-zinc-700"
+            className="h-24 w-24 rounded-lg object-cover ring-1 ring-zinc-200 hover:ring-brand-400 dark:ring-zinc-700"
           />
         ) : (
           <div className="flex h-24 w-24 items-center justify-center rounded-lg bg-zinc-100 text-[11px] text-zinc-400 dark:bg-zinc-900">
@@ -163,7 +178,7 @@ function ProofPhotos({
             group={pair}
             index={pair.length - 1}
             alt="After photo"
-            className="h-24 w-24 rounded-lg object-cover ring-1 ring-zinc-200 hover:ring-green-500 dark:ring-zinc-700"
+            className="h-24 w-24 rounded-lg object-cover ring-1 ring-zinc-200 hover:ring-brand-400 dark:ring-zinc-700"
           />
         ) : overdue ? (
           <div className="flex h-24 w-24 flex-col items-center justify-center rounded-lg bg-red-50 px-1 text-center text-[11px] font-medium text-red-600 ring-1 ring-red-200 dark:bg-red-950/40 dark:ring-red-900">
@@ -423,7 +438,7 @@ export default function FieldSalesPage() {
                 }}
                 className={`rounded-lg border px-2.5 py-1 ${
                   on
-                    ? "border-green-600 bg-green-600 text-white"
+                    ? "border-brand-500 bg-brand-500 text-white"
                     : "border-zinc-300 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
                 }`}
               >
@@ -643,14 +658,14 @@ export default function FieldSalesPage() {
                         {/* Stated ex-tax, the way the app states it and the way
                             a GST bill reads — the tax is added once at the end,
                             so this will not equal qty x rate. */}
-                        <span className="w-28 text-right text-sm">{money(taxableOf(gross))}</span>
+                        <span className="w-28 text-right text-sm">{money(exOf(it, gross))}</span>
                         <span className="w-28 text-right text-sm text-red-600">
                           {off > 0
                             ? `${it.discountType === "pct" ? `${it.discount}% ` : ""}− ${money(off)}`
                             : "—"}
                         </span>
                         <span className="w-28 text-right text-sm font-semibold">
-                          {money(taxableOf(round2(gross - off)))}
+                          {money(exOf(it, round2(gross - off)))}
                         </span>
                         <div className="w-52 pl-4">
                           <ProofPhotos
@@ -687,8 +702,12 @@ export default function FieldSalesPage() {
                       <Row label="Courier / other charges" value={`+ ${money(bill.chargesEx)}`} />
                     ) : null}
                     <Row label="Taxable value" value={money(bill.taxable)} />
-                    <Row label="CGST 2.5%" value={money(bill.cgst)} />
-                    <Row label="SGST 2.5%" value={money(bill.sgst)} />
+                    {bill.hasGoodsGst ? (
+                      <>
+                        <Row label="CGST 2.5%" value={money(bill.cgst)} />
+                        <Row label="SGST 2.5%" value={money(bill.sgst)} />
+                      </>
+                    ) : null}
                     {bill.chargesEx > 0 ? (
                       <>
                         <Row label="CGST 9% (courier)" value={money(bill.cgst18)} />
@@ -700,7 +719,8 @@ export default function FieldSalesPage() {
                       <span className="text-base font-bold text-green-600">{money(s.total)}</span>
                     </div>
                     <div className="text-right text-[11px] text-zinc-400">
-                      Products include 5% GST · courier 18%
+                      {bill.hasGoodsGst ? "GST products include 5% · " : "No GST on products · "}
+                      courier 18%
                     </div>
                   </div>
                 </div>

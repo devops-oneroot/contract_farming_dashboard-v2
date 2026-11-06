@@ -231,7 +231,7 @@ export function NextVisitDialog({
               type="button"
               onClick={() => save()}
               disabled={saving || !farmerId || (mode === "visit" ? !date : !reason.trim())}
-              className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-60"
             >
               {saving ? <Loader2 size={14} className="animate-spin" /> : null}
               {mode === "skip"

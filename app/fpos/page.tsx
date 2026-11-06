@@ -387,7 +387,7 @@ export default function FposPage() {
                             url={f.photoUrl}
                             caption={[f.name, f.role].filter(Boolean).join(" · ")}
                             alt={f.name}
-                            className="h-9 w-9 shrink-0 rounded-full object-cover ring-1 ring-zinc-200 hover:ring-green-500 dark:ring-zinc-700"
+                            className="h-9 w-9 shrink-0 rounded-full object-cover ring-1 ring-zinc-200 hover:ring-brand-400 dark:ring-zinc-700"
                           />
                         ) : (
                           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-green-100 text-xs font-semibold text-green-700 dark:bg-green-950/50 dark:text-green-300">

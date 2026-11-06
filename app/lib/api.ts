@@ -140,6 +140,8 @@ export type Product = {
   /** The pack sizes this product comes in. Empty = sold in one size only. */
   variants: ProductVariant[];
   imageUrl: string;
+  /** Whether a field sale of it splits out 5% GST. Off unless the office turns it on. */
+  gstEnabled?: boolean;
   crops: string[]; // crop names this product is mapped to; empty = all crops
   dayStart: number | null; // usage window in days from planting
   dayEnd: number | null;
@@ -413,6 +415,11 @@ export type ProductSaleItem = {
   discountType?: "rs" | "pct";
   /** The rupees that actually came off this line. */
   discountAmount?: number;
+  /**
+   * Whether this line carried 5% GST, snapshot from the product at sale time.
+   * Absent on older sales, which were all billed with GST.
+   */
+  gst?: boolean | null;
   /** qty x unitPrice, less `discountAmount`. */
   lineTotal: number;
   /** Taken at handover. */

@@ -76,7 +76,7 @@ export default function DiseaseReportsPage() {
               onClick={() => setFilter(f.key)}
               className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
                 filter === f.key
-                  ? "bg-green-600 text-white"
+                  ? "bg-brand-500 text-white"
                   : "border border-zinc-300 bg-white text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
               }`}
             >
@@ -172,7 +172,7 @@ export default function DiseaseReportsPage() {
                         }))}
                         index={pi}
                         alt="Reported crop"
-                        className="h-28 w-28 rounded-lg object-cover ring-1 ring-zinc-200 hover:ring-green-500 dark:ring-zinc-700"
+                        className="h-28 w-28 rounded-lg object-cover ring-1 ring-zinc-200 hover:ring-brand-400 dark:ring-zinc-700"
                       />
                     ))}
                   </div>

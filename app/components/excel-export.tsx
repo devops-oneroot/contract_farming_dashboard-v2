@@ -154,7 +154,7 @@ export function ExcelExport<T>({
                   >
                     <span
                       className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
-                        picked.has(c.key) ? "border-green-600 bg-green-600 text-white" : "border-zinc-300 dark:border-zinc-700"
+                        picked.has(c.key) ? "border-brand-500 bg-brand-500 text-white" : "border-zinc-300 dark:border-zinc-700"
                       }`}
                     >
                       {picked.has(c.key) && <Check size={12} />}
@@ -174,7 +174,7 @@ export function ExcelExport<T>({
               <button
                 onClick={download}
                 disabled={busy || picked.size === 0}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-green-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-brand-500 px-4 py-1.5 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50"
               >
                 <Download size={15} /> {busy ? "Preparing…" : "Download"}
               </button>

@@ -13,12 +13,14 @@ function clock(sec: number) {
 /**
  * A URL that downloads rather than streams.
  *
- * The HTML `download` attribute is ignored cross-origin, and these files are
- * served from Cloudinary — so the browser would just navigate to the audio and
- * play it in a blank tab. Cloudinary's `fl_attachment` sets the
- * Content-Disposition header that actually triggers a save.
+ * The HTML `download` attribute is ignored cross-origin, and these files come
+ * from the backend's /api/media route — so the browser would just navigate to
+ * the audio and play it in a blank tab. `?download=1` makes that route send the
+ * Content-Disposition header that actually triggers a save. A file still on
+ * Cloudinary gets the same from its `fl_attachment` flag.
  */
 function downloadUrl(src: string) {
+  if (src.includes("/api/media/")) return `${src}${src.includes("?") ? "&" : "?"}download=1`;
   return src.includes("/upload/") ? src.replace("/upload/", "/upload/fl_attachment/") : src;
 }
 
@@ -116,14 +118,14 @@ export function AudioPlayer({
       <button
         onClick={toggle}
         aria-label={playing ? "Pause recording" : "Play recording"}
-        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-green-600 text-white transition hover:bg-green-700"
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-500 text-white transition hover:bg-brand-600"
       >
         {playing ? <Pause size={15} /> : <Play size={15} className="ml-0.5" />}
       </button>
 
       {!compact && (
         <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-zinc-300 dark:bg-zinc-700">
-          <div className="h-full rounded-full bg-green-600" style={{ width: `${pct}%` }} />
+          <div className="h-full rounded-full bg-brand-500" style={{ width: `${pct}%` }} />
         </div>
       )}
 

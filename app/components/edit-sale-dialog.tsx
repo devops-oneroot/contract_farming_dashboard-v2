@@ -146,14 +146,26 @@ export function EditSaleDialog({
       .catch(() => setFpos([]));
   }, []);
 
+  /**
+   * Whether a line carries 5% GST, decided the way the server decides it: a
+   * line the sale already had keeps the GST it was billed with (older lines,
+   * with no flag, were billed with it); a new one takes the product's switch.
+   */
+  const gstOf = useMemo(() => {
+    const had = new Map(sale.items.map((it) => [offerKey(it.product, it.variant), it.gst !== false]));
+    const switched = new Map(catalog.map((p) => [p._id, !!p.gstEnabled]));
+    return (l: Line) => had.get(offerKey(l.productId, l.variantId)) ?? switched.get(l.productId) ?? false;
+  }, [sale.items, catalog]);
+
   const preview = useMemo(() => {
     const rows = lines.map((l) => {
       const gross = round2((Number(l.qty) || 0) * (Number(l.unitPrice) || 0));
       const entered = Math.max(0, Number(l.discount) || 0);
       const off = Math.min(gross, round2(l.discountType === "pct" ? (gross * entered) / 100 : entered));
-      return { gross, off, net: round2(gross - off) };
+      return { gross, off, net: round2(gross - off), gst: gstOf(l) };
     });
     const subtotal = round2(rows.reduce((n, r) => n + r.net, 0));
+    const taxedSubtotal = round2(rows.filter((r) => r.gst).reduce((n, r) => n + r.net, 0));
     const enteredBasket = Math.max(0, Number(basketOff) || 0);
     const basket = Math.min(
       subtotal,
@@ -175,9 +187,13 @@ export function EditSaleDialog({
      * taxable value with no crumb left on screen.
      */
     // Products at 5%, the courier at 18% — two groups, each split on its own.
-    const goodsTaxable = taxableOf(goods);
-    const cgst = round2(goodsTaxable * 0.025);
-    const subtotalEx = taxableOf(subtotal);
+    // Only the GST lines' share of the products is taxed; the basket discount
+    // comes off both shares in proportion to what each was worth.
+    const taxedGoods = subtotal > 0 ? round2((goods * taxedSubtotal) / subtotal) : 0;
+    const gstTaxable = taxableOf(taxedGoods);
+    const goodsTaxable = round2(gstTaxable + goods - taxedGoods);
+    const cgst = round2(gstTaxable * 0.025);
+    const subtotalEx = round2(taxableOf(taxedSubtotal) + subtotal - taxedSubtotal);
     const chargesEx = round2(extra / 1.18);
     const cgst18 = round2(chargesEx * 0.09);
     return {
@@ -189,12 +205,13 @@ export function EditSaleDialog({
       chargesEx,
       basketEx: round2(subtotalEx - goodsTaxable),
       taxable: round2(goodsTaxable + chargesEx),
+      hasGoodsGst: taxedGoods > 0,
       cgst,
-      sgst: round2(goods - goodsTaxable - cgst),
+      sgst: round2(taxedGoods - gstTaxable - cgst),
       cgst18,
       sgst18: round2(extra - chargesEx - cgst18),
     };
-  }, [lines, basketOff, basketOffType, charges]);
+  }, [lines, basketOff, basketOffType, charges, gstOf]);
 
   const set = (i: number, patch: Partial<Line>) =>
     setLines((ls) => ls.map((l, n) => (n === i ? { ...l, ...patch } : l)));
@@ -526,8 +543,12 @@ export function EditSaleDialog({
                 <Line label="Add : Courier / other charges" value={`+ ${money(preview.chargesEx)}`} />
               )}
               <Line label="Taxable value" value={money(preview.taxable)} />
-              <Line label="CGST 2.5%" value={money(preview.cgst)} />
-              <Line label="SGST 2.5%" value={money(preview.sgst)} />
+              {preview.hasGoodsGst && (
+                <>
+                  <Line label="CGST 2.5%" value={money(preview.cgst)} />
+                  <Line label="SGST 2.5%" value={money(preview.sgst)} />
+                </>
+              )}
               {preview.chargesEx > 0 && (
                 <>
                   <Line label="CGST 9% (courier)" value={money(preview.cgst18)} />
@@ -543,7 +564,9 @@ export function EditSaleDialog({
                   was {money(sale.total)}
                 </div>
               )}
-              <div className="text-right text-[11px] text-zinc-400">Products include 5% GST · courier 18%</div>
+              <div className="text-right text-[11px] text-zinc-400">
+                {preview.hasGoodsGst ? "GST products include 5% · " : "No GST on products · "}courier 18%
+              </div>
             </div>
           </div>
 
@@ -594,7 +617,7 @@ export function EditSaleDialog({
           <button
             onClick={save}
             disabled={saving}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-green-600 px-3 py-2 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-60"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-60"
           >
             <Save size={15} /> {saving ? "Saving…" : "Save changes"}
           </button>

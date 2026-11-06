@@ -153,7 +153,7 @@ export function RegionsDialog({ onClose }: { onClose: () => void }) {
             <button
               onClick={add}
               disabled={busy || !district.trim() || !taluk.trim() || code.trim().length < 2}
-              className="inline-flex items-center gap-1 rounded-lg bg-green-600 px-3 py-2 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-50"
+              className="inline-flex items-center gap-1 rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-50"
             >
               <Plus size={15} /> Add
             </button>

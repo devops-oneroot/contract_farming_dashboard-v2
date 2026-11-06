@@ -370,7 +370,7 @@ export default function VisitsPage() {
                               group={photos.map((x) => ({ url: x.url, caption: x.label }))}
                               index={i}
                               alt={p.label}
-                              className="h-12 w-12 rounded-md object-cover ring-1 ring-zinc-200 hover:ring-green-500 dark:ring-zinc-700"
+                              className="h-12 w-12 rounded-md object-cover ring-1 ring-zinc-200 hover:ring-brand-400 dark:ring-zinc-700"
                             />
                           ))}
                         </div>

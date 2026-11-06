@@ -47,7 +47,7 @@ export function PhotoLightbox({
           <X size={18} />
         </button>
 
-        {/* Plain <img>, not next/image: these are Cloudinary URLs on a host the
+        {/* Plain <img>, not next/image: these are backend /api/media URLs on a host the
             optimiser is not configured for, and an unoptimised photo shown is
             better than an optimised one that fails to load. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}

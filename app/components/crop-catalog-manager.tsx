@@ -136,7 +136,7 @@ export function CropCatalogManager() {
         </div>
         <button
           onClick={openNew}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-green-600 px-3 py-2 text-sm font-medium text-white hover:bg-green-700"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600"
         >
           <Plus size={16} /> Add Crop
         </button>
@@ -344,7 +344,7 @@ export function CropCatalogManager() {
                 <button
                   onClick={submit}
                   disabled={saving}
-                  className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-60"
+                  className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-60"
                 >
                   {saving ? "Saving…" : "Save"}
                 </button>

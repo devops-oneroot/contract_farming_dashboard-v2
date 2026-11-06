@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { api, Fpo, Person } from "../lib/api";
 import { PhotoThumb } from "../components/lightbox";
+import { Button, Select, DateInput } from "../components/ui";
 
 const PAGE_SIZE = 20;
 
@@ -195,12 +196,13 @@ export default function FposPage() {
 
       {/* Filters */}
       <div className="filter-bar border-b border-zinc-100 px-3 py-3 dark:border-zinc-800">
-        <label className="filter-field">
+        <div className="filter-field">
           <span className="filter-label">District</span>
-          <select
+          <Select
+            aria-label="District"
             value={district}
             onChange={(e) => changeDistrict(e.target.value)}
-            className="filter-control"
+            className="w-full"
           >
             <option value="">All districts</option>
             {districtOptions.map((d) => (
@@ -208,19 +210,20 @@ export default function FposPage() {
                 {d}
               </option>
             ))}
-          </select>
-        </label>
+          </Select>
+        </div>
         {/* Only offered when there is more than one taluk to choose between. */}
         {talukOptions.length > 1 && (
-          <label className="filter-field">
+          <div className="filter-field">
             <span className="filter-label">Taluk</span>
-            <select
+            <Select
+              aria-label="Taluk"
               value={taluk}
               onChange={(e) => {
                 setTaluk(e.target.value);
                 setPage(1);
               }}
-              className="filter-control"
+              className="w-full"
             >
               <option value="">{district ? `All of ${district}` : "All taluks"}</option>
               {talukOptions.map((t) => (
@@ -228,19 +231,20 @@ export default function FposPage() {
                   {t}
                 </option>
               ))}
-            </select>
-          </label>
+            </Select>
+          </div>
         )}
 
-        <label className="filter-field">
+        <div className="filter-field">
           <span className="filter-label">Role</span>
-          <select
+          <Select
+            aria-label="Role"
             value={role}
             onChange={(e) => {
               setRole(e.target.value);
               setPage(1);
             }}
-            className="filter-control"
+            className="w-full"
           >
             <option value="">All roles</option>
             {roleOptions.map((r) => (
@@ -248,18 +252,19 @@ export default function FposPage() {
                 {r}
               </option>
             ))}
-          </select>
-        </label>
+          </Select>
+        </div>
 
-        <label className="filter-field">
+        <div className="filter-field">
           <span className="filter-label">Crop</span>
-          <select
+          <Select
+            aria-label="Crop"
             value={crop}
             onChange={(e) => {
               setCrop(e.target.value);
               setPage(1);
             }}
-            className="filter-control"
+            className="w-full"
           >
             <option value="">All crops</option>
             {cropOptions.map((c) => (
@@ -267,18 +272,19 @@ export default function FposPage() {
                 {c}
               </option>
             ))}
-          </select>
-        </label>
+          </Select>
+        </div>
 
-        <label className="filter-field">
+        <div className="filter-field">
           <span className="filter-label">Onboarded by</span>
-          <select
+          <Select
+            aria-label="Onboarded by"
             value={onboardedBy}
             onChange={(e) => {
               setOnboardedBy(e.target.value);
               setPage(1);
             }}
-            className="filter-control"
+            className="w-full"
           >
             <option value="">All</option>
             {agronomists.map((a) => (
@@ -286,32 +292,33 @@ export default function FposPage() {
                 {a.name}
               </option>
             ))}
-          </select>
-        </label>
+          </Select>
+        </div>
 
-        <label className="filter-field">
+        <div className="filter-field">
           <span className="filter-label">Onboarded from</span>
-          <input type="date" value={from} onChange={(e) => applyFilter(setFrom)(e.target.value)} className="filter-control" />
-        </label>
-        <label className="filter-field">
+          <DateInput aria-label="Onboarded from" value={from} onChange={(e) => applyFilter(setFrom)(e.target.value)} className="w-full" />
+        </div>
+        <div className="filter-field">
           <span className="filter-label">Onboarded to</span>
-          <input type="date" value={to} onChange={(e) => applyFilter(setTo)(e.target.value)} className="filter-control" />
-        </label>
+          <DateInput aria-label="Onboarded to" value={to} onChange={(e) => applyFilter(setTo)(e.target.value)} className="w-full" />
+        </div>
 
         <div className="filter-actions">
-          <button
+          <Button
+            variant="secondary"
             onClick={() => {
               const today = new Date().toISOString().slice(0, 10);
               setFrom(today);
               setTo(today);
               setPage(1);
             }}
-            className="h-9 rounded-lg border border-zinc-300 px-3 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
           >
             Today
-          </button>
+          </Button>
           {filtersOn && (
-            <button
+            <Button
+              variant="ghost"
               onClick={() => {
                 setQuery("");
                 setRole("");
@@ -323,10 +330,9 @@ export default function FposPage() {
                 setTo("");
                 setPage(1);
               }}
-              className="h-9 rounded-lg px-3 text-zinc-500 hover:bg-zinc-100 hover:text-red-600 dark:hover:bg-zinc-900"
             >
               Clear
-            </button>
+            </Button>
           )}
         </div>
       </div>

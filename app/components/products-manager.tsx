@@ -33,7 +33,7 @@ const emptyForm = (): FormState => ({
   price: "",
   unit: "",
   variants: [],
-  gstEnabled: false,
+  gstEnabled: true,
   crops: [],
   file: null,
   preview: "",

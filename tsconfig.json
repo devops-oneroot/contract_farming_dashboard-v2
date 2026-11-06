@@ -19,7 +19,8 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "shared_ui/*": ["./@mf-types/shared_ui/*"]
     }
   },
   "include": [

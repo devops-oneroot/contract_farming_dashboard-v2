@@ -17,6 +17,7 @@ import { PhotoThumb } from "../components/lightbox";
 import { AgronomistMultiSelect } from "../components/agronomist-multi-select";
 import { ExcelExport } from "../components/excel-export";
 import { SALE_COLUMNS, saleLines } from "../components/sale-export";
+import { Button, Select, DateInput } from "../components/ui";
 
 /** The day alone — for a sale whose time was never actually observed. */
 function fmtDay(s: string) {
@@ -370,22 +371,23 @@ export default function FieldSalesPage() {
 
         {/* One column per filter: label on top, control below. */}
         <div className="filter-bar px-3 py-3">
-          <label className="filter-field">
+          <div className="filter-field">
             <span className="filter-label">Sold to</span>
-            <select
+            <Select
+              aria-label="Sold to"
               value={buyerKind}
               onChange={(e) => setBuyerKind(e.target.value as "" | "farmer" | "fpo")}
-              className="filter-control"
+              className="w-full"
             >
               <option value="">All ({sales.length})</option>
               <option value="farmer">Farmers ({kinds.farmer})</option>
               <option value="fpo">FPOs ({kinds.fpo})</option>
-            </select>
-          </label>
+            </Select>
+          </div>
 
-          <label className="filter-field">
+          <div className="filter-field">
             <span className="filter-label">Code</span>
-            <select value={code} onChange={(e) => setCode(e.target.value)} className="filter-control">
+            <Select aria-label="Code" value={code} onChange={(e) => setCode(e.target.value)} className="w-full">
               <option value="">All</option>
               {regions.map((r) => (
                 <option key={r._id} value={r.code}>
@@ -396,22 +398,22 @@ export default function FieldSalesPage() {
                   be findable, and they are the ones an office is most likely to
                   be chasing. */}
               <option value="__">Older numbering ({codeCounts.__ ?? 0})</option>
-            </select>
-          </label>
+            </Select>
+          </div>
 
           <div className="filter-field">
             <span className="filter-label">Agronomist</span>
             <AgronomistMultiSelect agronomists={agronomists} value={who} onChange={setWho} allLabel="All" />
           </div>
 
-          <label className="filter-field">
+          <div className="filter-field">
             <span className="filter-label">Given from</span>
-            <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="filter-control" />
-          </label>
-          <label className="filter-field">
+            <DateInput aria-label="Given from" value={from} onChange={(e) => setFrom(e.target.value)} className="w-full" />
+          </div>
+          <div className="filter-field">
             <span className="filter-label">Given to</span>
-            <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="filter-control" />
-          </label>
+            <DateInput aria-label="Given to" value={to} onChange={(e) => setTo(e.target.value)} className="w-full" />
+          </div>
 
           {/* One tap for the day, and for the periods worth asking about.
               Each sets BOTH ends — an open-ended window is what made a single
@@ -450,7 +452,8 @@ export default function FieldSalesPage() {
 
           <div className="filter-actions">
             {(who.length || from || to || buyerKind || code || query) && (
-              <button
+              <Button
+                variant="ghost"
                 onClick={() => {
                   setWho([]);
                   setFrom("");
@@ -459,10 +462,9 @@ export default function FieldSalesPage() {
                   setCode("");
                   setQuery("");
                 }}
-                className="h-9 rounded-lg px-3 text-zinc-500 hover:bg-zinc-100 hover:text-red-600 dark:hover:bg-zinc-900"
               >
                 Clear
-              </button>
+              </Button>
             )}
             <ExcelExport
               id="field-sales"

@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CalendarClock, ExternalLink, MapPin, Search } from "lucide-react";
+import { CalendarClock, ExternalLink, MapPin } from "lucide-react";
 
 import { api, Person, Visit } from "../lib/api";
 import { PhotoThumb } from "../components/lightbox";
 import { NextVisitDialog } from "../components/next-visit-dialog";
 import { AgronomistMultiSelect } from "../components/agronomist-multi-select";
 import { ExcelExport, type ExportColumn } from "../components/excel-export";
+import { Button, DateInput, SearchInput } from "../components/ui";
 
 function fmtTime(s: string) {
   return new Date(s).toLocaleString(undefined, {
@@ -182,33 +183,26 @@ export default function VisitsPage() {
       </div>
 
       <div className="card filter-bar p-3">
-        <label className="filter-field">
+        <div className="filter-field">
           <span className="filter-label">Search</span>
-          <span className="relative block">
-            <Search size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400" />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Farmer name or number"
-              className="filter-control pl-8"
-            />
-          </span>
-        </label>
+          <SearchInput value={query} onChange={setQuery} placeholder="Farmer name or number" className="w-full" />
+        </div>
         <div className="filter-field">
           <span className="filter-label">Agronomist</span>
           <AgronomistMultiSelect agronomists={agronomists} value={who} onChange={setWho} />
         </div>
-        <label className="filter-field">
+        <div className="filter-field">
           <span className="filter-label">Visited from</span>
-          <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="filter-control" />
-        </label>
-        <label className="filter-field">
+          <DateInput aria-label="Visited from" value={from} onChange={(e) => setFrom(e.target.value)} className="w-full" />
+        </div>
+        <div className="filter-field">
           <span className="filter-label">Visited to</span>
-          <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="filter-control" />
-        </label>
+          <DateInput aria-label="Visited to" value={to} onChange={(e) => setTo(e.target.value)} className="w-full" />
+        </div>
         {filtered && (
           <div className="filter-actions">
-            <button
+            <Button
+              variant="ghost"
               onClick={() => {
                 setWho([]);
                 setFrom("");
@@ -216,10 +210,9 @@ export default function VisitsPage() {
                 setOwed("");
                 setQuery("");
               }}
-              className="h-9 rounded-lg px-3 text-zinc-500 hover:bg-zinc-100 hover:text-red-600 dark:hover:bg-zinc-900"
             >
               Clear filters
-            </button>
+            </Button>
           </div>
         )}
       </div>

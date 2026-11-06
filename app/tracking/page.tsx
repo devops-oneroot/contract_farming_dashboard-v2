@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { api, NearbyResult, Person, TrackingPause, TrackingSession } from "../lib/api";
 import { PhotoThumb } from "../components/lightbox";
+import { Button, Select, DateInput } from "../components/ui";
 
 function fmtDateTime(s: string) {
   return new Date(s).toLocaleString(undefined, {
@@ -614,33 +615,33 @@ export default function TrackingPage() {
       </div>
 
       <div className="card filter-bar p-3">
-        <label className="filter-field">
+        <div className="filter-field">
           <span className="filter-label">Agent</span>
-          <select value={who} onChange={(e) => applyFilter(setWho)(e.target.value)} className="filter-control">
+          <Select aria-label="Agent" value={who} onChange={(e) => applyFilter(setWho)(e.target.value)} className="w-full">
             <option value="">All agents</option>
             {agents.map((a) => (
               <option key={a._id} value={a._id}>
                 {a.name}
               </option>
             ))}
-          </select>
-        </label>
-        <label className="filter-field">
+          </Select>
+        </div>
+        <div className="filter-field">
           <span className="filter-label">Date</span>
-          <input type="date" value={from} onChange={(e) => applyFilter(setFrom)(e.target.value)} className="filter-control" />
-        </label>
+          <DateInput aria-label="Date" value={from} onChange={(e) => applyFilter(setFrom)(e.target.value)} className="w-full" />
+        </div>
         {(who || from) && (
           <div className="filter-actions">
-            <button
+            <Button
+              variant="ghost"
               onClick={() => {
                 setWho("");
                 setFrom("");
                 setPage(1);
               }}
-              className="h-9 rounded-lg px-3 text-sm text-zinc-500 hover:bg-zinc-100 hover:text-red-600 dark:hover:bg-zinc-900"
             >
               Clear
-            </button>
+            </Button>
           </div>
         )}
       </div>

@@ -2,9 +2,10 @@
 
 import Image from "next/image";
 import { useState } from "react";
-import { Lock, Phone, Sprout, Users, BarChart3, Loader2 } from "lucide-react";
+import { Sprout, Users, BarChart3 } from "lucide-react";
 import { useAuth } from "../lib/auth";
 import { ThemeToggle } from "../components/theme-toggle";
+import { Button, Field, Input } from "../components/ui";
 
 const HIGHLIGHTS = [
   { icon: Users, text: "Farmers, FPOs and agronomists in one place" },
@@ -92,35 +93,26 @@ export default function LoginPage() {
           <h1 className="text-2xl font-semibold">Welcome back</h1>
           <p className="mt-1 text-sm text-zinc-500">Sign in to the OneRoot admin dashboard</p>
 
-          <label className="mt-8 block text-sm">
-            <span className="mb-1.5 block font-medium text-zinc-700 dark:text-zinc-300">Mobile number</span>
-            <span className="relative block">
-              <Phone size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
-              <input
+          <div className="mt-8 space-y-4">
+            <Field label="Mobile number">
+              <Input
                 value={mobile}
                 onChange={(e) => setMobile(e.target.value)}
                 inputMode="numeric"
                 autoComplete="username"
                 placeholder="9999999999"
-                className="w-full rounded-xl border border-zinc-300 bg-white py-2.5 pl-10 pr-3 outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-500/15 dark:border-zinc-700 dark:bg-zinc-950"
               />
-            </span>
-          </label>
-
-          <label className="mt-4 block text-sm">
-            <span className="mb-1.5 block font-medium text-zinc-700 dark:text-zinc-300">Password</span>
-            <span className="relative block">
-              <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
-              <input
-                type="password"
+            </Field>
+            <Field label="Password">
+              <Input
+                isPassword
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="current-password"
                 placeholder="••••••••"
-                className="w-full rounded-xl border border-zinc-300 bg-white py-2.5 pl-10 pr-3 outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-500/15 dark:border-zinc-700 dark:bg-zinc-950"
               />
-            </span>
-          </label>
+            </Field>
+          </div>
 
           {error && (
             <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300">
@@ -128,14 +120,9 @@ export default function LoginPage() {
             </p>
           )}
 
-          <button
-            type="submit"
-            disabled={busy}
-            className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-brand-500 px-4 py-3 font-semibold text-white shadow-lg shadow-brand-500/25 transition hover:bg-brand-600 disabled:opacity-60"
-          >
-            {busy && <Loader2 size={16} className="animate-spin" />}
-            {busy ? "Signing in…" : "Sign in"}
-          </button>
+          <Button type="submit" loading={busy} loadingText="Signing in…" className="mt-6 w-full">
+            Sign in
+          </Button>
 
           <p className="mt-6 text-center text-sm text-zinc-500">
             Need access? Ask an existing admin to add you from the Account tab.

@@ -12,6 +12,7 @@ import { AudioPlayer } from "./audio-player";
 import { EMPTY_LOCATION, FarmLocation, FarmLocationPicker } from "./farm-location-picker";
 import { AgronomistMultiSelect } from "./agronomist-multi-select";
 import { ExcelExport, type ExportColumn } from "./excel-export";
+import { Button, Select, DateInput } from "./ui";
 
 const when = (s?: string | null) => (s ? new Date(s) : null);
 
@@ -425,50 +426,52 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
         )}
         {showDetail && (
           <>
-            <label className="filter-field">
+            <div className="filter-field">
               <span className="filter-label">Farming</span>
-              <select
+              <Select
+                aria-label="Farming"
                 value={farmingType}
                 onChange={(e) => applyFilter(setFarmingType)(e.target.value)}
-                className="filter-control"
+                className="w-full"
               >
                 <option value="">All</option>
                 <option value="contract">Contract farming</option>
                 <option value="regular">Regular farming</option>
-              </select>
-            </label>
+              </Select>
+            </div>
 
             {/* Where the farm is. Three dropdowns rather than a typed box: the
                 addresses are reverse-geocoded, so the spellings are the
                 geocoder's and nobody would guess them reliably. */}
-            <label className="filter-field">
+            <div className="filter-field">
               <span className="filter-label">District</span>
-              <select value={district} onChange={(e) => pickDistrict(e.target.value)} className="filter-control">
+              <Select aria-label="District" value={district} onChange={(e) => pickDistrict(e.target.value)} className="w-full">
                 <option value="">All districts</option>
                 {places.districts.map((d) => (
                   <option key={d} value={d}>
                     {d}
                   </option>
                 ))}
-              </select>
-            </label>
-            <label className="filter-field">
+              </Select>
+            </div>
+            <div className="filter-field">
               <span className="filter-label">Taluk</span>
-              <select value={taluk} onChange={(e) => pickTaluk(e.target.value)} className="filter-control">
+              <Select aria-label="Taluk" value={taluk} onChange={(e) => pickTaluk(e.target.value)} className="w-full">
                 <option value="">All taluks</option>
                 {places.taluks.map((t) => (
                   <option key={t} value={t}>
                     {t}
                   </option>
                 ))}
-              </select>
-            </label>
-            <label className="filter-field">
+              </Select>
+            </div>
+            <div className="filter-field">
               <span className="filter-label">Village</span>
-              <select
+              <Select
+                aria-label="Village"
                 value={village}
                 onChange={(e) => applyFilter(setVillage)(e.target.value)}
-                className="filter-control"
+                className="w-full"
               >
                 <option value="">All villages</option>
                 {places.villages.map((v) => (
@@ -476,32 +479,33 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
                     {v}
                   </option>
                 ))}
-              </select>
-            </label>
+              </Select>
+            </div>
           </>
         )}
-        <label className="filter-field">
+        <div className="filter-field">
           <span className="filter-label">{showDetail ? "Registered from" : "Counts for farmers registered from"}</span>
-          <input type="date" value={from} onChange={(e) => applyFilter(setFrom)(e.target.value)} className="filter-control" />
-        </label>
-        <label className="filter-field">
+          <DateInput aria-label="Registered from" value={from} onChange={(e) => applyFilter(setFrom)(e.target.value)} className="w-full" />
+        </div>
+        <div className="filter-field">
           <span className="filter-label">Registered to</span>
-          <input type="date" value={to} onChange={(e) => applyFilter(setTo)(e.target.value)} className="filter-control" />
-        </label>
+          <DateInput aria-label="Registered to" value={to} onChange={(e) => applyFilter(setTo)(e.target.value)} className="w-full" />
+        </div>
         <div className="filter-actions">
-          <button
+          <Button
+            variant="secondary"
             onClick={() => {
               const today = new Date().toISOString().slice(0, 10);
               setFrom(today);
               setTo(today);
               setPage(1);
             }}
-            className="h-9 rounded-lg border border-zinc-300 px-3 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
           >
             Today
-          </button>
+          </Button>
           {(from || to || onboardedByFilter || farmingType || district || taluk || village) && (
-            <button
+            <Button
+              variant="ghost"
               onClick={() => {
                 setFrom("");
                 setTo("");
@@ -512,10 +516,9 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
                 setVillage("");
                 setPage(1);
               }}
-              className="h-9 rounded-lg px-3 text-zinc-500 hover:bg-zinc-100 hover:text-red-600 dark:hover:bg-zinc-900"
             >
               Clear
-            </button>
+            </Button>
           )}
         </div>
       </div>

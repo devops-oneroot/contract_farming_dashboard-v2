@@ -76,6 +76,11 @@ export function ThemeToggle() {
   );
 }
 
+// Current light / dark mode (used to theme the federated shared UI).
+export function useThemeMode() {
+  return useSyncExternalStore(subscribe, currentTheme, () => "light" as Theme);
+}
+
 // Current accent plus a setter that applies and remembers it (used by the profile menu).
 export function useAccent() {
   const accent = useSyncExternalStore(subscribe, currentAccent, () => "orange" as Accent);

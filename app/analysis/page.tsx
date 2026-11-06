@@ -18,6 +18,7 @@ import { DonutChart, money, RankedBars, shortMoney, topSlices, TrendChart } from
 import { AgronomistMultiSelect } from "../components/agronomist-multi-select";
 import { ExcelExport } from "../components/excel-export";
 import { SALE_COLUMNS, saleLines } from "../components/sale-export";
+import { Button, Select, DateInput } from "../components/ui";
 
 /**
  * A period ending today, as the two yyyy-mm-dd ends of a closed window.
@@ -456,60 +457,62 @@ export default function AnalysisPage() {
 
         {/* One column per filter: label on top, control below. */}
         <div className="filter-bar px-3 py-3">
-          <label className="filter-field">
+          <div className="filter-field">
             <span className="filter-label">Sold to</span>
-            <select
+            <Select
+              aria-label="Sold to"
               value={buyerKind}
               onChange={(e) => setBuyerKind(e.target.value as "" | "farmer" | "fpo")}
-              className="filter-control"
+              className="w-full"
             >
               <option value="">All</option>
               <option value="farmer">Farmers</option>
               <option value="fpo">FPOs</option>
-            </select>
-          </label>
+            </Select>
+          </div>
 
           <div className="filter-field">
             <span className="filter-label">Agronomist</span>
             <AgronomistMultiSelect agronomists={agronomists} value={who} onChange={setWho} allLabel="All" />
           </div>
 
-          <label className="filter-field">
+          <div className="filter-field">
             <span className="filter-label">Product</span>
-            <select value={product} onChange={(e) => setProduct(e.target.value)} className="filter-control">
+            <Select aria-label="Product" value={product} onChange={(e) => setProduct(e.target.value)} className="w-full">
               <option value="">All</option>
               {options.products.map((p) => (
                 <option key={p} value={p}>
                   {p}
                 </option>
               ))}
-            </select>
-          </label>
+            </Select>
+          </div>
 
-          <label className="filter-field">
+          <div className="filter-field">
             <span className="filter-label">Region</span>
-            <select value={region} onChange={(e) => setRegion(e.target.value)} className="filter-control">
+            <Select aria-label="Region" value={region} onChange={(e) => setRegion(e.target.value)} className="w-full">
               <option value="">All districts</option>
               {options.regions.map((r) => (
                 <option key={r} value={r}>
                   {r}
                 </option>
               ))}
-            </select>
-          </label>
+            </Select>
+          </div>
 
-          <label className="filter-field">
+          <div className="filter-field">
             <span className="filter-label">Sold from</span>
-            <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="filter-control" />
-          </label>
-          <label className="filter-field">
+            <DateInput aria-label="Sold from" value={from} onChange={(e) => setFrom(e.target.value)} className="w-full" />
+          </div>
+          <div className="filter-field">
             <span className="filter-label">Sold to date</span>
-            <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="filter-control" />
-          </label>
+            <DateInput aria-label="Sold to date" value={to} onChange={(e) => setTo(e.target.value)} className="w-full" />
+          </div>
 
           {filtered && (
             <div className="filter-actions">
-              <button
+              <Button
+                variant="ghost"
                 onClick={() => {
                   setWho([]);
                   setProduct("");
@@ -517,10 +520,9 @@ export default function AnalysisPage() {
                   setBuyerKind("");
                   setQuery("");
                 }}
-                className="h-9 rounded-lg px-3 text-zinc-500 hover:bg-zinc-100 hover:text-red-600 dark:hover:bg-zinc-900"
               >
                 Clear filters
-              </button>
+              </Button>
             </div>
           )}
         </div>

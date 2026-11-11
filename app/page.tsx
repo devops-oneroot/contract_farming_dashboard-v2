@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Acreage, api, CatalogCrop, Order, OrderStatus, Person, Product } from "./lib/api";
 import { useAuth } from "./lib/auth";
+import { LoadingBlock } from "./components/loading";
 
 const STATUS_STYLE: Record<OrderStatus, string> = {
   pending: "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300",
@@ -252,7 +253,7 @@ export default function Home() {
           </div>
           <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
             {loading ? (
-              <p className="p-4 text-sm text-zinc-500">Loading…</p>
+              <LoadingBlock />
             ) : farmers.length === 0 ? (
               <p className="p-4 text-sm text-zinc-500">No farmers yet.</p>
             ) : (
@@ -290,7 +291,7 @@ export default function Home() {
           </div>
           <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
             {loading ? (
-              <p className="p-4 text-sm text-zinc-500">Loading…</p>
+              <LoadingBlock />
             ) : orders.length === 0 ? (
               <p className="p-4 text-sm text-zinc-500">No orders yet.</p>
             ) : (

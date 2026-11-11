@@ -6,6 +6,7 @@ import { useEffect } from "react";
 import { AuthProvider, useAuth } from "../lib/auth";
 import { SharedUIProvider } from "../lib/shared-ui";
 import { LightboxProvider } from "./lightbox";
+import { GlobalLoader, Loader } from "./loading";
 import { Shell } from "./shell";
 
 function AppLoader() {
@@ -14,7 +15,7 @@ function AppLoader() {
       <span className="flex h-14 w-14 animate-pulse items-center justify-center rounded-2xl bg-brand-500 shadow-lg shadow-brand-500/30">
         <Image src="/logo-mark-white.png" alt="OneRoot" width={169} height={221} className="h-8 w-auto" priority />
       </span>
-      <span className="text-sm text-zinc-500">Loading…</span>
+      <Loader />
     </div>
   );
 }
@@ -45,6 +46,8 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <AuthProvider>
+      {/* Top-of-window bar while any API request runs, on every page. */}
+      <GlobalLoader />
       {/* The shared UI kit (Module Federation) loads while the session is checked. */}
       <SharedUIProvider fallback={<AppLoader />}>
         {/* Outside AuthGate so the overlay sits above the shell chrome. */}

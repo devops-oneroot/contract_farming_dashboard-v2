@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { FollowUpDialog } from "./follow-up-dialog";
 import { PhotoLightbox } from "./photo-lightbox";
-import { RefreshCw, Search, ChevronLeft, ChevronRight, ArrowRight, Plus, X, CalendarClock, MapPin, Sprout } from "lucide-react";
+import { RefreshCw, Search, ArrowRight, Plus, X, CalendarClock, MapPin, Sprout } from "lucide-react";
 import { api, CatalogCrop, missingDetails, Person, Region } from "../lib/api";
 import { AcresCovered } from "./acres-covered";
 import { RegionsDialog } from "./regions-dialog";
@@ -13,6 +13,8 @@ import { EMPTY_LOCATION, FarmLocation, FarmLocationPicker } from "./farm-locatio
 import { AgronomistMultiSelect } from "./agronomist-multi-select";
 import { ExcelExport, type ExportColumn } from "./excel-export";
 import { Button, Select, DateInput } from "./ui";
+import { Loader } from "./loading";
+import { Pagination } from "./pagination";
 
 const when = (s?: string | null) => (s ? new Date(s) : null);
 
@@ -348,7 +350,6 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
   // The server decides what a page holds; these only place it in the whole.
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const current = Math.min(page, pageCount);
-  const start = (current - 1) * PAGE_SIZE;
   const rows = people;
 
   return (
@@ -495,7 +496,9 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
           <Button
             variant="secondary"
             onClick={() => {
-              const today = new Date().toISOString().slice(0, 10);
+              // The browser's own date: toISOString is UTC, which is still yesterday before 05:30 IST.
+              const n = new Date();
+              const today = `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`;
               setFrom(today);
               setTo(today);
               setPage(1);
@@ -574,7 +577,7 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
             {loading ? (
               <tr>
                 <td colSpan={colCount} className="py-10 text-center text-zinc-500">
-                  Loading…
+                  <Loader />
                 </td>
               </tr>
             ) : error ? (
@@ -909,32 +912,15 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
       </div>
 
       {/* Footer / pagination */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-100 p-3 text-sm text-zinc-500 dark:border-zinc-800">
-        <span>
-          {total === 0
-            ? "No records"
-            : `Showing ${start + 1} to ${Math.min(start + PAGE_SIZE, total)} of ${total} records`}
-        </span>
-        <div className="ml-auto flex items-center gap-1">
-          <button
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={current <= 1}
-            className="rounded-lg border border-zinc-300 p-1.5 disabled:opacity-40 dark:border-zinc-700"
-          >
-            <ChevronLeft size={16} />
-          </button>
-          <span className="px-2">
-            {current} / {pageCount}
-          </span>
-          <button
-            onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
-            disabled={current >= pageCount}
-            className="rounded-lg border border-zinc-300 p-1.5 disabled:opacity-40 dark:border-zinc-700"
-          >
-            <ChevronRight size={16} />
-          </button>
-        </div>
-      </div>
+      <Pagination
+        page={current}
+        total={total}
+        pageSize={PAGE_SIZE}
+        onPage={setPage}
+        noun="records"
+        alwaysShow
+        className="border-t border-zinc-100 p-3 dark:border-zinc-800"
+      />
 
       {/* Add farmer */}
       {adding && (

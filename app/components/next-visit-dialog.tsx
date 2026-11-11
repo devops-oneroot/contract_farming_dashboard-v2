@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CalendarClock, Loader2, X } from "lucide-react";
+import { CalendarClock, X } from "lucide-react";
 
 import { api, Visit } from "../lib/api";
+import { Spinner } from "./loading";
 
 const asInputDate = (iso?: string | null) => {
   if (!iso) return "";
@@ -233,7 +234,7 @@ export function NextVisitDialog({
               disabled={saving || !farmerId || (mode === "visit" ? !date : !reason.trim())}
               className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-brand-500 px-4 py-2 sm:flex-none text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-60"
             >
-              {saving ? <Loader2 size={14} className="animate-spin" /> : null}
+              {saving ? <Spinner size={14} className="" /> : null}
               {mode === "skip"
                 ? "Mark not needed"
                 : visit.farmer?.visitDate

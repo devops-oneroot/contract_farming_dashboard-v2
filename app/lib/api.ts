@@ -1,3 +1,5 @@
+import { track } from "./loading";
+
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 
 // Where the farm is, reverse-geocoded from the centre of the farmer's boundary by the backend.
@@ -245,7 +247,12 @@ function authHeaders(): Record<string, string> {
   return t ? { Authorization: `Bearer ${t}` } : {};
 }
 
-async function json<T>(path: string, options?: RequestInit): Promise<T> {
+// Every request counts itself into the global loader bar (lib/loading).
+function json<T>(path: string, options?: RequestInit): Promise<T> {
+  return track(jsonRequest<T>(path, options));
+}
+
+async function jsonRequest<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
     headers: { "Content-Type": "application/json", ...authHeaders() },
     cache: "no-store",
@@ -257,7 +264,11 @@ async function json<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 // multipart (for image uploads) — do NOT set Content-Type, the browser adds the boundary.
-async function form<T>(path: string, method: string, body: FormData): Promise<T> {
+function form<T>(path: string, method: string, body: FormData): Promise<T> {
+  return track(formRequest<T>(path, method, body));
+}
+
+async function formRequest<T>(path: string, method: string, body: FormData): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
     method,
     body,
@@ -1124,6 +1135,14 @@ export const api = {
       method: "PUT",
       body: JSON.stringify(body),
     }),
+
+  /**
+   * Remove a sale entered by mistake or twice. Admin only (the server checks).
+   * Permanent: the sale and its bill are gone, and the products return to the
+   * agronomist's stock, which is worked out from the sales that remain.
+   */
+  deleteProductSale: (id: string) =>
+    json<{ deleted: boolean; _id: string }>(`/api/product-sales/${id}`, { method: "DELETE" }),
 
   /** The bill for one field sale, as a PDF — the same one the app hands over. */
   saleInvoicePdfUrl: (saleId: string) => `${API_URL}/api/product-sales/${saleId}/pdf`,

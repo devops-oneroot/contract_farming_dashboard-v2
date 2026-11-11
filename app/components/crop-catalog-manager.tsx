@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Pencil, Trash2, X, Leaf, ClipboardList } from "lucide-react";
 import { api, CatalogCrop, Practice } from "../lib/api";
+import { LoadingBlock } from "./loading";
 
 type FormState = {
   id: string | null;
@@ -145,7 +146,7 @@ export function CropCatalogManager() {
       {error && !open && <p className="mb-3 text-sm text-red-600">{error}</p>}
 
       {loading ? (
-        <p className="text-sm text-zinc-500">Loading…</p>
+        <LoadingBlock />
       ) : crops.length === 0 ? (
         <div className="rounded-xl border border-dashed border-zinc-300 p-8 text-center text-sm text-zinc-500 dark:border-zinc-700">
           No crops yet. Click “Add Crop” to create the first one.

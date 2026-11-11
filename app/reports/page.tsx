@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { ClipboardList, Eye } from "lucide-react";
 import { api, DailyReport } from "../lib/api";
 import { DayDetailModal } from "../components/day-detail-modal";
+import { LoadingBlock } from "../components/loading";
+import { Pagination, usePaged } from "../components/pagination";
 
 function fmtDate(s: string) {
   return new Date(s).toLocaleString(undefined, {
@@ -32,7 +34,10 @@ export default function ReportsPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <p className="text-zinc-500">Loading…</p>;
+  // Every report ever filed, so drawn a page at a time.
+  const { pageItems, pager } = usePaged(reports);
+
+  if (loading) return <LoadingBlock />;
   if (error) return <p className="text-red-600">{error}</p>;
 
   return (
@@ -62,7 +67,7 @@ export default function ReportsPage() {
               </tr>
             </thead>
             <tbody>
-              {reports.map((r) => {
+              {pageItems.map((r) => {
                 const name = r.user?.name || r.userName || "Field agent";
                 const cell = (v: string) => (
                   <span className={v ? "" : "italic text-zinc-400"}>{v || "—"}</span>
@@ -135,6 +140,7 @@ export default function ReportsPage() {
           </table>
         </div>
       )}
+      <Pagination {...pager} noun="reports" />
 
       <DayDetailModal
         userId={viewing?.userId ?? null}

@@ -10,6 +10,8 @@ import {
   type StockEntryType,
   type StockSummaryRow,
 } from "../lib/api";
+import { LoadingBlock } from "../components/loading";
+import { Pagination, usePaged } from "../components/pagination";
 
 const inr = (n: number) => `₹${Math.round(n).toLocaleString("en-IN")}`;
 const fmtDate = (s: string) =>
@@ -66,6 +68,7 @@ export default function StockPage() {
       (r) => !t || r.name.toLowerCase().includes(t) || r.mobile.includes(t) || r.region.toLowerCase().includes(t)
     );
   }, [rows, search]);
+  const { pageItems, pager } = usePaged(shown, 25, search);
 
   const totals = useMemo(
     () => ({
@@ -103,7 +106,7 @@ export default function StockPage() {
         </div>
 
         {error && <p className="py-3 text-sm text-red-600">{error}</p>}
-        {!rows && !error && <p className="py-6 text-sm text-zinc-500">Loading…</p>}
+        {!rows && !error && <LoadingBlock />}
 
         {rows && (
           <div className="table-wrap">
@@ -120,7 +123,7 @@ export default function StockPage() {
                 </tr>
               </thead>
               <tbody>
-                {shown.map((r) => (
+                {pageItems.map((r) => (
                   <tr key={r._id} onClick={() => setOpenId(r._id)} className="cursor-pointer">
                     <td>
                       <div className="font-medium">{r.name}</div>
@@ -164,6 +167,7 @@ export default function StockPage() {
             </table>
           </div>
         )}
+        {rows && <Pagination {...pager} noun="staff" className="mt-3" />}
       </div>
 
       {openId && (

@@ -19,6 +19,8 @@ import { AgronomistMultiSelect } from "../components/agronomist-multi-select";
 import { ExcelExport } from "../components/excel-export";
 import { SALE_COLUMNS, saleLines } from "../components/sale-export";
 import { Button, Select, DateInput } from "../components/ui";
+import { Loader } from "../components/loading";
+import { Pagination, usePaged } from "../components/pagination";
 
 /**
  * A period ending today, as the two yyyy-mm-dd ends of a closed window.
@@ -174,6 +176,9 @@ export default function AnalysisPage() {
       );
     });
   }, [sales, buyerKind, product, region, query]);
+
+  // Only the table is paged; the charts, KPIs and its footer total every row.
+  const { pageItems, pager } = usePaged(rows, 25, `${whoKey}|${from}|${to}|${buyerKind}|${product}|${region}|${query}`);
 
   /**
    * The headline figures.
@@ -739,7 +744,7 @@ export default function AnalysisPage() {
             {loading ? (
               <tr>
                 <td colSpan={9} className="py-10 text-center text-zinc-500">
-                  Loading…
+                  <Loader />
                 </td>
               </tr>
             ) : rows.length === 0 ? (
@@ -749,7 +754,7 @@ export default function AnalysisPage() {
                 </td>
               </tr>
             ) : (
-              rows.map((s) => {
+              pageItems.map((s) => {
                 const b = saleBuyer(s);
                 const a = s.farmer?.farmAddress ?? s.fpo?.address;
                 const off =
@@ -848,6 +853,7 @@ export default function AnalysisPage() {
           ) : null}
         </table>
       </div>
+      {!loading && <Pagination {...pager} noun="sales" />}
 
       <p className="text-xs text-zinc-400">
         Revenue is what was charged after both kinds of discount. Axis figures are shortened

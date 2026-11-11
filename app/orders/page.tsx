@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { RefreshCw, Phone, User } from "lucide-react";
 import { api, Order, OrderStatus } from "../lib/api";
+import { LoadingBlock } from "../components/loading";
+import { Pagination, usePaged } from "../components/pagination";
 
 const STATUSES: OrderStatus[] = ["pending", "confirmed", "delivered", "cancelled"];
 
@@ -28,6 +30,8 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<"" | OrderStatus>("");
+  // A new status filter starts again from page 1.
+  const { pageItems, pager } = usePaged(orders, 24, filter);
 
   const load = async () => {
     setLoading(true);
@@ -94,12 +98,12 @@ export default function OrdersPage() {
       {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
 
       {loading ? (
-        <p className="mt-6 text-zinc-500">Loading…</p>
+        <LoadingBlock />
       ) : orders.length === 0 ? (
         <p className="mt-6 text-zinc-500">No orders yet.</p>
       ) : (
         <div className="mt-2 grid grid-cols-1 gap-4 xl:grid-cols-2">
-          {orders.map((o) => (
+          {pageItems.map((o) => (
             <div
               key={o._id}
               className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950"
@@ -168,6 +172,7 @@ export default function OrdersPage() {
           ))}
         </div>
       )}
+      {!loading && <Pagination {...pager} noun="orders" className="mt-4" />}
     </div>
   );
 }

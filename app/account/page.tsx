@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { KeyRound, RefreshCw, ShieldCheck, Trash2, UserPlus } from "lucide-react";
 import { api, Admin } from "../lib/api";
 import { useAuth } from "../lib/auth";
+import { Loader } from "../components/loading";
 
 const MIN_PASSWORD = 8;
 
@@ -165,7 +166,7 @@ export default function AccountPage() {
       <div className="card overflow-hidden">
         <div className="flex flex-wrap items-center gap-3 border-b border-zinc-100 p-3 dark:border-zinc-800">
           <span className="text-sm font-medium">
-            {loading ? "Loading…" : `${admins.length} admin${admins.length === 1 ? "" : "s"}`}
+            {loading ? <Loader /> : `${admins.length} admin${admins.length === 1 ? "" : "s"}`}
           </span>
           <button
             onClick={load}

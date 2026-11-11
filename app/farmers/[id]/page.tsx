@@ -16,6 +16,7 @@ import {
 } from "../../lib/api";
 import { AudioPlayer } from "../../components/audio-player";
 import { PhotoThumb } from "../../components/lightbox";
+import { LoadingBlock } from "../../components/loading";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -260,7 +261,7 @@ export default function FarmerDetailPage() {
   // Varieties depend on which catalog crop is selected.
   const varieties = catalog.find((c) => c.name === cropForm.name)?.varieties ?? [];
 
-  if (loading) return <p className="text-zinc-500">Loading…</p>;
+  if (loading) return <LoadingBlock />;
   if (error) return <p className="text-red-600">{error}</p>;
   if (!farmer) return <p className="text-zinc-500">Farmer not found.</p>;
 

@@ -8,14 +8,14 @@ import {
   X,
   CloudRain,
   PauseCircle,
-  ChevronLeft,
-  ChevronRight,
   Users,
   Phone,
 } from "lucide-react";
 import { api, NearbyResult, Person, TrackingPause, TrackingSession } from "../lib/api";
 import { PhotoThumb } from "../components/lightbox";
 import { Button, Select, DateInput } from "../components/ui";
+import { LoadingBlock } from "../components/loading";
+import { Pagination } from "../components/pagination";
 
 function fmtDateTime(s: string) {
   return new Date(s).toLocaleString(undefined, {
@@ -509,7 +509,10 @@ export default function TrackingPage() {
     Promise.all([
       api.listTrackingPage({
         userId: who || undefined,
+        // The filter is one "Date": that day alone. Sending only `from` asked
+        // for that day AND every day after it.
         from: from || undefined,
+        to: from || undefined,
         page,
         limit: PAGE_SIZE,
       }),
@@ -665,7 +668,7 @@ export default function TrackingPage() {
       </div>
 
       {loading ? (
-        <p className="text-zinc-500">Loading…</p>
+        <LoadingBlock />
       ) : error ? (
         <p className="text-red-600">{error}</p>
       ) : sessions.length === 0 ? (
@@ -833,32 +836,8 @@ export default function TrackingPage() {
       )}
 
       {/* Only worth showing once there is more than one page to move between. */}
-      {!loading && total > PAGE_SIZE && (
-        <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-zinc-500">
-          <span>
-            Showing {(page - 1) * PAGE_SIZE + 1} to {Math.min(page * PAGE_SIZE, total)} of {total}{" "}
-            sessions
-          </span>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page <= 1}
-              className="rounded-lg border border-zinc-300 p-1.5 disabled:opacity-40 dark:border-zinc-700"
-            >
-              <ChevronLeft size={16} />
-            </button>
-            <span className="px-2">
-              {page} / {Math.max(1, Math.ceil(total / PAGE_SIZE))}
-            </span>
-            <button
-              onClick={() => setPage((p) => p + 1)}
-              disabled={page >= Math.ceil(total / PAGE_SIZE)}
-              className="rounded-lg border border-zinc-300 p-1.5 disabled:opacity-40 dark:border-zinc-700"
-            >
-              <ChevronRight size={16} />
-            </button>
-          </div>
-        </div>
+      {!loading && (
+        <Pagination page={page} total={total} pageSize={PAGE_SIZE} onPage={setPage} noun="sessions" />
       )}
 
       {/* Route map */}

@@ -9,6 +9,7 @@ import {
   RefreshCw,
   Search,
   ShoppingBag,
+  Trash2,
 } from "lucide-react";
 import { api, Person, ProductSale, Region, saleBuyer } from "../lib/api";
 import { EditSaleDialog } from "../components/edit-sale-dialog";
@@ -18,6 +19,8 @@ import { AgronomistMultiSelect } from "../components/agronomist-multi-select";
 import { ExcelExport } from "../components/excel-export";
 import { SALE_COLUMNS, saleLines } from "../components/sale-export";
 import { Button, Select, DateInput } from "../components/ui";
+import { LoadingBlock } from "../components/loading";
+import { Pagination, usePaged } from "../components/pagination";
 
 /** The day alone — for a sale whose time was never actually observed. */
 function fmtDay(s: string) {
@@ -199,6 +202,26 @@ export default function FieldSalesPage() {
   const [sales, setSales] = useState<ProductSale[]>([]);
   /** The sale being corrected, if any. */
   const [editing, setEditing] = useState<ProductSale | null>(null);
+  /** The sale whose delete is in flight, so its button cannot be pressed twice. */
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const deleteSale = async (s: ProductSale) => {
+    const buyer = saleBuyer(s);
+    const ok = window.confirm(
+      `Delete this sale?\n\n${buyer.name} · ${money(s.total)}${s.invoiceNo ? ` · Bill ${s.invoiceNo}` : ""}\n\n` +
+        "The sale and its bill are removed for good, and the products go back into the agronomist's stock. This cannot be undone."
+    );
+    if (!ok) return;
+    setDeletingId(s._id);
+    try {
+      await api.deleteProductSale(s._id);
+      setSales((rows) => rows.filter((r) => r._id !== s._id));
+    } catch (e) {
+      window.alert(`Could not delete the sale: ${e instanceof Error ? e.message : "please try again."}`);
+    } finally {
+      setDeletingId(null);
+    }
+  };
   const [agronomists, setPersons] = useState<Person[]>([]);
   /** Agronomists picked; none picked means everyone. */
   const [who, setWho] = useState<string[]>([]);
@@ -282,6 +305,10 @@ export default function FieldSalesPage() {
       );
     });
   }, [sales, buyerKind, code, query]);
+
+  // Sale cards are tall (a bill each), so 10 to a page. Totals and the Excel
+  // export still cover every matching sale, not just this page.
+  const { pageItems, pager } = usePaged(rows, 10, `${whoKey}|${from}|${to}|${buyerKind}|${code}|${query}`);
 
   /**
    * How many of the fetched sales sit under each code, so the dropdown says so
@@ -503,7 +530,7 @@ export default function FieldSalesPage() {
       </div>
 
       {loading ? (
-        <p className="text-zinc-500">Loading…</p>
+        <LoadingBlock />
       ) : error ? (
         <p className="text-red-600">{error}</p>
       ) : rows.length === 0 ? (
@@ -514,7 +541,7 @@ export default function FieldSalesPage() {
         </p>
       ) : (
         <div className="space-y-4">
-          {rows.map((s) => {
+          {pageItems.map((s) => {
             const hasLoc = s.location?.latitude != null && s.location?.longitude != null;
             const bill = billOf(s);
             // Farmer or FPO — one helper, so the two can never be shown as
@@ -576,6 +603,14 @@ export default function FieldSalesPage() {
                       className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-300 px-2.5 py-1.5 text-xs font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
                     >
                       <Pencil size={13} /> Edit
+                    </button>
+                    {/* A sale entered by mistake or twice. Asks first: it is permanent. */}
+                    <button
+                      onClick={() => deleteSale(s)}
+                      disabled={deletingId === s._id}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-red-300 px-2.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950"
+                    >
+                      <Trash2 size={13} /> {deletingId === s._id ? "Deleting…" : "Delete"}
                     </button>
                     {/* The same PDF the agronomist hands the farmer, so office
                         and field are never reconciling two different bills. */}
@@ -740,6 +775,7 @@ export default function FieldSalesPage() {
           })}
         </div>
       )}
+      {!loading && !error && <Pagination {...pager} noun="sales" />}
 
       {/* The corrected sale comes back from the server, so the row redraws with
           the figures the server computed - not with what the dialog guessed. */}

@@ -5,6 +5,8 @@ import { Bug, Clock, MapPin, ExternalLink, MessageSquare, Mic } from "lucide-rea
 import { api, DiseaseReport } from "../lib/api";
 import { PhotoThumb } from "../components/lightbox";
 import { AudioPlayer } from "../components/audio-player";
+import { LoadingBlock } from "../components/loading";
+import { Pagination, usePaged } from "../components/pagination";
 
 function fmtDateTime(s: string) {
   return new Date(s).toLocaleString(undefined, {
@@ -40,6 +42,9 @@ export default function DiseaseReportsPage() {
       .catch((e) => setError(e instanceof Error ? e.message : "Failed to load reports"))
       .finally(() => setLoading(false));
   }, [filter]);
+
+  // Report cards are tall (photos, replies), so fewer to a page.
+  const { pageItems, pager } = usePaged(reports, 10, filter);
 
   const stats = useMemo(() => {
     const open = reports.filter((r) => r.status === "open");
@@ -105,7 +110,7 @@ export default function DiseaseReportsPage() {
       </div>
 
       {loading ? (
-        <p className="text-zinc-500">Loading…</p>
+        <LoadingBlock />
       ) : error ? (
         <p className="text-red-600">{error}</p>
       ) : reports.length === 0 ? (
@@ -114,7 +119,7 @@ export default function DiseaseReportsPage() {
         </p>
       ) : (
         <div className="space-y-3">
-          {reports.map((r) => {
+          {pageItems.map((r) => {
             const hasLoc = r.location?.latitude != null && r.location?.longitude != null;
             const open = r.status === "open";
             return (
@@ -217,6 +222,7 @@ export default function DiseaseReportsPage() {
           })}
         </div>
       )}
+      {!loading && !error && <Pagination {...pager} noun="reports" />}
     </div>
   );
 }

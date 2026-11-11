@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { Phone, PhoneOutgoing, User, Sprout } from "lucide-react";
 import { api, CallLog } from "../lib/api";
+import { LoadingBlock } from "../components/loading";
+import { Pagination, usePaged } from "../components/pagination";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 
@@ -44,7 +46,9 @@ export default function CallsPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <p className="text-zinc-500">Loading…</p>;
+  const { pageItems, pager } = usePaged(logs);
+
+  if (loading) return <LoadingBlock />;
   if (error) return <p className="text-red-600">{error}</p>;
 
   return (
@@ -72,7 +76,7 @@ export default function CallsPage() {
               </tr>
             </thead>
             <tbody>
-              {logs.map((l) => (
+              {pageItems.map((l) => (
                 <tr key={l._id}>
                   <td>
                     <div className="flex items-center gap-2">
@@ -129,6 +133,7 @@ export default function CallsPage() {
           </table>
         </div>
       )}
+      <Pagination {...pager} noun="calls" />
 
       <p className="text-xs text-zinc-400">
         <User size={12} className="mr-1 inline" />

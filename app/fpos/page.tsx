@@ -2,14 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
-  ChevronLeft,
-  ChevronRight,
   RefreshCw,
   Search,
 } from "lucide-react";
 import { api, Fpo, Person } from "../lib/api";
 import { PhotoThumb } from "../components/lightbox";
 import { Button, Select, DateInput } from "../components/ui";
+import { Loader } from "../components/loading";
+import { Pagination } from "../components/pagination";
 
 const PAGE_SIZE = 20;
 
@@ -165,7 +165,6 @@ export default function FposPage() {
   // The server decides what a page holds; these only place it in the whole.
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const current = Math.min(page, pageCount);
-  const start = (current - 1) * PAGE_SIZE;
   const rows = fpos;
 
   const filtersOn = !!(query || role || crop || district || taluk || onboardedBy || from || to);
@@ -308,7 +307,9 @@ export default function FposPage() {
           <Button
             variant="secondary"
             onClick={() => {
-              const today = new Date().toISOString().slice(0, 10);
+              // The browser's own date: toISOString is UTC, which is still yesterday before 05:30 IST.
+              const n = new Date();
+              const today = `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`;
               setFrom(today);
               setTo(today);
               setPage(1);
@@ -366,7 +367,7 @@ export default function FposPage() {
             {loading ? (
               <tr>
                 <td colSpan={11} className="whitespace-normal py-10 text-center text-zinc-500">
-                  Loading…
+                  <Loader />
                 </td>
               </tr>
             ) : error ? (
@@ -507,37 +508,22 @@ export default function FposPage() {
       </div>
 
       {/* Footer / pagination */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-100 p-3 text-sm text-zinc-500 dark:border-zinc-800">
-        <span>
-          {total === 0
-            ? "No records"
-            : `Showing ${start + 1} to ${Math.min(start + PAGE_SIZE, total)} of ${total} records`}
-          {/* Stated as claimed, because the figure is self-reported and will
-              otherwise be read with the same authority as a farmer count. */}
-          {total > 0 && farmersCovered > 0
+      <Pagination
+        page={current}
+        total={total}
+        pageSize={PAGE_SIZE}
+        onPage={setPage}
+        noun="records"
+        alwaysShow
+        className="border-t border-zinc-100 p-3 dark:border-zinc-800"
+        // Stated as claimed, because the figure is self-reported and will
+        // otherwise be read with the same authority as a farmer count.
+        note={
+          total > 0 && farmersCovered > 0
             ? ` · ${num(farmersCovered)} farmers covered, as stated by the FPOs`
-            : ""}
-        </span>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={current <= 1}
-            className="rounded-lg border border-zinc-300 p-1.5 disabled:opacity-40 dark:border-zinc-700"
-          >
-            <ChevronLeft size={16} />
-          </button>
-          <span className="px-2">
-            {current} / {pageCount}
-          </span>
-          <button
-            onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
-            disabled={current >= pageCount}
-            className="rounded-lg border border-zinc-300 p-1.5 disabled:opacity-40 dark:border-zinc-700"
-          >
-            <ChevronRight size={16} />
-          </button>
-        </div>
-      </div>
+            : undefined
+        }
+      />
     </div>
   );
 }

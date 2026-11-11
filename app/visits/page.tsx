@@ -9,6 +9,8 @@ import { NextVisitDialog } from "../components/next-visit-dialog";
 import { AgronomistMultiSelect } from "../components/agronomist-multi-select";
 import { ExcelExport, type ExportColumn } from "../components/excel-export";
 import { Button, DateInput, SearchInput } from "../components/ui";
+import { LoadingBlock } from "../components/loading";
+import { Pagination, usePaged } from "../components/pagination";
 
 function fmtTime(s: string) {
   return new Date(s).toLocaleString(undefined, {
@@ -149,6 +151,10 @@ export default function VisitsPage() {
     });
   }, [visits, owed, query]);
 
+  // Any change of filter or search goes back to page 1; the counts above
+  // still cover every visit fetched.
+  const { pageItems, pager } = usePaged(rows, 25, `${whoKey}|${from}|${to}|${owed}|${query}`);
+
   /**
    * The headline this page is for: how many visits happened, and how many of
    * them left nobody knowing when to go back. Counted over the fetched set, not
@@ -245,7 +251,7 @@ export default function VisitsPage() {
       </div>
 
       {loading ? (
-        <p className="text-zinc-500">Loading…</p>
+        <LoadingBlock />
       ) : error ? (
         <p className="text-red-600">{error}</p>
       ) : rows.length === 0 ? (
@@ -269,7 +275,7 @@ export default function VisitsPage() {
               </tr>
             </thead>
             <tbody>
-              {rows.map((v) => {
+              {pageItems.map((v) => {
                 const hasLoc = v.location?.latitude != null && v.location?.longitude != null;
                 const photos = [
                   { url: v.farmPhotoUrl, label: "Farm" },
@@ -395,6 +401,7 @@ export default function VisitsPage() {
           </table>
         </div>
       )}
+      {!loading && !error && <Pagination {...pager} noun="visits" />}
 
       {/* Patches every row for that farmer, not just the one clicked — the same
           farmer can appear on several visits, and they would otherwise disagree

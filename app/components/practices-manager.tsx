@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Plus, Trash2, Save, GripVertical, Package, X } from "lucide-react";
 import { api, Practice, PopStep, Product } from "../lib/api";
+import { LoadingBlock } from "./loading";
 
 const emptyStep = (): PopStep => ({
   day: [0, 0],
@@ -176,7 +177,7 @@ export function PracticesManager({ crop }: { crop?: string } = {}) {
       </div>
 
       {loading ? (
-        <p className="mt-2 text-zinc-500">Loading…</p>
+        <LoadingBlock />
       ) : practices.length === 0 ? (
         <p className="mt-2 text-zinc-500">No crops yet. Click “New crop” to add one.</p>
       ) : (

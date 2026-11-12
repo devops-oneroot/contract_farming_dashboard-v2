@@ -6,9 +6,11 @@ import { CalendarClock, ExternalLink, MapPin } from "lucide-react";
 import { api, Person, Visit } from "../lib/api";
 import { PhotoThumb } from "../components/lightbox";
 import { NextVisitDialog } from "../components/next-visit-dialog";
-import { AgronomistMultiSelect } from "../components/agronomist-multi-select";
 import { ExcelExport, type ExportColumn } from "../components/excel-export";
-import { Button, DateInput, SearchInput } from "../components/ui";
+import { Tabs } from "../components/ui";
+import { VisitFilters, type CommonVisitFilters } from "./visit-filters";
+import { FarmerVisits } from "./farmer-visits";
+import { AgronomistVisits } from "./agronomist-visits";
 import { LoadingBlock } from "../components/loading";
 import { Pagination, usePaged } from "../components/pagination";
 
@@ -59,6 +61,7 @@ const VISIT_COLUMNS: ExportColumn<Visit>[] = [
   { key: "agronomistMobile", label: "Agronomist mobile", value: (v) => v.agronomist?.mobile, checked: false },
   { key: "farmer", label: "Farmer", value: (v) => v.farmer?.name || v.farmerName },
   { key: "farmerMobile", label: "Farmer mobile", value: (v) => v.farmer?.mobile },
+  { key: "farmerTotalVisits", label: "Farmer's total visits (all agronomists)", value: (v) => v.farmerTotalVisits },
   { key: "notes", label: "Notes", value: (v) => v.notes },
   { key: "followUpNote", label: "Follow-up note", value: (v) => v.followUpNote },
   { key: "nextFollowUpAt", label: "Next follow-up", value: (v) => when(v.nextFollowUpAt) },
@@ -108,6 +111,9 @@ export default function VisitsPage() {
   // Client-side: these narrow what has already arrived.
   const [owed, setOwed] = useState<"" | Owed>("");
   const [query, setQuery] = useState("");
+
+  /** Recent visits (the list), one row per farmer, or one per agronomist. */
+  const [tab, setTab] = useState<"recent" | "farmers" | "agronomists">("recent");
 
   /** Which visit's next-visit dialog is open. */
   const [setting, setSetting] = useState<Visit | null>(null);
@@ -172,7 +178,7 @@ export default function VisitsPage() {
     };
   }, [visits]);
 
-  const filtered = !!(who.length || from || to || owed || query);
+  const common: CommonVisitFilters = { agronomists, who, setWho, from, setFrom, to, setTo };
 
   return (
     <div className="space-y-4">
@@ -180,49 +186,47 @@ export default function VisitsPage() {
         <div className="flex min-w-0 items-center gap-2">
           <MapPin size={20} className="shrink-0 text-green-600" />
           <h2 className="text-lg font-semibold">
-            Farm Visits ({rows.length}
-            {rows.length !== visits.length ? ` of ${visits.length}` : ""})
+            Farm Visits
+            {tab === "recent" && (
+              <>
+                {" "}
+                ({rows.length}
+                {rows.length !== visits.length ? ` of ${visits.length}` : ""})
+              </>
+            )}
           </h2>
         </div>
 
-        <ExcelExport id="visits" fileName="farm-visits" columns={VISIT_COLUMNS} rows={() => rows} />
-      </div>
-
-      <div className="card filter-bar p-3">
-        <div className="filter-field">
-          <span className="filter-label">Search</span>
-          <SearchInput value={query} onChange={setQuery} placeholder="Farmer name or number" className="w-full" />
-        </div>
-        <div className="filter-field">
-          <span className="filter-label">Agronomist</span>
-          <AgronomistMultiSelect agronomists={agronomists} value={who} onChange={setWho} />
-        </div>
-        <div className="filter-field">
-          <span className="filter-label">Visited from</span>
-          <DateInput aria-label="Visited from" value={from} onChange={(e) => setFrom(e.target.value)} className="w-full" />
-        </div>
-        <div className="filter-field">
-          <span className="filter-label">Visited to</span>
-          <DateInput aria-label="Visited to" value={to} onChange={(e) => setTo(e.target.value)} className="w-full" />
-        </div>
-        {filtered && (
-          <div className="filter-actions">
-            <Button
-              variant="ghost"
-              onClick={() => {
-                setWho([]);
-                setFrom("");
-                setTo("");
-                setOwed("");
-                setQuery("");
-              }}
-            >
-              Clear filters
-            </Button>
-          </div>
+        {tab === "recent" && (
+          <ExcelExport id="visits" fileName="farm-visits" columns={VISIT_COLUMNS} rows={() => rows} />
         )}
       </div>
 
+      <Tabs
+        value={tab}
+        onChange={setTab}
+        tabs={[
+          { value: "recent", label: "Recent visits" },
+          { value: "farmers", label: "By farmer" },
+          { value: "agronomists", label: "By agronomist" },
+        ]}
+      />
+
+      {/* Each tab has its own filter bar; agronomists and dates are shared and
+          carry over when switching. */}
+      {tab === "farmers" && <FarmerVisits common={common} />}
+      {tab === "agronomists" && <AgronomistVisits common={common} />}
+
+      {tab === "recent" && (
+        <>
+      <VisitFilters
+        common={common}
+        search={query}
+        onSearch={setQuery}
+        searchPlaceholder="Farmer name or number"
+        active={!!owed}
+        onClear={() => setOwed("")}
+      />
       {/* The counts double as the filter. "No next visit" leads because it is
           the one that needs somebody to do something about it. */}
       <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
@@ -296,6 +300,19 @@ export default function VisitsPage() {
                       <div className="font-medium">{v.farmer?.name || v.farmerName || "Farmer"}</div>
                       {v.farmer?.mobile ? (
                         <div className="text-xs text-zinc-500">{v.farmer.mobile}</div>
+                      ) : null}
+                      {/* Every visit to this farm by anyone, ever - the filters
+                          above do not narrow it. */}
+                      {v.farmerTotalVisits ? (
+                        <span
+                          title="All visits to this farmer's farm, by every agronomist, all time"
+                          className="mt-1 inline-flex whitespace-nowrap rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-medium text-green-800 dark:bg-green-950/50 dark:text-green-300"
+                        >
+                          {v.farmerTotalVisits} visit{v.farmerTotalVisits === 1 ? "" : "s"} in total
+                          {v.farmerTotalAgronomists
+                            ? ` · ${v.farmerTotalAgronomists} agronomist${v.farmerTotalAgronomists === 1 ? "" : "s"}`
+                            : ""}
+                        </span>
                       ) : null}
                     </td>
                     <td className="text-zinc-500">
@@ -402,6 +419,8 @@ export default function VisitsPage() {
         </div>
       )}
       {!loading && !error && <Pagination {...pager} noun="visits" />}
+        </>
+      )}
 
       {/* Patches every row for that farmer, not just the one clicked — the same
           farmer can appear on several visits, and they would otherwise disagree

@@ -394,6 +394,10 @@ export type Visit = {
     skipReason?: string;
   } | null;
   farmerName: string;
+  /** Every visit to this farmer's farm, by any agronomist, ever (absent on a random visit). */
+  farmerTotalVisits?: number;
+  /** How many different agronomists have ever visited this farmer. */
+  farmerTotalAgronomists?: number;
   farmPhotoUrl: string;
   farmerPhotoUrl: string;
   location: { latitude: number | null; longitude: number | null };
@@ -403,6 +407,60 @@ export type Visit = {
   nextFollowUpAt?: string | null;
   visitedAt: string;
   createdAt: string;
+};
+
+/** GET /api/visits/by-farmer: one farmer's visits in the window, counted on the server. */
+export type FarmerVisitSummary = {
+  farmer: {
+    _id: string;
+    name: string;
+    mobile: string;
+    photoUrl: string;
+    village: string;
+    taluk: string;
+    visitDate?: string | null;
+    nextFollowUpAt?: string | null;
+    followUpNote?: string;
+    skippedAt?: string | null;
+    skipReason?: string;
+    lastVisitedAt?: string | null;
+  };
+  /** Visits in the window, by the agronomists picked. */
+  visits: number;
+  /** Every visit to this farmer's farm, by any agronomist, ever - ignores the filters. */
+  totalVisits: number;
+  /** How many different agronomists have ever visited this farmer. */
+  totalAgronomists: number;
+  /** The farmer's next visit date (promised or asked for) has passed. */
+  nextOverdue: boolean;
+  firstVisit: string;
+  lastVisit: string;
+  /** Whole days from the last visit in the window to now. */
+  daysSinceLast: number;
+  last30Days: number;
+  withPhotos: number;
+  agronomists: { _id: string; name: string }[];
+  lastAgronomist: { _id: string; name: string } | null;
+  lastNotes: string;
+  lastFollowUpNote: string;
+  lastFarmPhotoUrl: string;
+  lastFarmerPhotoUrl: string;
+};
+
+/** GET /api/visits/by-agronomist: one agronomist's field work in the window. */
+export type AgronomistVisitSummary = {
+  agronomist: { _id: string; name: string; mobile: string } | null;
+  visits: number;
+  farmers: number;
+  /** Visits to a farmer they had already visited in the window. */
+  repeatVisits: number;
+  randomVisits: number;
+  /** Visits to a farmer that left no return date. */
+  noReturnDate: number;
+  withBothPhotos: number;
+  activeDays: number;
+  firstVisit: string;
+  lastVisit: string;
 };
 
 /** One product line in a field sale, with its own before/after crop photos. */
@@ -1167,12 +1225,29 @@ export const api = {
   },
 
   // Farm visits logged by agronomists
-  listVisits: (params: { agronomist?: string; from?: string; to?: string } = {}) => {
+  listVisits: (params: { agronomist?: string; from?: string; to?: string; farmer?: string } = {}) => {
     const q = new URLSearchParams();
     if (params.agronomist) q.set("agronomist", params.agronomist);
     if (params.from) q.set("from", params.from);
     if (params.to) q.set("to", params.to);
+    if (params.farmer) q.set("farmer", params.farmer);
     return json<Visit[]>(`/api/visits?${q.toString()}`);
+  },
+  /** One row per farmer visited, counted over every visit in the window (no 500 cap). */
+  visitsByFarmer: (params: { agronomist?: string; from?: string; to?: string } = {}) => {
+    const q = new URLSearchParams();
+    if (params.agronomist) q.set("agronomist", params.agronomist);
+    if (params.from) q.set("from", params.from);
+    if (params.to) q.set("to", params.to);
+    return json<FarmerVisitSummary[]>(`/api/visits/by-farmer?${q.toString()}`);
+  },
+  /** One row per agronomist: visits, farmers covered, repeat visits, days in the field. */
+  visitsByAgronomist: (params: { agronomist?: string; from?: string; to?: string } = {}) => {
+    const q = new URLSearchParams();
+    if (params.agronomist) q.set("agronomist", params.agronomist);
+    if (params.from) q.set("from", params.from);
+    if (params.to) q.set("to", params.to);
+    return json<AgronomistVisitSummary[]>(`/api/visits/by-agronomist?${q.toString()}`);
   },
 
   // Crops reported as diseased, and the advice sent back.

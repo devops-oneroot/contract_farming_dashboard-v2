@@ -99,7 +99,9 @@ export function LightboxProvider({ children }: { children: React.ReactNode }) {
             <a
               href={current.url}
               target="_blank"
-              rel="noopener noreferrer"
+              // noopener only, not noreferrer: the backend opens a file only
+              // when the Referer is the dashboard (FRONTEND_URLS).
+              rel="noopener"
               title="Open the original in a new tab"
               className="shrink-0 rounded-md p-1.5 text-white/80 transition hover:bg-white/10 hover:text-white"
             >

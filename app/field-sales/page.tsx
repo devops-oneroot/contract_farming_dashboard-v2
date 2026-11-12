@@ -18,7 +18,7 @@ import { PhotoThumb } from "../components/lightbox";
 import { AgronomistMultiSelect } from "../components/agronomist-multi-select";
 import { ExcelExport } from "../components/excel-export";
 import { SALE_COLUMNS, saleLines } from "../components/sale-export";
-import { Button, Select, DateInput } from "../components/ui";
+import { Button, Select, DateInput, Dropdown } from "../components/ui";
 import { LoadingBlock } from "../components/loading";
 import { Pagination, usePaged } from "../components/pagination";
 
@@ -242,6 +242,12 @@ export default function FieldSalesPage() {
   /** Buyer name or number. Narrowed here, like the kind — the page already
    *  holds every sale it is showing. */
   const [query, setQuery] = useState("");
+  /**
+   * Products UNticked in the product filter. Kept as the ones left out rather
+   * than the ones picked, so every product starts ticked, and a product that
+   * first appears after a date change or a refresh comes in ticked too.
+   */
+  const [hiddenProducts, setHiddenProducts] = useState<Set<string>>(() => new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -273,12 +279,53 @@ export default function FieldSalesPage() {
     load();
   }, [load]);
 
+  /**
+   * Every product sold in the fetched sales, by name, with how many sales
+   * carry it. Keyed by product id, so a renamed product or its pack sizes are
+   * still one entry.
+   */
+  const productOptions = useMemo(() => {
+    const byId = new Map<string, { name: string; sales: number }>();
+    sales.forEach((s) => {
+      new Set(s.items.map((i) => i.product || i.name)).forEach((id) => {
+        const item = s.items.find((i) => (i.product || i.name) === id)!;
+        const p = byId.get(id) ?? { name: item.name, sales: 0 };
+        p.sales += 1;
+        byId.set(id, p);
+      });
+    });
+    return [...byId.entries()]
+      .map(([value, p]) => ({ value, label: p.name, hint: `${p.sales} sale${p.sales === 1 ? "" : "s"}` }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [sales]);
+
+  const ALL_PRODUCTS = "__all__";
+  const pickedProducts = productOptions.map((o) => o.value).filter((id) => !hiddenProducts.has(id));
+  const allProductsPicked = pickedProducts.length === productOptions.length;
+  /** What the dropdown shows ticked: "All products" row included when every product is. */
+  const productValues = allProductsPicked ? [ALL_PRODUCTS, ...pickedProducts] : pickedProducts;
+
+  const onProductsChange = (next: string[]) => {
+    const ids = productOptions.map((o) => o.value);
+    const allTicked = next.includes(ALL_PRODUCTS);
+    if (allTicked && !allProductsPicked) {
+      setHiddenProducts(new Set()); // "All products" ticked: everything
+    } else if (!allTicked && allProductsPicked && ids.every((id) => next.includes(id))) {
+      setHiddenProducts(new Set(ids)); // "All products" unticked: nothing, ready to tick a few
+    } else {
+      setHiddenProducts(new Set(ids.filter((id) => !next.includes(id))));
+    }
+  };
+  const productsKey = [...hiddenProducts].sort().join(",");
+
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase();
     const digits = q.replace(/\D/g, "");
     return sales.filter((s) => {
       const buyer = saleBuyer(s);
       if (buyerKind && buyer.kind !== buyerKind) return false;
+      // A sale stays when any of its products is ticked.
+      if (hiddenProducts.size && !s.items.some((i) => !hiddenProducts.has(i.product || i.name))) return false;
       /**
        * Matched against the bill's own number, not against where the agent
        * works today. An agronomist who moves taluk keeps their old sales under
@@ -304,11 +351,15 @@ export default function FieldSalesPage() {
         (!!digits && buyer.mobile.replace(/\D/g, "").includes(digits))
       );
     });
-  }, [sales, buyerKind, code, query]);
+  }, [sales, buyerKind, code, query, hiddenProducts]);
 
   // Sale cards are tall (a bill each), so 10 to a page. Totals and the Excel
   // export still cover every matching sale, not just this page.
-  const { pageItems, pager } = usePaged(rows, 10, `${whoKey}|${from}|${to}|${buyerKind}|${code}|${query}`);
+  const { pageItems, pager } = usePaged(
+    rows,
+    10,
+    `${whoKey}|${from}|${to}|${buyerKind}|${code}|${query}|${productsKey}`
+  );
 
   /**
    * How many of the fetched sales sit under each code, so the dropdown says so
@@ -429,6 +480,26 @@ export default function FieldSalesPage() {
           </div>
 
           <div className="filter-field">
+            <span className="filter-label">Products</span>
+            <Dropdown
+              aria-label="Products"
+              multiple
+              isSearch
+              searchPlaceholder="Search products"
+              placeholder="No products"
+              emptyText="No product sold in these sales"
+              options={
+                productOptions.length
+                  ? [{ value: ALL_PRODUCTS, label: "All products", hint: `${productOptions.length}` }, ...productOptions]
+                  : []
+              }
+              values={productValues}
+              onValuesChange={onProductsChange}
+              className="w-full"
+            />
+          </div>
+
+          <div className="filter-field">
             <span className="filter-label">Agronomist</span>
             <AgronomistMultiSelect agronomists={agronomists} value={who} onChange={setWho} allLabel="All" />
           </div>
@@ -478,11 +549,12 @@ export default function FieldSalesPage() {
           </div>
 
           <div className="filter-actions">
-            {(who.length || from || to || buyerKind || code || query) && (
+            {(who.length || from || to || buyerKind || code || query || hiddenProducts.size > 0) && (
               <Button
                 variant="ghost"
                 onClick={() => {
                   setWho([]);
+                  setHiddenProducts(new Set());
                   setFrom("");
                   setTo("");
                   setBuyerKind("");

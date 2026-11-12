@@ -1,6 +1,6 @@
 "use client";
 
-import type { ComponentType } from "react";
+import type { ComponentType, JSX, ReactNode } from "react";
 import { useSharedUI, type SharedUIModule } from "../lib/shared-ui";
 
 /**
@@ -62,6 +62,57 @@ export const Select = shared((ui) => ui.Select, function FallbackSelect({ isSear
   return <select {...props} className={cx(CONTROL, className)} />;
 }, "Select");
 
+/**
+ * The common styled dropdown: single choice, or `multiple` with a checkbox per
+ * row, and `isSearch` for a filter box. Fallback: a native <select>, a list
+ * box when `multiple` (Ctrl/Cmd-click to pick several).
+ */
+export const Dropdown = shared((ui) => ui.Dropdown, function FallbackDropdown({
+  options,
+  value = "",
+  onChange,
+  multiple,
+  values = [],
+  onValuesChange,
+  placeholder,
+  disabled,
+  className,
+  title,
+  id,
+  "aria-label": ariaLabel,
+}) {
+  const common = { disabled, title, id, "aria-label": ariaLabel };
+  if (multiple) {
+    return (
+      <select
+        {...common}
+        multiple
+        size={Math.min(6, Math.max(2, options.length))}
+        value={values}
+        onChange={(e) => onValuesChange?.(Array.from(e.target.selectedOptions, (o) => o.value))}
+        className={cx(CONTROL, "h-auto", className)}
+      >
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+            {o.hint ? ` (${o.hint})` : ""}
+          </option>
+        ))}
+      </select>
+    );
+  }
+  return (
+    <select {...common} value={value} onChange={(e) => onChange?.(e.target.value)} className={cx(CONTROL, className)}>
+      {placeholder && <option value="">{placeholder}</option>}
+      {options.map((o) => (
+        <option key={o.value} value={o.value}>
+          {o.label}
+        </option>
+      ))}
+    </select>
+  );
+}, "Dropdown");
+
 export const DateInput = shared((ui) => ui.DateInput, function FallbackDateInput({ className, ...props }) {
   return <input {...props} type="date" className={cx(CONTROL, className)} />;
 }, "DateInput");
@@ -91,3 +142,58 @@ export const Field = shared((ui) => ui.Field, function FallbackField({ label, hi
     </label>
   );
 }, "Field");
+
+type TabsProps<T extends string> = { tabs: { value: T; label: ReactNode }[]; value: T; onChange: (v: T) => void };
+
+/**
+ * The common tab strip. Cast back to a generic after `shared()`, so the tab
+ * value keeps its own type (`Tabs<"recent" | "farmers">`).
+ */
+export const Tabs = shared(
+  (ui) => ui.Tabs as ComponentType<TabsProps<string>>,
+  function FallbackTabs({ tabs, value, onChange }: TabsProps<string>) {
+    return (
+      <div role="tablist" className="flex gap-1 border-b border-zinc-200 dark:border-zinc-800">
+        {tabs.map((t) => (
+          <button
+            key={t.value}
+            role="tab"
+            aria-selected={value === t.value}
+            onClick={() => onChange(t.value)}
+            className={cx(
+              "-mb-px border-b-2 px-3 py-2 text-sm font-medium",
+              value === t.value ? "border-brand-500 text-brand-700" : "border-transparent text-zinc-500 hover:text-zinc-800"
+            )}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+    );
+  },
+  "Tabs"
+) as unknown as <T extends string>(props: TabsProps<T>) => JSX.Element;
+
+/** The common dialog. Fallback: a plain centred panel over a dimmed page. */
+export const Modal = shared((ui) => ui.Modal, function FallbackModal({ open, onClose, title, children, footer }) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4" onClick={onClose}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="mt-10 w-full max-w-2xl rounded-xl bg-white p-4 shadow-xl dark:bg-zinc-950"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div className="text-base font-semibold">{title}</div>
+          <button onClick={onClose} aria-label="Close" className="text-zinc-500 hover:text-zinc-900">
+            ✕
+          </button>
+        </div>
+        {children}
+        {footer && <div className="mt-4 flex justify-end gap-2">{footer}</div>}
+      </div>
+    </div>
+  );
+}, "Modal");

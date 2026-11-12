@@ -99,7 +99,7 @@ const TITLES: Record<string, string> = {
 function titleFor(pathname: string) {
   if (TITLES[pathname]) return TITLES[pathname];
   const section = "/" + pathname.split("/")[1];
-  return TITLES[section] ?? "OneRoot Admin";
+  return TITLES[section] ?? "OneRoot Contract Farming";
 }
 
 function isActive(pathname: string, href: string) {

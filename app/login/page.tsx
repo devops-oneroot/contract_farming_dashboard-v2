@@ -91,7 +91,7 @@ export default function LoginPage() {
             priority
           />
           <h1 className="text-2xl font-semibold">Welcome back</h1>
-          <p className="mt-1 text-sm text-zinc-500">Sign in to the OneRoot admin dashboard</p>
+          <p className="mt-1 text-sm text-zinc-500">Sign in to the OneRoot Contract Farming dashboard</p>
 
           <div className="mt-8 space-y-4">
             <Field label="Mobile number">

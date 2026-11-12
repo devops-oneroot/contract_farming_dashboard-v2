@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: { default: "OneRoot Admin", template: "%s · OneRoot Admin" },
+  title: { default: "OneRoot Contract Farming", template: "%s · OneRoot Contract Farming" },
   description: "Manage farmers, agronomists, package of practices and products",
 };
 

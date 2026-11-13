@@ -93,7 +93,7 @@ export default function AccountPage() {
     <div className="mx-auto max-w-4xl space-y-6">
       <div>
         <h2 className="flex items-center gap-2 text-xl font-semibold">
-          <ShieldCheck size={20} className="text-green-600" /> Dashboard access
+          <ShieldCheck size={20} className="text-brand-600" /> Dashboard access
         </h2>
         <p className="mt-1 text-sm text-zinc-500">
           Everyone listed here can sign in and manage farmers, orders and products. There is no public
@@ -107,7 +107,7 @@ export default function AccountPage() {
         className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950"
       >
         <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold">
-          <UserPlus size={16} className="text-green-600" /> Add an admin
+          <UserPlus size={16} className="text-brand-600" /> Add an admin
         </h3>
         <div className="flex flex-wrap items-end gap-3">
           <label className="w-full min-w-40 flex-1 text-sm sm:w-auto">

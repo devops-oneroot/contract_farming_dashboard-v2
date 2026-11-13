@@ -431,7 +431,7 @@ export default function AnalysisPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <BarChart3 size={20} className="text-green-600" />
+        <BarChart3 size={20} className="text-brand-600" />
         <h2 className="text-lg font-semibold">
           Sales Analysis ({rows.length}
           {rows.length !== sales.length ? ` of ${sales.length}` : ""})
@@ -576,7 +576,7 @@ export default function AnalysisPage() {
 
       <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
         <div className="mb-3 flex flex-wrap items-center gap-2">
-          <TrendingUp size={16} className="text-green-600" />
+          <TrendingUp size={16} className="text-brand-600" />
           <h3 className="font-semibold">Sales per day</h3>
           <span className="text-xs text-zinc-500">
             {trend.length} day{trend.length === 1 ? "" : "s"} · hover for a day&apos;s takings,
@@ -594,7 +594,7 @@ export default function AnalysisPage() {
       <div className="grid gap-3 lg:grid-cols-2">
         <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
           <div className="mb-3 flex flex-wrap items-center gap-2">
-            <PieChart size={16} className="text-green-600" />
+            <PieChart size={16} className="text-brand-600" />
             <h3 className="font-semibold">Where the money came from</h3>
             <span className="text-xs text-zinc-500">by product</span>
           </div>
@@ -607,7 +607,7 @@ export default function AnalysisPage() {
 
         <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
           <div className="mb-3 flex flex-wrap items-center gap-2">
-            <Users size={16} className="text-green-600" />
+            <Users size={16} className="text-brand-600" />
             <h3 className="font-semibold">Who bought it</h3>
             <span className="text-xs text-zinc-500">farmers against FPOs</span>
           </div>
@@ -622,13 +622,13 @@ export default function AnalysisPage() {
       {/* Who came back, and where they are. */}
       <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
         <div className="mb-3 flex flex-wrap items-center gap-2">
-          <Repeat size={16} className="text-green-600" />
+          <Repeat size={16} className="text-brand-600" />
           <h3 className="font-semibold">Repeat buyers</h3>
           <span className="text-xs text-zinc-500">bought from us more than once</span>
           {repeat.buyers > 0 && (
-            <span className="ml-auto flex flex-wrap items-center gap-x-2 rounded-lg bg-green-50 px-3 py-1.5 text-sm font-semibold text-green-800 dark:bg-green-950/40 dark:text-green-300">
+            <span className="ml-auto flex flex-wrap items-center gap-x-2 rounded-lg bg-brand-50 px-3 py-1.5 text-sm font-semibold text-brand-800 dark:bg-brand-950/40 dark:text-brand-300">
               {repeat.returning.length} of {repeat.buyers} buyers
-              <span className="text-xs font-normal text-green-700/70 dark:text-green-400/70">
+              <span className="text-xs font-normal text-brand-700/70 dark:text-brand-400/70">
                 {Math.round((repeat.returning.length / repeat.buyers) * 100)}% came back ·{" "}
                 {money(repeat.value)}
               </span>
@@ -845,7 +845,7 @@ export default function AnalysisPage() {
                 <td className="num text-red-600">
                   {kpi.discounts > 0 ? `− ${money(kpi.discounts)}` : "—"}
                 </td>
-                <td className="num text-green-600">
+                <td className="num text-brand-600">
                   {money(kpi.revenue)}
                 </td>
               </tr>

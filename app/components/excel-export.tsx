@@ -114,7 +114,7 @@ export function ExcelExport<T>({
       <button
         type="button"
         onClick={start}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-green-600 px-2.5 py-1.5 text-sm font-medium text-green-700 hover:bg-green-50 dark:text-green-300 dark:hover:bg-green-950"
+        className="inline-flex items-center gap-1.5 rounded-lg border border-brand-600 px-2.5 py-1.5 text-sm font-medium text-brand-700 hover:bg-brand-50 dark:text-brand-300 dark:hover:bg-brand-950"
       >
         <Download size={15} /> {label}
       </button>
@@ -137,7 +137,7 @@ export function ExcelExport<T>({
 
             <div className="px-4 py-3 sm:px-5">
               <div className="mb-2 flex justify-between text-xs">
-                <button onClick={() => setPicked(new Set(columns.map((c) => c.key)))} className="text-green-700 hover:underline">
+                <button onClick={() => setPicked(new Set(columns.map((c) => c.key)))} className="text-brand-700 hover:underline">
                   Select all
                 </button>
                 <button onClick={() => setPicked(new Set())} className="text-zinc-500 hover:underline">

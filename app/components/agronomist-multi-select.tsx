@@ -135,7 +135,7 @@ export function AgronomistMultiSelect({
             <button
               type="button"
               onClick={() => onChange([...new Set([...value, ...options.map((o) => o._id)])])}
-              className="text-green-700 hover:underline"
+              className="text-brand-700 hover:underline"
             >
               Select {q ? "shown" : "all"}
             </button>

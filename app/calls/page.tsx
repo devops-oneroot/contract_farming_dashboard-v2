@@ -54,7 +54,7 @@ export default function CallsPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <Phone size={20} className="text-green-600" />
+        <Phone size={20} className="text-brand-600" />
         <h2 className="text-lg font-semibold">Call Logs ({logs.length})</h2>
       </div>
 
@@ -80,7 +80,7 @@ export default function CallsPage() {
                 <tr key={l._id}>
                   <td>
                     <div className="flex items-center gap-2">
-                      <PhoneOutgoing size={15} className="shrink-0 text-green-600" />
+                      <PhoneOutgoing size={15} className="shrink-0 text-brand-600" />
                       <div>
                         <div className="font-medium">{l.agronomist?.name ?? "—"}</div>
                         <div className="text-xs text-zinc-500">
@@ -91,7 +91,7 @@ export default function CallsPage() {
                   </td>
                   <td>
                     <div className="flex items-center gap-2">
-                      <Sprout size={15} className="shrink-0 text-green-600" />
+                      <Sprout size={15} className="shrink-0 text-brand-600" />
                       <div>
                         <div className="font-medium">{l.farmerName || "Farmer"}</div>
                         <div className="text-xs text-zinc-500">{l.farmerMobile}</div>

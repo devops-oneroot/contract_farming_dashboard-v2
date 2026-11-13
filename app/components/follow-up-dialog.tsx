@@ -89,7 +89,7 @@ export function FollowUpDialog({
         <div className="mb-4 flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h2 className="flex items-center gap-2 text-lg font-semibold">
-              <CalendarClock size={18} className="text-green-600" /> Next follow-up
+              <CalendarClock size={18} className="text-brand-600" /> Next follow-up
             </h2>
             <p className="mt-0.5 text-sm text-zinc-500">
               {farmer.name}

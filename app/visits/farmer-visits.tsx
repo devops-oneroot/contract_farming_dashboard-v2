@@ -205,7 +205,7 @@ export function FarmerVisits({ common }: { common: CommonVisitFilters }) {
             onClick={() => setShow((s) => (s === c.key ? "" : c.key))}
             className={`rounded-xl border px-3 py-2 text-left transition ${
               show === c.key && (c.key || !show)
-                ? "border-green-600 ring-1 ring-green-600"
+                ? "border-brand-600 ring-1 ring-brand-600"
                 : "border-zinc-200 hover:border-zinc-300 dark:border-zinc-800"
             }`}
           >
@@ -275,7 +275,7 @@ export function FarmerVisits({ common }: { common: CommonVisitFilters }) {
                           above do not narrow it. */}
                       <span
                         title="All visits to this farmer's farm, by every agronomist, all time"
-                        className="mt-1 inline-flex whitespace-nowrap rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-medium text-green-800 dark:bg-green-950/50 dark:text-green-300"
+                        className="mt-1 inline-flex whitespace-nowrap rounded-full bg-brand-100 px-2 py-0.5 text-[11px] font-medium text-brand-800 dark:bg-brand-950/50 dark:text-brand-300"
                       >
                         {r.totalVisits} visit{r.totalVisits === 1 ? "" : "s"} in total · {r.totalAgronomists} agronomist
                         {r.totalAgronomists === 1 ? "" : "s"}
@@ -302,7 +302,7 @@ export function FarmerVisits({ common }: { common: CommonVisitFilters }) {
                       <span className="line-clamp-2">{r.lastNotes || "—"}</span>
                     </td>
                     <td>
-                      <span className="inline-flex items-center gap-1 whitespace-nowrap text-xs font-medium text-green-700 dark:text-green-400">
+                      <span className="inline-flex items-center gap-1 whitespace-nowrap text-xs font-medium text-brand-700 dark:text-brand-400">
                         <History size={13} /> History
                       </span>
                     </td>
@@ -382,7 +382,7 @@ function FarmerHistory({ summary, onClose }: { summary: FarmerVisitSummary; onCl
             Next visit: <span className="font-medium text-zinc-800 dark:text-zinc-200">{nextOf(f).label}</span>
             {f.skippedAt && f.skipReason ? ` — ${f.skipReason}` : ""}
           </span>
-          <Link href={`/farmers/${f._id}`} className="inline-flex items-center gap-1 font-medium text-green-700 hover:underline dark:text-green-400">
+          <Link href={`/farmers/${f._id}`} className="inline-flex items-center gap-1 font-medium text-brand-700 hover:underline dark:text-brand-400">
             Open farmer <ExternalLink size={12} />
           </Link>
         </div>
@@ -401,7 +401,7 @@ function FarmerHistory({ summary, onClose }: { summary: FarmerVisitSummary; onCl
               const hasLoc = v.location?.latitude != null && v.location?.longitude != null;
               return (
                 <li key={v._id} className="relative">
-                  <span className="absolute -left-[26px] top-1 h-3 w-3 rounded-full border-2 border-white bg-green-600 dark:border-zinc-950" />
+                  <span className="absolute -left-[26px] top-1 h-3 w-3 rounded-full border-2 border-white bg-brand-600 dark:border-zinc-950" />
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
                     <div className="font-medium">
                       Visit {visits.length - i} · {fmtDateTime(v.visitedAt)}
@@ -433,7 +433,7 @@ function FarmerHistory({ summary, onClose }: { summary: FarmerVisitSummary; onCl
                           href={`https://www.google.com/maps?q=${v.location.latitude},${v.location.longitude}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-xs font-medium text-green-600 hover:underline"
+                          className="inline-flex items-center gap-1 text-xs font-medium text-brand-600 hover:underline"
                         >
                           <MapPin size={13} /> Map
                         </a>

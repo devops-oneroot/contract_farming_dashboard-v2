@@ -154,7 +154,7 @@ export function AgronomistVisits({ common }: { common: CommonVisitFilters }) {
                 <td className="min-w-32">
                   <div className="font-semibold">{r.visits}</div>
                   <div className="mt-1 h-1.5 rounded-full bg-zinc-100 dark:bg-zinc-800">
-                    <div className="h-1.5 rounded-full bg-green-600" style={{ width: `${(r.visits / max) * 100}%` }} />
+                    <div className="h-1.5 rounded-full bg-brand-600" style={{ width: `${(r.visits / max) * 100}%` }} />
                   </div>
                 </td>
                 <td>{r.farmers}</td>

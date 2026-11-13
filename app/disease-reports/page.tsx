@@ -67,7 +67,7 @@ export default function DiseaseReportsPage() {
     <div className="space-y-4">
       <div className="page-toolbar">
         <div className="flex min-w-0 items-center gap-2">
-          <Bug size={20} className="shrink-0 text-green-600" />
+          <Bug size={20} className="shrink-0 text-brand-600" />
           <h2 className="text-lg font-semibold">Crop Disease Reports ({reports.length})</h2>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -146,7 +146,7 @@ export default function DiseaseReportsPage() {
                         href={`https://www.google.com/maps?q=${r.location.latitude},${r.location.longitude}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-xs font-medium text-green-600 hover:underline"
+                        className="inline-flex items-center gap-1 text-xs font-medium text-brand-600 hover:underline"
                       >
                         <MapPin size={13} /> Map <ExternalLink size={11} />
                       </a>
@@ -203,9 +203,9 @@ export default function DiseaseReportsPage() {
                     {r.replies.map((rep, i) => (
                       <div
                         key={i}
-                        className="border-l-2 border-green-600 bg-green-50/60 py-2 pl-3 pr-2 text-sm dark:bg-green-950/20"
+                        className="border-l-2 border-brand-600 bg-brand-50/60 py-2 pl-3 pr-2 text-sm dark:bg-brand-950/20"
                       >
-                        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 font-medium text-green-700 dark:text-green-400">
+                        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 font-medium text-brand-700 dark:text-brand-400">
                           <MessageSquare size={13} />
                           {rep.seniorName || "Senior agronomist"}
                           <span className="font-normal text-xs text-zinc-500">

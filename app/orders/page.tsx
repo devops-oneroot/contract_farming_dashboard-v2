@@ -117,7 +117,7 @@ export default function OrdersPage() {
                   </div>
                   <a
                     href={`tel:${o.farmerMobile}`}
-                    className="mt-0.5 flex items-center gap-2 text-sm text-zinc-500 hover:text-green-600"
+                    className="mt-0.5 flex items-center gap-2 text-sm text-zinc-500 hover:text-brand-600"
                   >
                     <Phone size={14} /> {o.farmerMobile || "—"}
                   </a>
@@ -149,7 +149,7 @@ export default function OrdersPage() {
               {/* Footer: total + status */}
               <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
                 <div className="text-sm">
-                  Total: <span className="font-semibold text-green-600">₹{o.total}</span>
+                  Total: <span className="font-semibold text-brand-600">₹{o.total}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className={`rounded-full px-2.5 py-1 text-xs font-medium capitalize ${STATUS_STYLE[o.status]}`}>

@@ -105,7 +105,7 @@ export function RegionsDialog({ onClose }: { onClose: () => void }) {
         <div className="flex items-start justify-between gap-3 border-b border-zinc-100 px-4 py-4 sm:px-5 dark:border-zinc-900">
           <div className="min-w-0">
             <h2 className="flex items-center gap-2 text-lg font-semibold">
-              <MapPin size={18} className="text-green-600" /> Regions
+              <MapPin size={18} className="text-brand-600" /> Regions
             </h2>
             <p className="mt-0.5 text-xs text-zinc-500">
               Bills are numbered per taluk — ENP-CHM01 out of Chamarajanagar, ENP-GOK01 out of
@@ -236,7 +236,7 @@ export function RegionsDialog({ onClose }: { onClose: () => void }) {
                             <button
                               onClick={saveEdit}
                               disabled={busy || editing.code.length < 2 || !editing.taluk.trim()}
-                              className="rounded-lg p-1 text-green-600 hover:bg-green-50 disabled:opacity-40 dark:hover:bg-green-950/40"
+                              className="rounded-lg p-1 text-brand-600 hover:bg-brand-50 disabled:opacity-40 dark:hover:bg-brand-950/40"
                               aria-label="Save"
                             >
                               <Check size={16} />

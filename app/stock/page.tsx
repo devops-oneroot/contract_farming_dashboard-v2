@@ -92,7 +92,7 @@ export default function StockPage() {
       <div>
         <div className="page-toolbar">
           <h2 className="flex items-center gap-2 font-semibold">
-            <Boxes size={18} className="text-green-600" /> Stock by staff
+            <Boxes size={18} className="text-brand-600" /> Stock by staff
           </h2>
           <div className="relative w-full sm:w-64">
             <Search size={14} className="absolute left-2.5 top-2.5 text-zinc-400" />
@@ -516,7 +516,7 @@ function EntryDialog({
               onClick={() =>
                 setLines((ls) => [...ls, { key: Math.max(...ls.map((x) => x.key)) + 1, product: "", variant: "", qty: "" }])
               }
-              className="inline-flex items-center gap-1 text-sm text-green-700 hover:underline"
+              className="inline-flex items-center gap-1 text-sm text-brand-700 hover:underline"
             >
               <Plus size={14} /> Add another product
             </button>

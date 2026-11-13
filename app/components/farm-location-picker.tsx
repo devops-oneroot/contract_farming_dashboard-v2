@@ -166,7 +166,7 @@ export function FarmLocationPicker({
                   onClick={() => pickHit(h)}
                   className="flex w-full items-start gap-2 px-3 py-2 text-left hover:bg-zinc-50 dark:hover:bg-zinc-900"
                 >
-                  <MapPin size={14} className="mt-0.5 shrink-0 text-green-600" />
+                  <MapPin size={14} className="mt-0.5 shrink-0 text-brand-600" />
                   <span className="min-w-0">
                     <span className="block text-sm font-medium">
                       {[h.village, h.taluk, h.district].filter(Boolean).join(", ") || h.label}

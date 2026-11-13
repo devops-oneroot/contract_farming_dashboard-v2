@@ -1,12 +1,217 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Download, X } from "lucide-react";
+import {
+  CalendarCheck,
+  Clock,
+  Download,
+  FileText,
+  Gauge,
+  IndianRupee,
+  LogIn,
+  LogOut,
+  MapPin,
+  UserPlus,
+  Users,
+  Utensils,
+  Wallet,
+  X,
+  type LucideIcon,
+} from "lucide-react";
 
-import { api, DayReport, DayReportRow } from "../lib/api";
+import { api, DayAttendance, DayReport, DayReportRow } from "../lib/api";
+import { AttendanceChip, fmtClock, hm } from "./attendance-status";
 import { Loader } from "./loading";
+import { PhotoThumb } from "./lightbox";
 
 const money = (n: number) => `₹${Number(n || 0).toLocaleString("en-IN")}`;
+
+const initials = (name: string) =>
+  name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase())
+    .join("") || "?";
+
+/** A titled card in the details view. */
+function Panel({ icon: Icon, title, children }: { icon: LucideIcon; title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
+      <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold">
+        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-50 text-brand-600 dark:bg-brand-950/50">
+          <Icon size={15} />
+        </span>
+        {title}
+      </h4>
+      {children}
+    </div>
+  );
+}
+
+/**
+ * What the agent wrote: points ("• …" lines, as the app sends them) as a
+ * list, anything else as a paragraph.
+ */
+function Writing({ text }: { text?: string }) {
+  const t = (text || "").trim();
+  if (!t) return <p className="text-sm italic text-zinc-400">Nothing written.</p>;
+  const lines = t.split(/\n+/).map((l) => l.trim()).filter(Boolean);
+  const isPoints = lines.length > 0 && lines.every((l) => /^[•\-*]\s*/.test(l));
+  if (!isPoints) return <p className="whitespace-pre-wrap text-sm leading-relaxed">{t}</p>;
+  return (
+    <ol className="space-y-2">
+      {lines.map((l, i) => (
+        <li key={i} className="flex gap-2.5 text-sm leading-relaxed">
+          <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-600 text-[11px] font-semibold text-white">
+            {i + 1}
+          </span>
+          <span>{l.replace(/^[•\-*]\s*/, "")}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+/** One expense: the amount or note, and any bill photos behind it. */
+function ExpenseBlock({ label, value, bills }: { label: string; value?: string; bills?: string[] }) {
+  return (
+    <div className="rounded-lg bg-zinc-50 p-3 dark:bg-zinc-900/60">
+      <div className="text-xs uppercase tracking-wide text-zinc-500">{label}</div>
+      <p className={`mt-1 whitespace-pre-wrap text-sm ${value ? "font-medium" : "italic text-zinc-400"}`}>
+        {value || "—"}
+      </p>
+      {bills?.length ? (
+        <div className="mt-2 flex flex-wrap gap-2">
+          {bills.map((u, i) => (
+            <PhotoThumb
+              key={u}
+              url={u}
+              caption={`${label} bill`}
+              group={bills.map((url) => ({ url, caption: `${label} bill` }))}
+              index={i}
+              className="h-14 w-14 rounded-lg object-cover ring-1 ring-zinc-200 hover:ring-brand-500 dark:ring-zinc-700"
+            />
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * The day's travel from the daily report: odometer at start and stop, and the
+ * difference. The GPS route length is shown beneath only as a cross-check.
+ */
+function TravelCard({
+  meterStart,
+  meterEnd,
+  totalKm,
+  gpsKm,
+  filed,
+}: {
+  meterStart?: number;
+  meterEnd?: number;
+  totalKm?: number;
+  gpsKm?: number;
+  filed: boolean;
+}) {
+  const has = !!meterEnd;
+  return (
+    <div className="rounded-xl border border-zinc-200 bg-gradient-to-br from-blue-50/70 to-transparent p-4 dark:border-zinc-800 dark:from-blue-950/20">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <h4 className="flex items-center gap-2 text-sm font-semibold">
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-white">
+            <Gauge size={15} />
+          </span>
+          Kilometres travelled
+        </h4>
+        {has ? (
+          <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 ring-1 ring-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:ring-blue-900">
+            From meter reading
+          </span>
+        ) : null}
+      </div>
+      {!has ? (
+        <p className="text-sm italic text-zinc-500">
+          {filed ? "No meter reading was entered in the report." : "No report filed, so no meter reading."}
+        </p>
+      ) : (
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { label: "Start meter", value: String(meterStart ?? 0) },
+            { label: "Stop meter", value: String(meterEnd) },
+            { label: "Total km", value: `${totalKm ?? 0} km`, strong: true },
+          ].map((s) => (
+            <div key={s.label} className="rounded-lg bg-white p-3 ring-1 ring-zinc-200 dark:bg-zinc-950 dark:ring-zinc-800">
+              <div className="text-xs text-zinc-500">{s.label}</div>
+              <div className={`mt-1 text-lg font-semibold ${s.strong ? "text-blue-600" : ""}`}>{s.value}</div>
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="mt-3 text-[11px] text-zinc-500">
+        Stop − Start = total km{gpsKm != null ? ` · GPS tracked route: ${gpsKm} km` : ""}
+      </div>
+    </div>
+  );
+}
+
+/** The day's attendance: start, end, total hours against the day's minimum. */
+function AttendanceCard({ attendance: a }: { attendance?: DayAttendance | null }) {
+  const pct = a?.workedMinutes != null ? Math.min(100, Math.round((a.workedMinutes / (a.minHours * 60)) * 100)) : 0;
+  const met = a?.workedMinutes != null && a.workedMinutes >= a.minHours * 60;
+  return (
+    <div className="rounded-xl border border-zinc-200 bg-gradient-to-br from-brand-50/70 to-transparent p-4 dark:border-zinc-800 dark:from-brand-950/20">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <h4 className="flex items-center gap-2 text-sm font-semibold">
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-600 text-white">
+            <Clock size={15} />
+          </span>
+          Attendance
+        </h4>
+        <AttendanceChip attendance={a} />
+      </div>
+      {!a ? (
+        <p className="text-sm italic text-zinc-500">No attendance was recorded for this day.</p>
+      ) : a.kind === "no_field" ? (
+        <p className="text-sm text-amber-700 dark:text-amber-500">
+          Declared a day with no field work{a.reason ? `: ${a.reason}` : "."}
+        </p>
+      ) : (
+        <>
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { icon: LogIn, label: "Start time", value: fmtClock(a.startAt) },
+              { icon: LogOut, label: "End time", value: a.endAt ? fmtClock(a.endAt) : "—" },
+              { icon: Clock, label: "Total hours", value: a.workedMinutes != null ? hm(a.workedMinutes) : "Running" },
+            ].map((s) => (
+              <div key={s.label} className="rounded-lg bg-white p-3 ring-1 ring-zinc-200 dark:bg-zinc-950 dark:ring-zinc-800">
+                <div className="flex items-center gap-1.5 text-xs text-zinc-500">
+                  <s.icon size={13} className="text-brand-600" /> {s.label}
+                </div>
+                <div className="mt-1 text-lg font-semibold">{s.value}</div>
+              </div>
+            ))}
+          </div>
+          {a.workedMinutes != null && (
+            <div className="mt-3">
+              <div className="h-2 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
+                <div
+                  className={`h-full rounded-full ${met ? "bg-green-600" : "bg-red-500"}`}
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+              <div className="mt-1 text-[11px] text-zinc-500">
+                {hm(a.workedMinutes)} of the {a.minHours}h needed for a full day
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
 
 const fmtTime = (s?: string | null) =>
   s ? new Date(s).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }) : "—";
@@ -147,9 +352,28 @@ export function DayDetailModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-3 border-b border-zinc-200 px-4 py-3 sm:gap-4 sm:px-5 sm:py-4 dark:border-zinc-800">
-          <div className="min-w-0">
-            <h3 className="truncate text-base font-semibold">{name}</h3>
-            <p className="text-xs text-zinc-500">{data ? fmtDay(data.date) : <Loader label="Loading…" size={12} />}</p>
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-600 text-sm font-semibold text-white">
+              {initials(name)}
+            </span>
+            <div className="min-w-0">
+              <h3 className="truncate text-base font-semibold">{name}</h3>
+              <p className="flex flex-wrap items-center gap-x-2 text-xs text-zinc-500">
+                {data ? (
+                  <>
+                    <span>{fmtDay(data.date)}</span>
+                    {data.agent?.mobile ? <span>· {data.agent.mobile}</span> : null}
+                    {data.report ? (
+                      <span className="text-green-600">· Report filed {fmtTime(data.report.at)}</span>
+                    ) : (
+                      <span className="text-amber-600">· No report filed</span>
+                    )}
+                  </>
+                ) : (
+                  <Loader label="Loading…" size={12} />
+                )}
+              </p>
+            </div>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             {data ? (
@@ -181,20 +405,39 @@ export function DayDetailModal({
             <p className="py-10 text-red-600">{error}</p>
           ) : data ? (
             <div className="space-y-6">
-              {/* The measured day, before any of the records behind it. */}
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {/* The day's start, end and distance side by side: attendance
+                  from My Day START / END, km from the report's meter readings. */}
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                <AttendanceCard attendance={data.attendance} />
+                <TravelCard
+                  meterStart={written?.meterStart}
+                  meterEnd={written?.meterEnd}
+                  totalKm={written?.totalKm}
+                  gpsKm={data.stats.distanceKm}
+                  filed={!!written}
+                />
+              </div>
+
+              {/* The day in numbers: what the agent entered and what was recorded. */}
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
                 {[
-                  { label: "Onboarded", value: String(data.stats.newFarmers) },
-                  { label: "Existing met", value: String(data.metExisting.length) },
-                  { label: "Visits", value: String(data.stats.visits) },
-                  { label: "Sales", value: money(data.stats.salesTotal) },
+                  {
+                    icon: Utensils,
+                    label: "Food",
+                    value: written?.foodExpense ? money(written.foodExpense) : "—",
+                    sub: written?.foodBills?.length ? `${written.foodBills.length} bill photo(s)` : "",
+                  },
+                  { icon: MapPin, label: "Visits", value: String(data.stats.visits) },
+                  { icon: UserPlus, label: "Onboarded", value: String(data.stats.newFarmers) },
+                  { icon: Users, label: "Existing met", value: String(data.metExisting.length) },
+                  { icon: IndianRupee, label: "Sales", value: money(data.stats.salesTotal) },
                 ].map((s) => (
-                  <div
-                    key={s.label}
-                    className="rounded-xl border border-zinc-200 px-3 py-2 dark:border-zinc-800"
-                  >
-                    <div className="text-lg font-semibold">{s.value}</div>
-                    <div className="text-xs text-zinc-500">{s.label}</div>
+                  <div key={s.label} className="rounded-xl border border-zinc-200 p-3 dark:border-zinc-800">
+                    <div className="flex items-center gap-1.5 text-xs text-zinc-500">
+                      <s.icon size={13} className="text-brand-600" /> {s.label}
+                    </div>
+                    <div className="mt-1 text-lg font-semibold">{s.value}</div>
+                    {s.sub ? <div className="text-[11px] text-zinc-500">{s.sub}</div> : null}
                   </div>
                 ))}
               </div>
@@ -202,30 +445,36 @@ export function DayDetailModal({
               {/* What the agent said happened leads the records, because the
                   tables below are only what the system managed to observe. */}
               {written ? (
-                <div className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
-                  <h4 className="mb-3 text-sm font-semibold text-green-600">In their words</h4>
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  {(
-                    [
-                      ["What I did today", written.dailyReport],
-                      ["Today's expenses", written.dailyExpenses],
-                      ["Tomorrow's expected expenses", written.expectedExpensesTomorrow],
-                      ["Plan for tomorrow", written.planOfActionTomorrow],
-                    ] as const
-                  )
-                    .filter(([, v]) => v && v.trim())
-                    .map(([label, v]) => (
-                      <div key={label}>
-                        <div className="text-xs uppercase tracking-wide text-zinc-500">{label}</div>
-                        <p className="whitespace-pre-wrap text-sm">{v}</p>
-                      </div>
-                    ))}
+                <>
+                  <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                    <Panel icon={FileText} title="Today's work">
+                      <Writing text={written.dailyReport} />
+                    </Panel>
+                    <Panel icon={CalendarCheck} title="Plan for tomorrow">
+                      <Writing text={written.planOfActionTomorrow} />
+                    </Panel>
                   </div>
-                </div>
+
+                  <Panel icon={Wallet} title="Expenses">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                      <ExpenseBlock
+                        label="Food expense"
+                        value={written.foodExpense ? money(written.foodExpense) : ""}
+                        bills={written.foodBills}
+                      />
+                      <ExpenseBlock
+                        label="Today's expenses"
+                        value={written.dailyExpenses}
+                        bills={written.expenseBills}
+                      />
+                      <ExpenseBlock label="Expected tomorrow" value={written.expectedExpensesTomorrow} />
+                    </div>
+                  </Panel>
+                </>
               ) : (
-                <p className="text-sm italic text-zinc-500">
+                <div className="rounded-xl border border-dashed border-amber-300 bg-amber-50/50 p-4 text-sm text-amber-700 dark:border-amber-900 dark:bg-amber-950/20 dark:text-amber-500">
                   No written report was filed for this day.
-                </p>
+                </div>
               )}
 
               {/* Two columns, not four full-width tables stacked.
@@ -239,7 +488,7 @@ export function DayDetailModal({
                 const rows = (data[s.key] as DayReportRow[]) ?? [];
                 return (
                   <div key={s.key}>
-                    <h4 className="mb-2 text-sm font-semibold text-green-600">
+                    <h4 className="mb-2 text-sm font-semibold text-brand-600">
                       {s.title} ({rows.length})
                     </h4>
                     {rows.length === 0 ? (

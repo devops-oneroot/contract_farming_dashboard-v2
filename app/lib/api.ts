@@ -315,13 +315,32 @@ export type DayReportRow = {
 };
 
 /** A day's work in full: the counts, and the records behind them. */
+/** A day's attendance from My Day START / END. */
+export type DayAttendance = {
+  kind: "tracked" | "no_field";
+  reason: string;
+  startAt: string;
+  endAt: string | null;
+  /** Null while the day is still running. */
+  workedMinutes: number | null;
+  /** Hours needed to count as present. */
+  minHours: number;
+};
+
 export type DayReport = {
   agent: { name: string; mobile: string; role: string } | null;
+  attendance?: DayAttendance | null;
   date: string;
   /** Null until the agent has submitted their report for that day. */
   report: {
     dailyReport: string;
     dailyExpenses: string;
+    foodExpense?: number;
+    meterStart?: number;
+    meterEnd?: number;
+    totalKm?: number;
+    foodBills?: string[];
+    expenseBills?: string[];
     expectedExpensesTomorrow: string;
     planOfActionTomorrow: string;
     at: string;
@@ -348,11 +367,19 @@ export type DayReport = {
 
 export type DailyReport = {
   _id: string;
+  /** That day's attendance; null when none was recorded. */
+  attendance?: DayAttendance | null;
   user: { _id: string; name: string; mobile: string } | null;
   userName: string;
   role: string;
   dailyReport: string;
   dailyExpenses: string;
+  foodExpense?: number;
+  meterStart?: number;
+  meterEnd?: number;
+  totalKm?: number;
+  foodBills?: string[];
+  expenseBills?: string[];
   expectedExpensesTomorrow: string;
   planOfActionTomorrow: string;
   /** Measured at submission — absent on reports filed before tracking existed. */
@@ -746,8 +773,19 @@ export type TrackingSession = {
   /** Only the single-session fetch carries the route; the list omits it. */
   points?: TrackPoint[];
   distanceKm: number;
+  /**
+   * Km from the agent's daily report for that day (meter end - start) — the
+   * figure the dashboard shows as Distance. Null when no report was filed.
+   * Only on the paged list.
+   */
+  reportKm?: number | null;
+  meterStart?: number | null;
+  meterEnd?: number | null;
   createdAt: string;
 };
+
+/** An agent who has not started their day (single-day tracking view). */
+export type NotStartedAgent = { _id: string; name: string; mobile: string; role: string };
 
 
 /**
@@ -1134,7 +1172,14 @@ export const api = {
   listCallLogs: () => json<CallLog[]>("/api/call-logs"),
 
   // Daily reports submitted by field agents
-  listDailyReports: () => json<DailyReport[]>("/api/daily-reports"),
+  /** `from` / `to` are YYYY-MM-DD days; omit both for every report. */
+  listDailyReports: (params: { from?: string; to?: string } = {}) => {
+    const q = new URLSearchParams();
+    if (params.from) q.set("from", params.from);
+    if (params.to) q.set("to", params.to);
+    const s = q.toString();
+    return json<DailyReport[]>(`/api/daily-reports${s ? `?${s}` : ""}`);
+  },
 
   // ---- Regions: which taluk an agronomist works out of, and so which series
   // numbers their bills.
@@ -1340,6 +1385,8 @@ export const api = {
     q.set("limit", String(params.limit ?? 20));
     return json<
       Paged<TrackingSession> & {
+        /** Agents with no session that day — only when from === to. */
+        notStarted?: NotStartedAgent[];
         totals: { km: number; hours: number; tracked: number; live: number; off: number };
       }
     >(`/api/tracking?${q.toString()}`);

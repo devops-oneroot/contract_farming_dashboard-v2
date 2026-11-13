@@ -120,7 +120,7 @@ export function NextVisitDialog({
         <div className="mb-4 flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h2 className="flex items-center gap-2 text-lg font-semibold">
-              <CalendarClock size={18} className="text-green-600" /> What happens next
+              <CalendarClock size={18} className="text-brand-600" /> What happens next
             </h2>
             <p className="mt-0.5 text-sm text-zinc-500">
               {visit.farmer?.name || visit.farmerName || "Farmer"}
@@ -161,7 +161,7 @@ export function NextVisitDialog({
               onClick={() => setMode(o.key)}
               className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition ${
                 mode === o.key
-                  ? "border-green-600 bg-green-50 text-green-700 dark:bg-green-950/40 dark:text-green-400"
+                  ? "border-brand-600 bg-brand-50 text-brand-700 dark:bg-brand-950/40 dark:text-brand-400"
                   : "border-zinc-300 text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900"
               }`}
             >

@@ -70,7 +70,7 @@ export default function Home() {
   const unassigned = farmers.filter((f) => !f.agronomist).length;
 
   const stats = [
-    { label: "Farmers", value: farmers.length, href: "/farmers", icon: Users, color: "text-green-600 bg-green-100 dark:bg-green-950/40" },
+    { label: "Farmers", value: farmers.length, href: "/farmers", icon: Users, color: "text-brand-600 bg-brand-100 dark:bg-brand-950/40" },
     { label: "Agronomists", value: agronomists.length, href: "/agronomists", icon: UserCog, color: "text-teal-600 bg-teal-100 dark:bg-teal-950/40" },
     { label: "Crops", value: crops.length, href: "/crops", icon: Leaf, color: "text-amber-600 bg-amber-100 dark:bg-amber-950/40" },
     { label: "Products", value: products.length, href: "/products", icon: Package, color: "text-blue-600 bg-blue-100 dark:bg-blue-950/40" },
@@ -263,7 +263,7 @@ export default function Home() {
                   href={`/farmers/${f._id}`}
                   className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-brand-50/50 dark:hover:bg-zinc-900"
                 >
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-green-500 to-green-700 text-sm font-semibold text-white">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-brand-700 text-sm font-semibold text-white">
                     {f.name?.charAt(0)?.toUpperCase() ?? "?"}
                   </span>
                   <div className="min-w-0 flex-1">
@@ -303,7 +303,7 @@ export default function Home() {
                       {o.items.length} item{o.items.length > 1 ? "s" : ""} · {fmtDate(o.createdAt)}
                     </div>
                   </div>
-                  <span className="shrink-0 text-sm font-semibold tabular-nums text-green-600">₹{o.total}</span>
+                  <span className="shrink-0 text-sm font-semibold tabular-nums text-brand-600">₹{o.total}</span>
                   <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium capitalize ${STATUS_STYLE[o.status]}`}>
                     {o.status}
                   </span>

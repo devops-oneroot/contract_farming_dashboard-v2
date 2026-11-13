@@ -262,13 +262,13 @@ export function ProductsManager() {
                         className="inline-flex items-baseline gap-1 rounded-md border border-zinc-200 px-2 py-0.5 text-xs dark:border-zinc-700"
                       >
                         <span className="text-zinc-600 dark:text-zinc-300">{v.label}</span>
-                        <span className="font-semibold text-green-600">₹{v.price}</span>
+                        <span className="font-semibold text-brand-600">₹{v.price}</span>
                       </span>
                     ))}
                   </div>
                 ) : (
                   <div className="mt-2 flex items-baseline gap-2">
-                    <span className="font-semibold text-green-600">₹{p.price}</span>
+                    <span className="font-semibold text-brand-600">₹{p.price}</span>
                     {p.unit && <span className="text-xs text-zinc-500">{p.unit}</span>}
                   </div>
                 )}
@@ -282,7 +282,7 @@ export function ProductsManager() {
                     p.crops.map((c) => (
                       <span
                         key={c}
-                        className="rounded-full bg-green-50 px-2 py-0.5 text-xs text-green-700 dark:bg-green-950/40 dark:text-green-300"
+                        className="rounded-full bg-brand-50 px-2 py-0.5 text-xs text-brand-700 dark:bg-brand-950/40 dark:text-brand-300"
                       >
                         {c}
                       </span>

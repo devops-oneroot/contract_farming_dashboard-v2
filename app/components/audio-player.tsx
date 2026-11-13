@@ -138,7 +138,7 @@ export function AudioPlayer({
         download
         title="Download recording"
         aria-label="Download recording"
-        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-zinc-500 transition hover:bg-zinc-200 hover:text-green-600 dark:hover:bg-zinc-800"
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-zinc-500 transition hover:bg-zinc-200 hover:text-brand-600 dark:hover:bg-zinc-800"
       >
         <Download size={14} />
       </a>

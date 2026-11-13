@@ -285,7 +285,7 @@ export default function FarmerDetailPage() {
 
   return (
     <div className="space-y-6">
-      <Link href="/farmers" className="inline-flex items-center gap-1.5 text-sm text-zinc-500 hover:text-green-600">
+      <Link href="/farmers" className="inline-flex items-center gap-1.5 text-sm text-zinc-500 hover:text-brand-600">
         <ArrowLeft size={16} /> Back to farmers
       </Link>
 
@@ -297,7 +297,7 @@ export default function FarmerDetailPage() {
         <div className="min-w-0 flex-1">
           <h1 className="break-words text-xl font-semibold">{farmer.name}</h1>
           <div className="mt-1 flex flex-wrap gap-x-5 gap-y-1 text-sm text-zinc-500">
-            <a href={`tel:${farmer.mobile}`} className="flex items-center gap-1.5 hover:text-green-600">
+            <a href={`tel:${farmer.mobile}`} className="flex items-center gap-1.5 hover:text-brand-600">
               <Phone size={14} /> {farmer.mobile}
             </a>
             <span className="flex items-center gap-1.5">
@@ -320,7 +320,7 @@ export default function FarmerDetailPage() {
       {/* Agronomist assignment */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
         <div className="flex min-w-0 items-center gap-2">
-          <UserCog size={18} className="shrink-0 text-green-600" />
+          <UserCog size={18} className="shrink-0 text-brand-600" />
           <div className="min-w-0">
             <div className="text-sm font-medium">Assigned agronomist</div>
             <div className="text-sm text-zinc-500">
@@ -354,7 +354,7 @@ export default function FarmerDetailPage() {
       {farmer?.nextFollowUpAt || farmer?.skippedAt ? (
         <section>
           <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold">
-            <CalendarClock size={18} className="text-green-600" /> Follow-up
+            <CalendarClock size={18} className="text-brand-600" /> Follow-up
           </h2>
           <div className="space-y-3 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
             {farmer.nextFollowUpAt ? (
@@ -428,7 +428,7 @@ export default function FarmerDetailPage() {
       {farmer?.onboardingAudioUrl ? (
         <section>
           <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold">
-            <Mic size={18} className="text-green-600" /> Onboarding recording
+            <Mic size={18} className="text-brand-600" /> Onboarding recording
           </h2>
           <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
             <AudioPlayer
@@ -460,7 +460,7 @@ export default function FarmerDetailPage() {
       {/* Farm boundary (geofence) */}
       <section>
         <h2 className="mb-3 flex flex-wrap items-center gap-2 text-lg font-semibold">
-          <MapIcon size={18} className="text-green-600" /> Farm boundary
+          <MapIcon size={18} className="text-brand-600" /> Farm boundary
           {geofence.length >= 3 && (
             <span className="text-sm font-normal text-zinc-500">· {geofence.length} corners</span>
           )}
@@ -485,7 +485,7 @@ export default function FarmerDetailPage() {
       <section>
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
           <h2 className="flex items-center gap-2 text-lg font-semibold">
-            <Sprout size={18} className="text-green-600" /> Crops ({crops.length})
+            <Sprout size={18} className="text-brand-600" /> Crops ({crops.length})
           </h2>
           <button
             onClick={openEdit}
@@ -530,7 +530,7 @@ export default function FarmerDetailPage() {
 
                   {/* Progress bar */}
                   <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
-                    <div className="h-full rounded-full bg-green-600" style={{ width: `${info.pct}%` }} />
+                    <div className="h-full rounded-full bg-brand-600" style={{ width: `${info.pct}%` }} />
                   </div>
                   <div className="mt-1 flex justify-between text-xs text-zinc-500">
                     <span>
@@ -563,7 +563,7 @@ export default function FarmerDetailPage() {
 
                       <ol className="space-y-1.5 text-sm">
                         <li className="flex items-start gap-2">
-                          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-green-600" />
+                          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-600" />
                           <span>
                             <b>Sown</b> {fmtDate(crop.dop)}
                             <span className="text-zinc-500">
@@ -665,7 +665,7 @@ export default function FarmerDetailPage() {
       {/* Agronomist verifications (did the farmer do each day's task?) */}
       <section>
         <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold">
-          <ClipboardCheck size={18} className="text-green-600" /> Agronomist verifications ({verifications.length})
+          <ClipboardCheck size={18} className="text-brand-600" /> Agronomist verifications ({verifications.length})
         </h2>
         {verifications.length === 0 ? (
           <p className="text-sm text-zinc-500">
@@ -724,7 +724,7 @@ export default function FarmerDetailPage() {
       {/* Product application photos (farmer's proof of use) */}
       <section>
         <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold">
-          <Camera size={18} className="text-green-600" /> Product usage photos ({productPhotos.length})
+          <Camera size={18} className="text-brand-600" /> Product usage photos ({productPhotos.length})
         </h2>
         {productPhotos.length === 0 ? (
           <p className="text-sm text-zinc-500">
@@ -760,7 +760,7 @@ export default function FarmerDetailPage() {
       {/* Orders */}
       <section>
         <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold">
-          <ShoppingCart size={18} className="text-green-600" /> Orders ({orders.length})
+          <ShoppingCart size={18} className="text-brand-600" /> Orders ({orders.length})
         </h2>
         {orders.length === 0 ? (
           <p className="text-sm text-zinc-500">No products bought yet.</p>
@@ -788,7 +788,7 @@ export default function FarmerDetailPage() {
                   ))}
                 </div>
                 <div className="mt-2 border-t border-zinc-100 pt-2 text-sm dark:border-zinc-800">
-                  Total: <span className="font-semibold text-green-600">₹{o.total}</span>
+                  Total: <span className="font-semibold text-brand-600">₹{o.total}</span>
                 </div>
               </div>
             ))}

@@ -417,7 +417,7 @@ export default function FieldSalesPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <ShoppingBag size={20} className="text-green-600" />
+        <ShoppingBag size={20} className="text-brand-600" />
         <h2 className="text-lg font-semibold">
           Field Sales ({rows.length}
           {rows.length !== sales.length ? ` of ${sales.length}` : ""})
@@ -663,7 +663,7 @@ export default function FieldSalesPage() {
                         href={`https://www.google.com/maps?q=${s.location.latitude},${s.location.longitude}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-xs font-medium text-green-600 hover:underline"
+                        className="inline-flex items-center gap-1 text-xs font-medium text-brand-600 hover:underline"
                       >
                         <MapPin size={13} /> Map <ExternalLink size={11} />
                       </a>
@@ -694,7 +694,7 @@ export default function FieldSalesPage() {
                     >
                       <Download size={13} /> Bill
                     </a>
-                    <div className="text-lg font-semibold text-green-600">{money(s.total)}</div>
+                    <div className="text-lg font-semibold text-brand-600">{money(s.total)}</div>
                   </div>
                 </div>
 
@@ -765,7 +765,7 @@ export default function FieldSalesPage() {
                                   >
                                     {money(it.listPrice ?? it.unitPrice)}
                                   </td>
-                                  <td className="num font-medium text-green-600">
+                                  <td className="num font-medium text-brand-600">
                                     {overridden ? money(it.unitPrice) : "—"}
                                   </td>
                                 </>
@@ -834,7 +834,7 @@ export default function FieldSalesPage() {
                     ) : null}
                     <div className="mt-1 flex items-center justify-between border-t border-zinc-200 pt-1.5 dark:border-zinc-700">
                       <span className="font-semibold">Total payable</span>
-                      <span className="text-base font-bold text-green-600">{money(s.total)}</span>
+                      <span className="text-base font-bold text-brand-600">{money(s.total)}</span>
                     </div>
                     <div className="text-right text-[11px] text-zinc-400">
                       {bill.hasGoodsGst ? "GST products include 5% · " : "No GST on products · "}

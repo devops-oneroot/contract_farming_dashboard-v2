@@ -557,7 +557,7 @@ export function EditSaleDialog({
               )}
               <div className="mt-1 flex items-center justify-between gap-6 border-t border-zinc-200 pt-1.5 dark:border-zinc-700">
                 <span className="font-semibold">Total payable</span>
-                <span className="text-base font-bold text-green-600">{money(preview.total)}</span>
+                <span className="text-base font-bold text-brand-600">{money(preview.total)}</span>
               </div>
               {round2(preview.total) !== round2(sale.total) && (
                 <div className="text-right text-xs text-amber-600 dark:text-amber-400">

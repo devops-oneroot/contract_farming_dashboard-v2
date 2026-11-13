@@ -13,7 +13,7 @@ export default function CropPracticesPage() {
     <div className="space-y-4">
       <Link
         href="/crops"
-        className="inline-flex items-center gap-1.5 text-sm text-zinc-500 hover:text-green-600"
+        className="inline-flex items-center gap-1.5 text-sm text-zinc-500 hover:text-brand-600"
       >
         <ArrowLeft size={16} /> Back to crops
       </Link>

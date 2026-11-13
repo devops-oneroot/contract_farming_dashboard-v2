@@ -184,7 +184,7 @@ export default function VisitsPage() {
     <div className="space-y-4">
       <div className="page-toolbar">
         <div className="flex min-w-0 items-center gap-2">
-          <MapPin size={20} className="shrink-0 text-green-600" />
+          <MapPin size={20} className="shrink-0 text-brand-600" />
           <h2 className="text-lg font-semibold">
             Farm Visits
             {tab === "recent" && (
@@ -244,7 +244,7 @@ export default function VisitsPage() {
             onClick={() => setOwed((o) => (o === key ? "" : key))}
             className={`rounded-xl border px-3 py-2 text-left transition ${
               owed === key
-                ? "border-green-600 ring-1 ring-green-600"
+                ? "border-brand-600 ring-1 ring-brand-600"
                 : "border-zinc-200 hover:border-zinc-300 dark:border-zinc-800"
             }`}
           >
@@ -306,7 +306,7 @@ export default function VisitsPage() {
                       {v.farmerTotalVisits ? (
                         <span
                           title="All visits to this farmer's farm, by every agronomist, all time"
-                          className="mt-1 inline-flex whitespace-nowrap rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-medium text-green-800 dark:bg-green-950/50 dark:text-green-300"
+                          className="mt-1 inline-flex whitespace-nowrap rounded-full bg-brand-100 px-2 py-0.5 text-[11px] font-medium text-brand-800 dark:bg-brand-950/50 dark:text-brand-300"
                         >
                           {v.farmerTotalVisits} visit{v.farmerTotalVisits === 1 ? "" : "s"} in total
                           {v.farmerTotalAgronomists
@@ -361,7 +361,7 @@ export default function VisitsPage() {
                       {v.farmer?._id ? (
                         <button
                           onClick={() => setSetting(v)}
-                          className="mt-1.5 inline-flex items-center gap-1 rounded-lg border border-green-600/40 px-2 py-1 text-[11px] font-semibold text-green-700 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-950/40"
+                          className="mt-1.5 inline-flex items-center gap-1 rounded-lg border border-brand-600/40 px-2 py-1 text-[11px] font-semibold text-brand-700 hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-brand-950/40"
                         >
                           <CalendarClock size={11} />
                           {state === "skipped"
@@ -400,7 +400,7 @@ export default function VisitsPage() {
                           href={`https://www.google.com/maps?q=${v.location.latitude},${v.location.longitude}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-xs font-medium text-green-600 hover:underline"
+                          className="inline-flex items-center gap-1 text-xs font-medium text-brand-600 hover:underline"
                         >
                           <MapPin size={13} /> Map <ExternalLink size={11} />
                         </a>

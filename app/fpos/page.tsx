@@ -400,7 +400,7 @@ export default function FposPage() {
                             className="h-9 w-9 shrink-0 rounded-full object-cover ring-1 ring-zinc-200 hover:ring-brand-400 dark:ring-zinc-700"
                           />
                         ) : (
-                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-green-100 text-xs font-semibold text-green-700 dark:bg-green-950/50 dark:text-green-300">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-100 text-xs font-semibold text-brand-700 dark:bg-brand-950/50 dark:text-brand-300">
                             {(f.name || "?").charAt(0).toUpperCase()}
                           </div>
                         )}
@@ -426,7 +426,7 @@ export default function FposPage() {
                               {m.mobile ? (
                                 <a
                                   href={`tel:${m.mobile}`}
-                                  className="block text-xs text-zinc-500 hover:text-green-600"
+                                  className="block text-xs text-zinc-500 hover:text-brand-600"
                                 >
                                   {m.mobile}
                                 </a>
@@ -460,7 +460,7 @@ export default function FposPage() {
                             href={`https://www.google.com/maps?q=${f.location.latitude},${f.location.longitude}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="hover:text-green-600 hover:underline"
+                            className="hover:text-brand-600 hover:underline"
                           >
                             {a.village}
                           </a>
@@ -477,7 +477,7 @@ export default function FposPage() {
                           {f.crops.map((c) => (
                             <span
                               key={c}
-                              className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800 dark:bg-green-950/50 dark:text-green-300"
+                              className="rounded-full bg-brand-100 px-2 py-0.5 text-xs font-medium text-brand-800 dark:bg-brand-950/50 dark:text-brand-300"
                             >
                               {c}
                             </span>
@@ -492,7 +492,7 @@ export default function FposPage() {
                     </td>
                     <td>
                       {agentName(f.agronomist) ? (
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-2.5 py-1 text-xs font-medium text-green-800 dark:bg-green-950/50 dark:text-green-300">
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-100 px-2.5 py-1 text-xs font-medium text-brand-800 dark:bg-brand-950/50 dark:text-brand-300">
                           {agentName(f.agronomist)}
                         </span>
                       ) : (

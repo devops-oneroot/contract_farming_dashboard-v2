@@ -129,7 +129,7 @@ export function CropCatalogManager() {
       <div className="page-toolbar">
         <div className="min-w-0">
           <h2 className="flex items-center gap-2 text-lg font-semibold">
-            <Leaf size={18} className="text-green-600" /> Crop Catalog
+            <Leaf size={18} className="text-brand-600" /> Crop Catalog
           </h2>
           <p className="text-sm text-zinc-500">
             Crops farmers can pick in the app. Click a crop to edit its Package of Practices.
@@ -174,11 +174,11 @@ export function CropCatalogManager() {
                           // eslint-disable-next-line @next/next/no-img-element
                           <img src={c.imageUrl} alt={c.name} className="h-11 w-11 shrink-0 rounded-md object-cover" />
                         ) : (
-                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-green-50 dark:bg-green-950/30">
-                            <Leaf size={20} className="text-green-600" />
+                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-brand-50 dark:bg-brand-950/30">
+                            <Leaf size={20} className="text-brand-600" />
                           </div>
                         )}
-                        <button onClick={openPop} className="font-medium hover:text-green-600">
+                        <button onClick={openPop} className="font-medium hover:text-brand-600">
                           {c.name}
                         </button>
                       </div>
@@ -191,7 +191,7 @@ export function CropCatalogManager() {
                           {c.varieties.map((v) => (
                             <span
                               key={v}
-                              className="rounded-full bg-green-50 px-2 py-0.5 text-xs text-green-700 dark:bg-green-950/40 dark:text-green-300"
+                              className="rounded-full bg-brand-50 px-2 py-0.5 text-xs text-brand-700 dark:bg-brand-950/40 dark:text-brand-300"
                             >
                               {v}
                             </span>
@@ -207,7 +207,7 @@ export function CropCatalogManager() {
                           </div>
                           <button
                             onClick={openPop}
-                            className="mt-0.5 inline-flex items-center gap-1 text-xs font-medium text-green-600 hover:underline"
+                            className="mt-0.5 inline-flex items-center gap-1 text-xs font-medium text-brand-600 hover:underline"
                           >
                             <ClipboardList size={12} /> View / edit schedule
                           </button>
@@ -301,7 +301,7 @@ export function CropCatalogManager() {
                     {form.varieties.map((v) => (
                       <span
                         key={v}
-                        className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-1 text-xs text-green-700 dark:bg-green-950/40 dark:text-green-300"
+                        className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-2 py-1 text-xs text-brand-700 dark:bg-brand-950/40 dark:text-brand-300"
                       >
                         {v}
                         <button onClick={() => removeVariety(v)} className="hover:text-red-600">
@@ -320,8 +320,8 @@ export function CropCatalogManager() {
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={form.preview} alt="" className="h-16 w-16 shrink-0 rounded-lg object-cover" />
                   ) : (
-                    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-green-50 dark:bg-green-950/30">
-                      <Leaf size={22} className="text-green-600" />
+                    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-brand-50 dark:bg-brand-950/30">
+                      <Leaf size={22} className="text-brand-600" />
                     </div>
                   )}
                   <input

@@ -11,11 +11,12 @@ import {
   Users,
   Phone,
 } from "lucide-react";
-import { api, NearbyResult, Person, TrackingPause, TrackingSession } from "../lib/api";
+import { api, NearbyResult, NotStartedAgent, Person, TrackingPause, TrackingSession } from "../lib/api";
 import { PhotoThumb } from "../components/lightbox";
 import { Button, Select, DateInput } from "../components/ui";
 import { LoadingBlock } from "../components/loading";
 import { Pagination } from "../components/pagination";
+import { useAccent } from "../components/theme-toggle";
 
 function fmtDateTime(s: string) {
   return new Date(s).toLocaleString(undefined, {
@@ -44,6 +45,40 @@ function hm(m: number) {
 }
 
 /** Minutes the agent was stepped out of the day. An open pause runs to now. */
+/** Where an agent's day stands: started and running, ended, or not begun. */
+function StatusBadge({ status }: { status: "working" | "completed" | "not_started" | "off" }) {
+  const look = {
+    working: {
+      label: "Working",
+      cls: "bg-green-50 text-green-700 ring-green-200 dark:bg-green-950/40 dark:text-green-400 dark:ring-green-900",
+      dot: "bg-green-600 animate-pulse",
+    },
+    completed: {
+      label: "Completed",
+      cls: "bg-blue-50 text-blue-700 ring-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:ring-blue-900",
+      dot: "bg-blue-600",
+    },
+    not_started: {
+      label: "Not Started",
+      cls: "bg-red-50 text-red-700 ring-red-200 dark:bg-red-950/40 dark:text-red-400 dark:ring-red-900",
+      dot: "bg-red-600",
+    },
+    off: {
+      label: "No field work",
+      cls: "bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-950/40 dark:text-amber-500 dark:ring-amber-900",
+      dot: "bg-amber-500",
+    },
+  }[status];
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ring-1 ${look.cls}`}
+    >
+      <span className={`h-1.5 w-1.5 rounded-full ${look.dot}`} />
+      {look.label}
+    </span>
+  );
+}
+
 function pausedMinutes(pauses: TrackingPause[] | undefined) {
   return (pauses || []).reduce((t, p) => t + mins(p.pausedAt, p.resumedAt), 0);
 }
@@ -73,6 +108,9 @@ function RouteMap({
   nearby: NearbyResult | null;
 }) {
   const points = (session.points ?? []).filter((p) => p.latitude != null && p.longitude != null);
+  // The map lives in its own document and cannot read the page's CSS
+  // variables, so the accent is handed in - and the map rebuilt when it changes.
+  const [accent] = useAccent();
 
   /**
    * Which legend groups are unticked.
@@ -102,6 +140,11 @@ function RouteMap({
     const farmers = nearby?.farmers ?? [];
     const radiusKm = nearby?.radiusKm ?? 0;
     const hidden = hiddenRef.current;
+    const css = getComputedStyle(document.documentElement);
+    const brand = (n: number, fallback: string) => css.getPropertyValue(`--brand-${n}`).trim() || fallback;
+    const b600 = brand(600, "#eb4f00");
+    const b700 = brand(700, "#c23b02");
+    const b50 = brand(50, "#fff5ed");
     return `<!DOCTYPE html><html><head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
@@ -110,16 +153,16 @@ function RouteMap({
 .legend{background:rgba(255,255,255,.92);border-radius:8px;padding:6px 9px;font:12px system-ui,sans-serif;line-height:1.7;color:#27272a}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;border:1.5px solid #fff;vertical-align:-1px}
 .legrow{display:flex;align-items:center;gap:0;cursor:pointer;user-select:none;white-space:nowrap}
-.legrow input{margin:0 7px 0 0;accent-color:#16a34a;cursor:pointer}
+.legrow input{margin:0 7px 0 0;accent-color:${b600};cursor:pointer}
 .legrow:hover{color:#000}
 .legempty{opacity:.45}
 .pop{font:13px system-ui,sans-serif;line-height:1.5}
 .pop b{font-size:14px}
-.pop a{color:#16a34a;text-decoration:none;font-weight:600}
+.pop a{color:${b600};text-decoration:none;font-weight:600}
 .endlabel{background:rgba(24,24,27,.85);border:0;color:#fff;font:600 11px system-ui,sans-serif;padding:1px 6px;border-radius:5px;box-shadow:none}
 .endlabel::before{border-top-color:rgba(24,24,27,.85)}
-.fitbtn{background:#fff;border-radius:6px;padding:5px 9px;font:600 12px system-ui,sans-serif;color:#166534;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.3)}
-.fitbtn:hover{background:#f0fdf4}
+.fitbtn{background:#fff;border-radius:6px;padding:5px 9px;font:600 12px system-ui,sans-serif;color:${b700};cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.fitbtn:hover{background:${b50}}
 .leaflet-top.leaflet-right .fitbtn{margin-top:8px}</style></head>
 <body><div id="map"></div><script>
   var C = ${JSON.stringify(coords)};
@@ -453,7 +496,8 @@ function RouteMap({
   HIDDEN.forEach(function (k) { if (GROUPS[k]) map.removeLayer(GROUPS[k]); });
   restack();
 </script></body></html>`;
-  }, [points, nearby]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- accent is read through the CSS variables above
+  }, [points, nearby, accent]);
 
   if (points.length === 0) {
     return (
@@ -474,15 +518,24 @@ function RouteMap({
 
 const PAGE_SIZE = 20;
 
+/** Today as YYYY-MM-DD in the browser's timezone (toISOString is UTC: still yesterday before 05:30 IST). */
+const localToday = () => {
+  const n = new Date();
+  return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`;
+};
+
 export default function TrackingPage() {
   const [sessions, setSessions] = useState<TrackingSession[]>([]);
+  /** Agents with no session on the picked day, listed as "Not Started". */
+  const [notStarted, setNotStarted] = useState<NotStartedAgent[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   /** Server-computed, so they cover the whole period rather than this page. */
   const [totals, setTotals] = useState({ km: 0, hours: 0, tracked: 0, live: 0, off: 0 });
   const [agents, setAgents] = useState<Person[]>([]);
   const [who, setWho] = useState("");
-  const [from, setFrom] = useState("");
+  // Opens on today; Clear shows every day.
+  const [from, setFrom] = useState(localToday);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -520,6 +573,7 @@ export default function TrackingPage() {
     ])
       .then(([res, a]) => {
         setSessions(res.items);
+        setNotStarted(res.notStarted ?? []);
         setTotal(res.total);
         setTotals(res.totals);
         setAgents(a);
@@ -612,7 +666,7 @@ export default function TrackingPage() {
     <div className="space-y-4">
       <div className="page-toolbar mb-0">
         <div className="flex items-center gap-2">
-          <Navigation size={20} className="text-green-600" />
+          <Navigation size={20} className="text-brand-600" />
           <h2 className="text-lg font-semibold">Tracking ({total})</h2>
         </div>
       </div>
@@ -671,7 +725,7 @@ export default function TrackingPage() {
         <LoadingBlock />
       ) : error ? (
         <p className="text-red-600">{error}</p>
-      ) : sessions.length === 0 ? (
+      ) : sessions.length === 0 && notStarted.length === 0 ? (
         <p className="text-sm text-zinc-500">
           No tracked days yet. They appear when an agent taps START in the app.
         </p>
@@ -681,6 +735,7 @@ export default function TrackingPage() {
             <thead>
               <tr>
                 <th>Agent</th>
+                <th>Status</th>
                 <th>Started</th>
                 <th>Ended</th>
                 <th>Duration</th>
@@ -707,18 +762,17 @@ export default function TrackingPage() {
                       <div className="font-medium">{s.user?.name || s.userName || "—"}</div>
                       {s.user?.mobile ? <div className="text-xs text-zinc-500">{s.user.mobile}</div> : null}
                     </td>
-                    <td className="text-zinc-500">{fmtDateTime(s.startAt)}</td>
-                    <td className="text-zinc-500">
+                    <td>
                       {off ? (
-                        "—"
+                        <StatusBadge status="off" />
                       ) : s.endAt ? (
-                        fmtTime(s.endAt)
+                        <StatusBadge status="completed" />
                       ) : (
-                        <span className="inline-flex items-center gap-1 font-medium text-green-600">
-                          <span className="h-2 w-2 animate-pulse rounded-full bg-green-600" /> Running
-                        </span>
+                        <StatusBadge status="working" />
                       )}
                     </td>
+                    <td className="text-zinc-500">{fmtDateTime(s.startAt)}</td>
+                    <td className="text-zinc-500">{!off && s.endAt ? fmtTime(s.endAt) : "—"}</td>
                     <td className="text-zinc-500">
                       {off ? (
                         "—"
@@ -746,8 +800,24 @@ export default function TrackingPage() {
                           </span>
                           <div className="mt-1 text-xs text-zinc-600 dark:text-zinc-300">{s.reason}</div>
                         </div>
+                      ) : s.reportKm == null ? (
+                        // Distance comes from the daily report's meter readings.
+                        <div>
+                          <span className="text-zinc-400">—</span>
+                          <div className="text-[11px] text-zinc-400">No report yet</div>
+                        </div>
+                      ) : !s.meterEnd ? (
+                        <div>
+                          <span className="text-zinc-400">—</span>
+                          <div className="text-[11px] text-zinc-400">No meter reading</div>
+                        </div>
                       ) : (
-                        <span className="font-semibold text-green-600">{s.distanceKm} km</span>
+                        <div>
+                          <span className="font-semibold text-brand-600">{s.reportKm} km</span>
+                          <div className="text-[11px] text-zinc-500">
+                            {s.meterStart} → {s.meterEnd}
+                          </div>
+                        </div>
                       )}
                     </td>
                     <td className={pauses.length > 0 && !off ? "cell-wrap" : undefined}>
@@ -821,7 +891,7 @@ export default function TrackingPage() {
                       ) : (
                         <button
                           onClick={() => showRoute(s._id)}
-                          className="inline-flex items-center gap-1 text-xs font-medium text-green-600 hover:underline"
+                          className="inline-flex items-center gap-1 text-xs font-medium text-brand-600 hover:underline"
                         >
                           <MapPin size={13} /> View route
                         </button>
@@ -830,6 +900,25 @@ export default function TrackingPage() {
                   </tr>
                 );
               })}
+              {/* Agents who have not pressed START on the picked day. Listed
+                  once, after the sessions on the first page. */}
+              {page === 1 &&
+                notStarted.map((a) => (
+                  <tr key={`ns-${a._id}`} className="[&>td]:align-top">
+                    <td>
+                      <div className="font-medium">{a.name || "—"}</div>
+                      {a.mobile ? <div className="text-xs text-zinc-500">{a.mobile}</div> : null}
+                    </td>
+                    <td>
+                      <StatusBadge status="not_started" />
+                    </td>
+                    {Array.from({ length: 7 }, (_, i) => (
+                      <td key={i} className="text-zinc-400">
+                        —
+                      </td>
+                    ))}
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>
@@ -904,7 +993,7 @@ export default function TrackingPage() {
                   {anchor && (
                     <button
                       onClick={() => setAnchor(null)}
-                      className="shrink-0 text-xs text-green-600 hover:underline"
+                      className="shrink-0 text-xs text-brand-600 hover:underline"
                     >
                       reset
                     </button>
@@ -988,7 +1077,7 @@ export default function TrackingPage() {
                               {f.mobile ? (
                                 <a
                                   href={`tel:${f.mobile}`}
-                                  className="mt-0.5 inline-flex items-center gap-1 text-xs text-green-600 hover:underline"
+                                  className="mt-0.5 inline-flex items-center gap-1 text-xs text-brand-600 hover:underline"
                                 >
                                   <Phone size={11} /> {f.mobile}
                                 </a>

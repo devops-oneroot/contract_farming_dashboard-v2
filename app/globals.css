@@ -20,7 +20,8 @@
   --viz-2: #eb6834; /* orange */
   --viz-3: #1baf7a; /* aqua   */
   --viz-4: #eda100; /* yellow */
-  --background: #f7f6f3;
+  /* Warm neutral, lightly tinted with the accent so the page follows it. */
+  --background: color-mix(in oklab, var(--brand-50) 55%, #f7f6f3);
   --foreground: #171717;
 }
 
@@ -130,7 +131,7 @@
   --viz-2: #d95926;
   --viz-3: #199e70;
   --viz-4: #c98500;
-  --background: #0b0a09;
+  --background: color-mix(in oklab, var(--brand-950) 22%, #0b0a09);
   --foreground: #ededed;
 }
 

@@ -668,7 +668,7 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
                           {p.fpo.mobile ? (
                             <a
                               href={`tel:${p.fpo.mobile}`}
-                              className="text-xs text-zinc-500 hover:text-green-600"
+                              className="text-xs text-zinc-500 hover:text-brand-600"
                             >
                               {p.fpo.mobile}
                             </a>
@@ -693,7 +693,7 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
                   {showDetail && (
                     <td>
                       {p.onboardedBy ? (
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-2.5 py-1 text-xs font-medium text-green-800 dark:bg-green-950/50 dark:text-green-300">
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-100 px-2.5 py-1 text-xs font-medium text-brand-800 dark:bg-brand-950/50 dark:text-brand-300">
                           {p.onboardedBy.name}
                         </span>
                       ) : (
@@ -820,7 +820,7 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
                           list without anyone noticing. */}
                       <button
                         onClick={() => setFollowUpFor(p)}
-                        className="mt-1.5 inline-flex items-center gap-1 rounded-lg border border-green-600/40 px-2 py-1 text-[11px] font-semibold text-green-700 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-950/40"
+                        className="mt-1.5 inline-flex items-center gap-1 rounded-lg border border-brand-600/40 px-2 py-1 text-[11px] font-semibold text-brand-700 hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-brand-950/40"
                       >
                         <CalendarClock size={11} />
                         {p.nextFollowUpAt ? "Change" : "Set follow-up"}
@@ -852,7 +852,7 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
                   )}
                   {showCounts && (
                     <td>
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-800 dark:bg-green-950/50 dark:text-green-300">
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-100 px-2.5 py-1 text-xs font-semibold text-brand-800 dark:bg-brand-950/50 dark:text-brand-300">
                         {p.onboardedCount ?? 0}
                       </span>
                       <span className="ml-2 text-xs text-zinc-500">by them</span>

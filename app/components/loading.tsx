@@ -15,7 +15,7 @@ import { useGlobalLoading } from "../lib/loading";
  */
 /** Brand green by default; pass a className (even "") to use the surrounding text colour, e.g. on a filled button. */
 export function Spinner({ size = 16, className }: { size?: number; className?: string }) {
-  return <Loader2 size={size} className={`animate-spin ${className ?? "text-green-600"}`} aria-hidden="true" />;
+  return <Loader2 size={size} className={`animate-spin ${className ?? "text-brand-600"}`} aria-hidden="true" />;
 }
 
 export function Loader({ label = "Loading…", size = 16, className = "" }: { label?: string; size?: number; className?: string }) {
@@ -63,7 +63,7 @@ export function GlobalLoader() {
         visible ? "opacity-100" : "opacity-0"
       }`}
     >
-      <div className="global-loader-bar h-full w-1/3 bg-green-600" />
+      <div className="global-loader-bar h-full w-1/3 bg-brand-600" />
     </div>
   );
 }

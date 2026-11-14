@@ -38,6 +38,7 @@ import {
   Visit,
 } from "./lib/api";
 import { useAuth } from "./lib/auth";
+import { canPath } from "./lib/rbac";
 import { LoadingBlock } from "./components/loading";
 import {
   ColumnChart,
@@ -98,7 +99,10 @@ function groupCount<T>(items: T[], keyOf: (x: T) => string) {
 }
 
 /** A labelled group of chart cards. */
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, hrefs, children }: { title: string; hrefs: string[]; children: React.ReactNode }) {
+  // Hidden when the role can open none of the pages its cards are about.
+  const { admin } = useAuth();
+  if (!hrefs.some((h) => canPath(admin, h))) return null;
   return (
     <section>
       <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-zinc-400">{title}</h2>
@@ -130,6 +134,9 @@ function ChartCard({
   wide?: boolean;
   children: React.ReactNode;
 }) {
+  // Hidden when the role cannot open the page the card is about.
+  const { admin } = useAuth();
+  if (!canPath(admin, href)) return null;
   return (
     // The card's own left border wears the chart's colour, so it curves round
     // the rounded corners rather than standing as a straight stripe.
@@ -186,20 +193,23 @@ export default function Home() {
       try {
         const month = { from: dayKey(29), to: dayKey(0) };
         const week = { from: dayKey(6), to: dayKey(0) };
+        // Only what this role may open: the server would refuse the rest.
+        const may = (path: string) => canPath(admin, path);
+        const none = <T,>(empty: T) => Promise.resolve(empty);
         // Each call fails on its own: one module down must not blank the rest.
         const [f, a, c, p, o, land, sl, v, r, d, fp, st] = await Promise.all([
-          api.listFarmers().catch(() => []),
+          may("/farmers") ? api.listFarmers().catch(() => []) : none<Person[]>([]),
           api.listAgronomists().catch(() => []),
           api.listCropCatalog().catch(() => []),
           api.listProducts().catch(() => []),
-          api.listOrders().catch(() => []),
-          api.getAcreage().catch(() => null),
-          api.listProductSales(month).catch(() => []),
-          api.listVisits(month).catch(() => []),
-          api.listDailyReports(week).catch(() => []),
-          api.listDiseaseReports().catch(() => []),
-          api.listFpos().catch(() => []),
-          api.stockSummary().catch(() => []),
+          may("/orders") ? api.listOrders().catch(() => []) : none<Order[]>([]),
+          may("/land") ? api.getAcreage().catch(() => null) : none<Acreage | null>(null),
+          may("/field-sales") ? api.listProductSales(month).catch(() => []) : none<ProductSale[]>([]),
+          may("/visits") ? api.listVisits(month).catch(() => []) : none<Visit[]>([]),
+          may("/reports") ? api.listDailyReports(week).catch(() => []) : none<DailyReport[]>([]),
+          may("/disease-reports") ? api.listDiseaseReports().catch(() => []) : none<DiseaseReport[]>([]),
+          may("/fpos") ? api.listFpos().catch(() => []) : none<Fpo[]>([]),
+          may("/stock") ? api.stockSummary().catch(() => []) : none<StockSummaryRow[]>([]),
         ]);
         setFarmers(f);
         setAgronomists(a);
@@ -217,7 +227,7 @@ export default function Home() {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [admin]);
 
   const pending = orders.filter((o) => o.status === "pending").length;
 
@@ -279,6 +289,8 @@ export default function Home() {
     { label: "Orders", value: orders.length, href: "/orders", icon: ShoppingCart, color: "text-purple-600 bg-purple-100 dark:bg-purple-950/40" },
   ];
 
+  const visibleStats = () => stats.filter((x) => canPath(admin, x.href));
+
   const actions = [
     { label: "Daily reports", href: "/reports", icon: ClipboardList },
     { label: "Tracking", href: "/tracking", icon: Navigation },
@@ -311,7 +323,7 @@ export default function Home() {
             <p className="max-w-xl text-white/85">Here’s what’s happening across the OneRoot app today.</p>
           </div>
           <div className="flex flex-wrap gap-2 lg:max-w-md lg:justify-end">
-            {actions.map((a) => {
+            {actions.filter((a) => canPath(admin, a.href)).map((a) => {
               const Icon = a.icon;
               return (
                 <Link
@@ -330,7 +342,7 @@ export default function Home() {
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5">
-        {stats.map((s) => {
+        {visibleStats().map((s) => {
           const Icon = s.icon;
           return (
             <Link
@@ -355,7 +367,7 @@ export default function Home() {
       </div>
 
       {/* Attention banner. Farmers without an agronomist are in the top bar's notifications. */}
-      {!loading && pending > 0 && (
+      {!loading && pending > 0 && canPath(admin, "/orders") && (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <Link
               href="/orders"
@@ -375,7 +387,7 @@ export default function Home() {
 
       {/* Every module as a chart, grouped. The figures behind each live on the
           module's own page, linked from the card. */}
-      <Section title="Farmers & land">
+      <Section title="Farmers & land" hrefs={["/farmers", "/land", "/agronomists", "/fpos"]}>
         <ChartCard icon={Users} color="var(--viz-3)" wide title="Farmers onboarded" subtitle="Last 30 days, per day" href="/farmers" loading={loading}>
           <TrendChart color="var(--viz-3)"
             points={onboardTrend}
@@ -444,7 +456,7 @@ export default function Home() {
         </ChartCard>
       </Section>
 
-      <Section title="Sales, orders & stock">
+      <Section title="Sales, orders & stock" hrefs={["/field-sales", "/orders", "/stock"]}>
         <ChartCard icon={IndianRupee} color="var(--viz-6)" wide title="Field sales" subtitle={`Last 30 days · ${money(salesTotal)} in all`} href="/field-sales" loading={loading}>
           <TrendChart color="var(--viz-6)" points={salesTrend} height={200} emptyLabel="No field sales in the last 30 days" />
         </ChartCard>
@@ -468,7 +480,7 @@ export default function Home() {
         </ChartCard>
       </Section>
 
-      <Section title="Field operations">
+      <Section title="Field operations" hrefs={["/visits", "/reports", "/disease-reports"]}>
         <ChartCard icon={MapPin} color="var(--viz-1)" wide title="Farm visits" subtitle={`Last 30 days · ${countOf(visits.length)} visits`} href="/visits" loading={loading}>
           <TrendChart color="var(--viz-1)"
             points={visitTrend}

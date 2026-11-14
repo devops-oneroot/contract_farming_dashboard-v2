@@ -4,6 +4,7 @@ import { Plus, Save, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { api, type Fpo, type Person, type Product, type ProductSale } from "../lib/api";
+import { Select } from "./ui";
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 /**
@@ -309,16 +310,16 @@ export function EditSaleDialog({
             <div>
               <span className={label}>Sold to</span>
               <div className="flex gap-2">
-                <select
+                <Select
                   value={buyerKind}
                   onChange={(e) => setBuyerKind(e.target.value as "farmer" | "fpo")}
-                  className="shrink-0 rounded-lg border border-zinc-300 bg-transparent px-2 py-2 text-sm dark:border-zinc-700"
+                  className="w-auto shrink-0 rounded-lg border border-zinc-300 bg-transparent px-2 py-2 text-sm dark:border-zinc-700"
                 >
                   <option value="farmer">Farmer</option>
                   <option value="fpo">FPO</option>
-                </select>
+                </Select>
                 {buyerKind === "farmer" ? (
-                  <select value={farmerId} onChange={(e) => setFarmerId(e.target.value)} className={`${field} min-w-0`}>
+                  <Select value={farmerId} onChange={(e) => setFarmerId(e.target.value)} className={`${field} min-w-0`}>
                     <option value="">Choose a farmer…</option>
                     {/* The sale's own buyer first, in case they are not on the
                         page of farmers that was loaded. */}
@@ -330,9 +331,9 @@ export function EditSaleDialog({
                         {f.name} · {f.mobile}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 ) : (
-                  <select value={fpoId} onChange={(e) => setFpoId(e.target.value)} className={`${field} min-w-0`}>
+                  <Select value={fpoId} onChange={(e) => setFpoId(e.target.value)} className={`${field} min-w-0`}>
                     <option value="">Choose an FPO…</option>
                     {sale.fpo?._id && !fpos.some((f) => f._id === sale.fpo?._id) && (
                       <option value={sale.fpo._id}>{sale.fpo.name} (current)</option>
@@ -342,14 +343,14 @@ export function EditSaleDialog({
                         {f.name} · {f.mobile}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 )}
               </div>
             </div>
 
             <label className="text-sm">
               <span className={label}>Sold by</span>
-              <select
+              <Select
                 value={agronomistId}
                 onChange={(e) => setAgronomistId(e.target.value)}
                 className={field}
@@ -360,7 +361,7 @@ export function EditSaleDialog({
                     {a.name} · {a.mobile}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
 
             <label className="text-sm">
@@ -412,7 +413,7 @@ export function EditSaleDialog({
                 {lines.map((l, i) => (
                   <tr key={i}>
                     <td>
-                      <select
+                      <Select
                         value={offerKey(l.productId, l.variantId)}
                         onChange={(e) => {
                           const o = offers.find((x) => x.key === e.target.value);
@@ -436,7 +437,7 @@ export function EditSaleDialog({
                             {o.name}
                           </option>
                         ))}
-                      </select>
+                      </Select>
                       {l.hasPhoto && <div className="mt-1 text-[11px] text-zinc-400">handover photo kept</div>}
                     </td>
                     <td>
@@ -464,14 +465,14 @@ export function EditSaleDialog({
                           inputMode="decimal"
                           className="w-16 rounded-lg border border-zinc-300 bg-transparent px-2 py-1 dark:border-zinc-700"
                         />
-                        <select
+                        <Select
                           value={l.discountType}
                           onChange={(e) => set(i, { discountType: e.target.value as "rs" | "pct" })}
-                          className="rounded-lg border border-zinc-300 bg-transparent px-1 py-1 dark:border-zinc-700"
+                          className="h-8 w-auto rounded-lg border border-zinc-300 bg-transparent px-1.5 py-1 dark:border-zinc-700"
                         >
                           <option value="rs">₹</option>
                           <option value="pct">%</option>
-                        </select>
+                        </Select>
                       </div>
                     </td>
                     <td className="num">{money(preview.rows[i]?.net ?? 0)}</td>
@@ -520,14 +521,14 @@ export function EditSaleDialog({
                   inputMode="decimal"
                   className="w-24 rounded-lg border border-zinc-300 bg-transparent px-2 py-1 dark:border-zinc-700"
                 />
-                <select
+                <Select
                   value={basketOffType}
                   onChange={(e) => setBasketOffType(e.target.value as "rs" | "pct")}
-                  className="rounded-lg border border-zinc-300 bg-transparent px-1 py-1 dark:border-zinc-700"
+                  className="h-8 w-auto rounded-lg border border-zinc-300 bg-transparent px-1.5 py-1 dark:border-zinc-700"
                 >
                   <option value="rs">₹</option>
                   <option value="pct">%</option>
-                </select>
+                </Select>
               </div>
             </label>
             </div>

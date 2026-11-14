@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Plus, Trash2, Save, GripVertical, Package, X } from "lucide-react";
 import { api, Practice, PopStep, Product } from "../lib/api";
 import { LoadingBlock } from "./loading";
+import { Select } from "./ui";
 
 const emptyStep = (): PopStep => ({
   day: [0, 0],
@@ -284,7 +285,7 @@ export function PracticesManager({ crop }: { crop?: string } = {}) {
                           <p className="text-xs text-zinc-400">No products yet — add them in the Products tab.</p>
                         ) : (
                           <>
-                            <select
+                            <Select
                               value=""
                               onChange={(e) => {
                                 if (e.target.value) toggleStepProduct(i, e.target.value);
@@ -302,7 +303,7 @@ export function PracticesManager({ crop }: { crop?: string } = {}) {
                                     {p.name}
                                   </option>
                                 ))}
-                            </select>
+                            </Select>
 
                             {(s.products ?? []).length > 0 && (
                               <div className="mt-2 flex flex-wrap gap-1.5">

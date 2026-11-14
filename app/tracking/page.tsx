@@ -1004,17 +1004,17 @@ export default function TrackingPage() {
                     <Users size={14} />
                     {nearbyLoading ? "…" : `${nearby?.farmers.length ?? 0} farmers`} within
                   </span>
-                  <select
+                  <Select
                     value={radiusKm}
                     onChange={(e) => setRadiusKm(Number(e.target.value))}
-                    className="rounded-lg border border-zinc-300 bg-white px-2 py-1 text-xs dark:border-zinc-700 dark:bg-zinc-900"
+                    className="h-8 w-auto rounded-lg border border-zinc-300 bg-white px-2 py-1 text-xs dark:border-zinc-700 dark:bg-zinc-900"
                   >
                     {[1, 2, 5, 10, 25].map((r) => (
                       <option key={r} value={r}>
                         {r} km
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </div>
               </div>
             )}

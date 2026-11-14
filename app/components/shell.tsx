@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import {
   LayoutDashboard,
   Users,
@@ -33,6 +33,7 @@ import {
 import { useAuth } from "../lib/auth";
 import { ProfileMenu } from "./profile-menu";
 import { NotificationsMenu } from "./notifications-menu";
+import { can, canPath, homeFor, roleLabel } from "../lib/rbac";
 import { ThemeToggle } from "./theme-toggle";
 
 const NAV_GROUPS = [
@@ -67,7 +68,7 @@ const NAV_GROUPS = [
     icon: ShoppingBag,
     items: [
       { href: "/field-sales", label: "Field Sales", icon: ShoppingBag },
-      { href: "/stock", label: "Staff Stock", icon: Boxes },
+      { href: "/stock", label: "Stock Portal", icon: Boxes },
     ],
   },
   {
@@ -84,7 +85,7 @@ const NAV_GROUPS = [
   {
     label: "Settings",
     icon: ShieldCheck,
-    items: [{ href: "/account", label: "Users", icon: ShieldCheck }],
+    items: [{ href: "/account", label: "Users & Roles", icon: ShieldCheck }],
   },
 ];
 
@@ -98,7 +99,7 @@ const TITLES: Record<string, string> = {
   "/orders": "Orders",
   "/field-sales": "Field Sales & Product Proof",
   "/analysis": "Sales Analysis",
-  "/stock": "Stock with Staff",
+  "/stock": "Stock Portal",
   "/calls": "Call Logs & Recordings",
   "/visits": "Farm Visits",
   "/tracking": "Tracking & Distance",
@@ -119,8 +120,8 @@ function isActive(pathname: string, href: string) {
 }
 
 /** The group holding the current page, or null (a page not in the menu). */
-function groupFor(pathname: string) {
-  return NAV_GROUPS.find((g) => g.items.some((i) => isActive(pathname, i.href)))?.label ?? null;
+function groupFor(pathname: string, nav = NAV_GROUPS) {
+  return nav.find((g) => g.items.some((i) => isActive(pathname, i.href)))?.label ?? null;
 }
 
 function initials(name?: string) {
@@ -132,6 +133,25 @@ function initials(name?: string) {
 export function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { admin, logout } = useAuth();
+  const router = useRouter();
+  /**
+   * Role-based access: the menu holds only the pages this account's role may
+   * open, an off-limits page sends them to the first one they can, and the
+   * server refuses everything else anyway.
+   */
+  const nav = useMemo(
+    () =>
+      NAV_GROUPS.map((g) => ({ ...g, items: g.items.filter((i) => canPath(admin, i.href)) })).filter(
+        (g) => g.items.length > 0
+      ),
+    [admin]
+  );
+  const offLimits = !!admin && !canPath(admin, pathname);
+  const fallback = homeFor(admin);
+  useEffect(() => {
+    if (offLimits && fallback) router.replace(fallback);
+  }, [offLimits, fallback, router]);
+  const myRole = roleLabel(admin?.role);
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -144,11 +164,11 @@ export function Shell({ children }: { children: React.ReactNode }) {
    * - React's pattern for state that tracks a prop - rather than in an effect,
    * which would first paint the old group open and then jump.
    */
-  const [openGroup, setOpenGroup] = useState<string | null>(() => groupFor(pathname));
+  const [openGroup, setOpenGroup] = useState<string | null>(() => groupFor(pathname, nav));
   const [groupPath, setGroupPath] = useState(pathname);
   if (groupPath !== pathname) {
     setGroupPath(pathname);
-    const g = groupFor(pathname);
+    const g = groupFor(pathname, nav);
     if (g) setOpenGroup(g);
   }
 
@@ -205,7 +225,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
       {/* Navigation */}
       <nav className="scroll-thin flex-1 overflow-y-auto px-3 py-4">
-        {NAV_GROUPS.map((group) => {
+        {nav.map((group) => {
           // Collapsed to icons there are no headings to fold, so every item shows.
           const open = compact || openGroup === group.label;
           const holdsActive = group.items.some((i) => isActive(pathname, i.href));
@@ -317,7 +337,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
           {!compact && (
             <div className="min-w-0 flex-1">
               <div className="truncate text-sm font-semibold">{admin?.name}</div>
-              <div className="truncate text-xs text-zinc-500">Administrator</div>
+              <div className="truncate text-xs text-zinc-500">{myRole}</div>
             </div>
           )}
           <button
@@ -341,7 +361,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
   /** Section › page for the breadcrumb; null on a page outside the menu. */
   const crumb = (() => {
-    for (const g of NAV_GROUPS) {
+    for (const g of nav) {
       const item = g.items.find((i) => isActive(pathname, i.href));
       if (item) return { group: g.label, page: item.label };
     }
@@ -409,7 +429,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
               <CalendarDays size={13} className="text-brand-600 dark:text-brand-400" />
               {today}
             </span>
-            <NotificationsMenu />
+            {can(admin, "farmers") ? <NotificationsMenu /> : null}
             <ThemeToggle />
             <span className="mx-1 hidden h-6 w-px bg-zinc-200 sm:block dark:bg-zinc-800" aria-hidden />
             <ProfileMenu />
@@ -434,7 +454,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
               {crumb ? <p className="text-[11px] font-medium text-zinc-400">{crumb.group}</p> : null}
               <h1 className="text-xl font-semibold tracking-tight">{titleFor(pathname)}</h1>
             </div>
-            <div className="page-body flex-1">{children}</div>
+            <div className="page-body flex-1">{offLimits ? null : children}</div>
           </div>
         </main>
       </div>

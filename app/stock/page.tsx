@@ -1,60 +1,56 @@
 "use client";
 
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Boxes, Minus, Plus, Search, Trash2, Undo2, X } from "lucide-react";
-
 import {
-  api,
-  type Product,
-  type StaffStock,
-  type StockEntryType,
-  type StockSummaryRow,
-} from "../lib/api";
+  AlertTriangle,
+  ArrowRight,
+  Boxes,
+  ChevronDown,
+  IndianRupee,
+  PackageCheck,
+  PackageOpen,
+  Plus,
+  Search,
+  SlidersHorizontal,
+  Users,
+  Split,
+  Warehouse,
+} from "lucide-react";
+
+import { api, type StockSummaryRow, type StoreStock } from "../lib/api";
 import { LoadingBlock } from "../components/loading";
 import { Pagination, usePaged } from "../components/pagination";
-
-const inr = (n: number) => `₹${Math.round(n).toLocaleString("en-IN")}`;
-const fmtDate = (s: string) =>
-  new Date(s).toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" });
-
-/** Today in the browser's own time zone - toISOString alone is UTC, a day behind before 5:30 IST. */
-const localDay = () => {
-  const d = new Date();
-  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-  return d.toISOString().slice(0, 10);
-};
-
-const TYPE_LABEL: Record<StockEntryType, string> = {
-  opening: "Opening count",
-  issue: "Issued",
-  return: "Returned",
-  adjust: "Adjustment",
-};
-const TYPE_STYLE: Record<StockEntryType, string> = {
-  opening: "bg-sky-50 text-sky-700 dark:bg-sky-950 dark:text-sky-300",
-  issue: "bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300",
-  return: "bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300",
-  adjust: "bg-zinc-100 text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300",
-};
+import { ActionBtn, EntryDialog, fmtDate, HistoryItem, inr, qty, Stat, type EntryTarget } from "./stock-ui";
+import { DistributeDialog } from "./distribute-dialog";
 
 /**
- * Who is carrying how much stock.
+ * The Stock portal, run by the stock in-charge.
  *
- * Nothing here stores a stock figure. What each person holds is their opening
- * count, plus what the office issued, less what they returned and sold, plus
- * any adjustment - so every number can be opened up and traced.
+ * Top: the central stock the in-charge holds - what was received, what has gone
+ * out to field staff, what is left - with stock received and corrected here.
+ * Below: every field person, with what they were allocated, sold and still
+ * hold, and what their sales came to. A name opens that person's own page.
+ *
+ * Nothing stores a stock figure: every number is worked out from the entries
+ * and from Field Sales, so each can be traced.
  */
-export default function StockPage() {
+export default function StockPortalPage() {
+  const router = useRouter();
+  const [store, setStore] = useState<StoreStock | null>(null);
   const [rows, setRows] = useState<StockSummaryRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [openId, setOpenId] = useState<string | null>(null);
-  const [entry, setEntry] = useState<{ staff: string; type: StockEntryType } | null>(null);
+  const [entry, setEntry] = useState<{ target: EntryTarget; type: "receive" | "adjust" | "issue" | "opening" } | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
+  const [distributing, setDistributing] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const load = useCallback(() => {
-    api
-      .stockSummary()
-      .then((r) => {
+    Promise.all([api.storeStock(), api.stockSummary()])
+      .then(([s, r]) => {
+        setStore(s);
         setRows(r);
         setError(null);
       })
@@ -70,118 +66,240 @@ export default function StockPage() {
   }, [rows, search]);
   const { pageItems, pager } = usePaged(shown, 25, search);
 
-  const totals = useMemo(
+  const field = useMemo(
     () => ({
       units: (rows ?? []).reduce((n, r) => n + r.units, 0),
-      value: (rows ?? []).reduce((n, r) => n + r.value, 0),
-      holding: (rows ?? []).filter((r) => r.units > 0).length,
+      sold: (rows ?? []).reduce((n, r) => n + r.sold, 0),
+      soldAmount: (rows ?? []).reduce((n, r) => n + r.soldAmount, 0),
       short: (rows ?? []).filter((r) => r.short > 0).length,
     }),
     [rows]
   );
 
+  const storeLines = (store?.lines ?? []).filter((l) => l.inStore !== 0 || l.received || l.issued);
+
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Stat label="Stock with staff" value={inr(totals.value)} />
-        <Stat label="Units in hand" value={totals.units.toLocaleString("en-IN")} />
-        <Stat label="Staff holding stock" value={String(totals.holding)} />
-        <Stat label="Staff with shortages" value={String(totals.short)} warn={totals.short > 0} />
+      {/* ---- Central stock: what the in-charge holds ---- */}
+      <div className="page-toolbar mb-0">
+        <h2 className="flex items-center gap-2 text-lg font-semibold">
+          <Warehouse size={20} className="text-brand-600" /> Central stock
+        </h2>
+        <div className="flex flex-wrap gap-2 mb-3">
+          <ActionBtn
+            primary
+            onClick={() => setEntry({ target: { kind: "store" }, type: "receive" })}
+            icon={<Plus size={14} />}
+            label="Receive stock"
+          />
+          <ActionBtn
+            primary
+            onClick={() => setDistributing(true)}
+            icon={<Split size={14} />}
+            label="Distribute stock"
+          />
+          <ActionBtn
+            onClick={() => setEntry({ target: { kind: "store" }, type: "adjust" })}
+            icon={<SlidersHorizontal size={14} />}
+            label="Adjust"
+          />
+        </div>
       </div>
 
-      <div>
-        <div className="page-toolbar">
-          <h2 className="flex items-center gap-2 font-semibold">
-            <Boxes size={18} className="text-brand-600" /> Stock by staff
-          </h2>
-          <div className="relative w-full sm:w-64">
-            <Search size={14} className="absolute left-2.5 top-2.5 text-zinc-400" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search name, mobile, region"
-              className="w-full rounded-lg border border-zinc-200 bg-white py-1.5 pl-8 pr-3 text-sm dark:border-zinc-800 dark:bg-zinc-900"
+      {error && <p className="text-sm text-red-600">{error}</p>}
+      {notice && (
+        <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700 dark:bg-green-950/40 dark:text-green-400">{notice}</p>
+      )}
+      {!store && !error && <LoadingBlock />}
+
+      {store && (
+        <>
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <Stat
+              icon={Warehouse}
+              color="var(--viz-1)"
+              label="In central stock"
+              value={`${qty(store.totals.units)} pcs`}
+              hint={`${store.totals.products} product${store.totals.products === 1 ? "" : "s"} · ${inr(store.totals.value)}`}
             />
+            <Stat icon={PackageCheck} color="var(--accent-indigo)" label="Received" value={`${qty(store.totals.received)} pcs`} hint={store.since ? `since ${fmtDate(store.since)}` : "nothing received yet"} />
+            <Stat icon={Users} color="var(--viz-3)" label="With field staff" value={`${qty(field.units)} pcs`} hint={`${(rows ?? []).filter((r) => r.units > 0).length} people holding stock`} />
+            <Stat icon={IndianRupee} color="var(--viz-6)" label="Field sales" value={inr(field.soldAmount)} hint={`${qty(field.sold)} pcs sold`} />
           </div>
+
+          <div className="card overflow-hidden">
+            {storeLines.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 px-4 py-8 text-center text-sm text-zinc-500">
+                <PackageOpen size={26} className="text-zinc-400" />
+                No central stock yet. Use <b>Receive stock</b> to record what you hold.
+              </div>
+            ) : (
+              <div className="scroll-thin max-h-80 overflow-auto">
+                <table className="data-table compact">
+                  <thead>
+                    <tr>
+                      <th>Product</th>
+                      <th className="num">Received</th>
+                      <th className="num">Issued to staff</th>
+                      <th className="num">Returned</th>
+                      <th className="num">Adjusted</th>
+                      <th className="num">In central stock</th>
+                      <th className="num">Value</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {storeLines.map((l) => (
+                      <tr key={`${l.product}:${l.variant}`}>
+                        <td>
+                          <div className="font-medium">{l.name}</div>
+                          {l.unit && <div className="text-xs text-zinc-500">{l.unit}</div>}
+                        </td>
+                        <td className="num">{l.received ? qty(l.received) : "—"}</td>
+                        <td className="num">{l.issued ? qty(l.issued) : "—"}</td>
+                        <td className="num">{l.returned ? qty(l.returned) : "—"}</td>
+                        <td className="num">{l.adjusted ? (l.adjusted > 0 ? `+${l.adjusted}` : l.adjusted) : "—"}</td>
+                        <td className={`num font-semibold ${l.inStore <= 0 ? "text-red-600" : ""}`}>{qty(l.inStore)}</td>
+                        <td className="num">{inr(l.value)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            {store.history.length > 0 && (
+              <div className="border-t border-zinc-100 dark:border-zinc-800">
+                <button
+                  onClick={() => setShowHistory((v) => !v)}
+                  className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-medium text-zinc-600 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-900"
+                >
+                  <ChevronDown size={15} className={`transition-transform ${showHistory ? "rotate-180" : ""}`} />
+                  Central stock entries ({store.history.length})
+                </button>
+                {showHistory && (
+                  <ul className="scroll-thin max-h-72 divide-y divide-zinc-100 overflow-y-auto px-4 pb-2 text-sm dark:divide-zinc-900">
+                    {store.history.map((m) => (
+                      <HistoryItem key={m._id} type={m.type} productName={m.productName} unit={m.unit} signedQty={m.qty} note={m.note} at={m.at} by={m.by} />
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* ---- Field persons: allocated, sold, in hand, sales ---- */}
+      <div className="page-toolbar mb-0 mt-2">
+        <h2 className="flex items-center gap-2 text-lg font-semibold">
+          <Boxes size={20} className="text-brand-600" /> Field persons
+          {field.short > 0 && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700 dark:bg-red-950 dark:text-red-300">
+              <AlertTriangle size={11} /> {field.short} with shortages
+            </span>
+          )}
+        </h2>
+        <div className="relative w-full sm:w-64">
+          <Search size={14} className="absolute left-2.5 top-2.5 text-zinc-400" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search name, mobile, region"
+            className="w-full rounded-lg border border-zinc-200 bg-white py-1.5 pl-8 pr-3 text-sm dark:border-zinc-800 dark:bg-zinc-900"
+          />
         </div>
+      </div>
 
-        {error && <p className="py-3 text-sm text-red-600">{error}</p>}
-        {!rows && !error && <LoadingBlock />}
-
-        {rows && (
-          <div className="table-wrap">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Staff</th>
-                  <th>Region</th>
-                  <th className="num">Products</th>
-                  <th className="num">Units in hand</th>
-                  <th className="num">Value</th>
-                  <th>Counting since</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {pageItems.map((r) => (
-                  <tr key={r._id} onClick={() => setOpenId(r._id)} className="cursor-pointer">
-                    <td>
-                      <div className="font-medium">{r.name}</div>
-                      <div className="text-xs text-zinc-500">{r.mobile}</div>
-                    </td>
-                    <td className="text-zinc-600 dark:text-zinc-400">{r.region || "—"}</td>
-                    <td className="num">{r.products}</td>
-                    <td className="num font-medium">
-                      {r.units.toLocaleString("en-IN")}
-                      {r.short > 0 && (
-                        <span
-                          title={`${r.short} product(s) sold beyond what was given`}
-                          className="ml-2 inline-flex items-center gap-1 rounded bg-red-50 px-1.5 py-0.5 text-xs text-red-700 dark:bg-red-950 dark:text-red-300"
-                        >
-                          <AlertTriangle size={11} /> {r.short} short
-                        </span>
-                      )}
-                    </td>
-                    <td className="num">{inr(r.value)}</td>
-                    <td className="text-zinc-600 dark:text-zinc-400">
-                      {r.since ? fmtDate(r.since) : <span className="text-zinc-400">Not started</span>}
-                    </td>
-                    <td className="text-right" onClick={(e) => e.stopPropagation()}>
+      {!rows && !error && <LoadingBlock />}
+      {rows && (
+        <div className="table-wrap">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Field person</th>
+                <th>Region</th>
+                <th className="num">Allocated</th>
+                <th className="num">Sold</th>
+                <th className="num">In hand</th>
+                <th className="num">Sales amount</th>
+                <th>Counting since</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {pageItems.map((r) => (
+                <tr
+                  key={r._id}
+                  onClick={() => router.push(`/stock/${r._id}`)}
+                  className="cursor-pointer hover:bg-brand-50/50 dark:hover:bg-brand-950/20"
+                >
+                  <td>
+                    <Link href={`/stock/${r._id}`} onClick={(e) => e.stopPropagation()} className="font-medium text-brand-700 hover:underline dark:text-brand-400">
+                      {r.name}
+                    </Link>
+                    <div className="text-xs text-zinc-500">{r.mobile}</div>
+                  </td>
+                  <td className="text-zinc-600 dark:text-zinc-400">{r.region || "—"}</td>
+                  <td className="num">{r.since ? qty(r.allocated) : "—"}</td>
+                  <td className="num">{r.since ? qty(r.sold) : "—"}</td>
+                  <td className="num font-semibold">
+                    {r.since ? qty(r.units) : "—"}
+                    {r.short > 0 && (
+                      <span
+                        title={`${r.short} product(s) sold beyond what was given`}
+                        className="ml-2 inline-flex items-center gap-1 rounded bg-red-50 px-1.5 py-0.5 text-xs font-normal text-red-700 dark:bg-red-950 dark:text-red-300"
+                      >
+                        <AlertTriangle size={11} /> {r.short} short
+                      </span>
+                    )}
+                  </td>
+                  <td className="num">{r.since ? inr(r.soldAmount) : "—"}</td>
+                  <td className="text-zinc-600 dark:text-zinc-400">
+                    {r.since ? fmtDate(r.since) : <span className="text-zinc-400">Not started</span>}
+                  </td>
+                  <td className="text-right" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center justify-end gap-2">
                       <button
-                        onClick={() => setEntry({ staff: r._id, type: r.since ? "issue" : "opening" })}
-                        className="rounded-lg bg-brand-500 px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-600"
+                        onClick={() =>
+                          setEntry({ target: { kind: "staff", id: r._id, name: r.name }, type: r.since ? "issue" : "opening" })
+                        }
+                        className="whitespace-nowrap rounded-lg bg-brand-500 px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-600"
                       >
                         {r.since ? "Issue stock" : "Enter opening stock"}
                       </button>
-                    </td>
-                  </tr>
-                ))}
-                {!shown.length && (
-                  <tr>
-                    <td colSpan={7} className="py-6 text-center text-zinc-500">
-                      No staff match.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
-        {rows && <Pagination {...pager} noun="staff" className="mt-3" />}
-      </div>
+                      <ArrowRight size={15} className="text-zinc-400" />
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {!shown.length && (
+                <tr>
+                  <td colSpan={8} className="py-6 text-center text-zinc-500">
+                    No field persons match.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {rows && <Pagination {...pager} noun="field persons" />}
 
-      {openId && (
-        <StaffPanel
-          id={openId}
-          onClose={() => setOpenId(null)}
-          onEntry={(type) => setEntry({ staff: openId, type })}
-          // Re-read after every saved entry, so the panel and the table agree.
-          version={rows}
+      {distributing && (
+        <DistributeDialog
+          staff={(rows ?? []).map((r) => ({ _id: r._id, name: r.name, mobile: r.mobile }))}
+          store={store?.since ? store.lines : []}
+          onClose={() => setDistributing(false)}
+          onSaved={(people) => {
+            setDistributing(false);
+            setNotice(`Stock distributed to ${people} salesperson${people === 1 ? "" : "s"}. They see it in the app straight away.`);
+            load();
+          }}
         />
       )}
+
       {entry && (
         <EntryDialog
-          staff={rows?.find((r) => r._id === entry.staff) ?? null}
+          target={entry.target}
           initialType={entry.type}
           onClose={() => setEntry(null)}
           onSaved={() => {
@@ -190,379 +308,6 @@ export default function StockPage() {
           }}
         />
       )}
-    </div>
-  );
-}
-
-function Stat({ label, value, warn }: { label: string; value: string; warn?: boolean }) {
-  return (
-    <div className="min-w-0 rounded-xl border border-zinc-200 bg-white px-3 py-3 sm:px-4 dark:border-zinc-800 dark:bg-zinc-950">
-      <div className="text-xs text-zinc-500">{label}</div>
-      <div className={`mt-1 break-words text-lg font-semibold tabular-nums sm:text-xl ${warn ? "text-red-600" : ""}`}>{value}</div>
-    </div>
-  );
-}
-
-/** One person's stock, product by product, and every entry behind it. */
-function StaffPanel({
-  id,
-  onClose,
-  onEntry,
-  version,
-}: {
-  id: string;
-  onClose: () => void;
-  onEntry: (type: StockEntryType) => void;
-  version: unknown;
-}) {
-  const [data, setData] = useState<StaffStock | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let live = true;
-    api
-      .staffStock(id)
-      .then((d) => live && setData(d))
-      .catch((e) => live && setError(e instanceof Error ? e.message : "Could not load"));
-    return () => {
-      live = false;
-    };
-  }, [id, version]);
-
-  const lines = data?.lines.filter((l) => l.inHand !== 0 || l.opening || l.issued) ?? [];
-
-  return (
-    <div className="fixed inset-0 z-40 flex justify-end bg-black/30" onClick={onClose}>
-      <div
-        className="h-full w-full max-w-3xl overflow-y-auto bg-white shadow-xl dark:bg-zinc-950"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="sticky top-0 z-10 flex items-start gap-3 border-b border-zinc-100 bg-white px-4 py-4 sm:px-5 dark:border-zinc-900 dark:bg-zinc-950">
-          <div className="min-w-0">
-            <h2 className="truncate text-lg font-semibold">{data?.staff.name ?? "…"}</h2>
-            <p className="text-xs text-zinc-500">
-              {data?.staff.mobile}
-              {data?.since && ` · counting since ${fmtDate(data.since)}`}
-            </p>
-          </div>
-          <button onClick={onClose} className="ml-auto shrink-0 rounded-lg p-1 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-900">
-            <X size={18} />
-          </button>
-        </div>
-
-        <div className="flex flex-wrap gap-2 px-4 pt-4 sm:px-5">
-          {!data?.since && (
-            <ActionBtn onClick={() => onEntry("opening")} icon={<Plus size={14} />} label="Opening stock" primary />
-          )}
-          <ActionBtn onClick={() => onEntry("issue")} icon={<Plus size={14} />} label="Issue stock" primary={!!data?.since} />
-          <ActionBtn onClick={() => onEntry("return")} icon={<Undo2 size={14} />} label="Record return" />
-          <ActionBtn onClick={() => onEntry("adjust")} icon={<Minus size={14} />} label="Adjust" />
-        </div>
-
-        {error && <p className="px-4 py-3 text-sm text-red-600 sm:px-5">{error}</p>}
-
-        <div className="px-4 py-4 sm:px-5">
-          <h3 className="mb-2 text-sm font-semibold">In hand</h3>
-          {data && !lines.length && <p className="text-sm text-zinc-500">No stock recorded yet.</p>}
-          {!!lines.length && (
-            <div className="scroll-thin overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-800">
-              <table className="data-table compact">
-                <thead>
-                  <tr>
-                    <th>Product</th>
-                    <th className="num">Opening</th>
-                    <th className="num">Issued</th>
-                    <th className="num">Returned</th>
-                    <th className="num">Adjusted</th>
-                    <th className="num">Sold</th>
-                    <th className="num">In hand</th>
-                    <th className="num">Value</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {lines.map((l) => (
-                    <tr key={`${l.product}:${l.variant}`}>
-                      <td>
-                        <div className="font-medium">{l.name}</div>
-                        {l.unit && <div className="text-xs text-zinc-500">{l.unit}</div>}
-                      </td>
-                      <td className="num">{l.opening || "—"}</td>
-                      <td className="num">{l.issued || "—"}</td>
-                      <td className="num">{l.returned || "—"}</td>
-                      <td className="num">{l.adjusted ? (l.adjusted > 0 ? `+${l.adjusted}` : l.adjusted) : "—"}</td>
-                      <td className="num">{l.sold || "—"}</td>
-                      <td className={`num font-semibold ${l.inHand < 0 ? "text-red-600" : ""}`}>
-                        {l.inHand}
-                        {l.inHand < 0 && <div className="text-[10px] font-normal">sold more than given</div>}
-                      </td>
-                      <td className="num">{inr(l.value)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-
-        <div className="px-4 pb-6 sm:px-5">
-          <h3 className="mb-2 text-sm font-semibold">History</h3>
-          {data && !data.history.length && <p className="text-sm text-zinc-500">No entries yet.</p>}
-          <ul className="divide-y divide-zinc-100 text-sm dark:divide-zinc-900">
-            {data?.history.map((m) => {
-              const q = m.type === "return" ? -m.qty : m.qty;
-              return (
-                <li key={m._id} className="flex items-start gap-3 py-2">
-                  <span className={`mt-0.5 shrink-0 rounded px-1.5 py-0.5 text-xs ${TYPE_STYLE[m.type]}`}>
-                    {TYPE_LABEL[m.type]}
-                  </span>
-                  <div className="min-w-0 flex-1 break-words">
-                    <div>
-                      {m.productName} {m.unit && <span className="text-zinc-500">· {m.unit}</span>}
-                    </div>
-                    {m.note && <div className="text-xs text-zinc-500">{m.note}</div>}
-                  </div>
-                  {/* Quantity over date on a phone, side by side from sm up. */}
-                  <div className="flex shrink-0 flex-col items-end gap-0.5 sm:flex-row sm:items-start sm:gap-3">
-                    <div className={`text-right font-medium sm:w-12 ${q < 0 ? "text-red-600" : "text-green-700 dark:text-green-400"}`}>
-                      {q > 0 ? `+${q}` : q}
-                    </div>
-                    <div className="max-w-28 text-right text-xs text-zinc-500 sm:w-28">
-                      {fmtDate(m.at)}
-                      {m.by && <div className="truncate">by {m.by}</div>}
-                    </div>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-          <p className="mt-3 text-xs text-zinc-400">
-            Sales are taken from Field Sales automatically and are not listed here.
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ActionBtn({
-  onClick,
-  icon,
-  label,
-  primary,
-}: {
-  onClick: () => void;
-  icon: React.ReactNode;
-  label: string;
-  primary?: boolean;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium ${
-        primary
-          ? "bg-brand-500 text-white hover:bg-brand-600"
-          : "border border-zinc-200 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900"
-      }`}
-    >
-      {icon} {label}
-    </button>
-  );
-}
-
-type Draft = { key: number; product: string; variant: string; qty: string };
-
-/** Record stock given, returned, counted or corrected - several products at once. */
-function EntryDialog({
-  staff,
-  initialType,
-  onClose,
-  onSaved,
-}: {
-  staff: StockSummaryRow | null;
-  initialType: StockEntryType;
-  onClose: () => void;
-  onSaved: () => void;
-}) {
-  const [type, setType] = useState<StockEntryType>(initialType);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [lines, setLines] = useState<Draft[]>([{ key: 0, product: "", variant: "", qty: "" }]);
-  const [note, setNote] = useState("");
-  const [date, setDate] = useState(() => localDay());
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    api
-      .listProducts()
-      .then((p) => setProducts([...p].sort((a, b) => a.name.localeCompare(b.name))))
-      .catch(() => setProducts([]));
-  }, []);
-
-  const byId = useMemo(() => new Map(products.map((p) => [p._id, p])), [products]);
-  const set = (key: number, patch: Partial<Draft>) =>
-    setLines((ls) => ls.map((l) => (l.key === key ? { ...l, ...patch } : l)));
-
-  const save = async () => {
-    if (!staff) return;
-    setBusy(true);
-    setError(null);
-    try {
-      const today = localDay();
-      await api.addStock({
-        staff: staff._id,
-        type,
-        note: note.trim(),
-        // Today's entries keep the exact time; a back-dated count is taken as noon that day.
-        at: date === today ? undefined : new Date(`${date}T12:00:00`).toISOString(),
-        items: lines
-          .filter((l) => l.product)
-          .map((l) => ({ product: l.product, variant: l.variant || null, qty: Number(l.qty) })),
-      });
-      onSaved();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not save");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const types: StockEntryType[] = ["opening", "issue", "return", "adjust"];
-
-  return (
-    <div className="modal-backdrop">
-      <div className="modal-panel sm:max-w-2xl">
-        <div className="flex items-start gap-3 border-b border-zinc-100 px-4 py-4 sm:px-5 dark:border-zinc-900">
-          <div className="min-w-0">
-            <h2 className="text-lg font-semibold">Stock entry</h2>
-            <p className="truncate text-xs text-zinc-500">{staff?.name}</p>
-          </div>
-          <button onClick={onClose} className="ml-auto shrink-0 rounded-lg p-1 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-900">
-            <X size={18} />
-          </button>
-        </div>
-
-        <div className="space-y-4 px-4 py-4 sm:px-5">
-          <div className="flex flex-wrap gap-2">
-            {types.map((t) => (
-              <button
-                key={t}
-                onClick={() => setType(t)}
-                className={`rounded-lg px-3 py-1.5 text-sm ${
-                  type === t
-                    ? "bg-brand-500 text-white"
-                    : "border border-zinc-200 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900"
-                }`}
-              >
-                {TYPE_LABEL[t]}
-              </button>
-            ))}
-          </div>
-          <p className="text-xs text-zinc-500">
-            {type === "opening" && "What they are holding right now, from a physical count. Sales from this date on are subtracted automatically."}
-            {type === "issue" && "Stock handed to them from the office or warehouse."}
-            {type === "return" && "Stock they handed back. Cannot be more than they hold."}
-            {type === "adjust" && "Damaged, lost or a recount difference. Use a minus number to take away (e.g. -2). A reason is required."}
-          </p>
-
-          <div className="space-y-2">
-            {lines.map((l) => {
-              const p = byId.get(l.product);
-              return (
-                <div key={l.key} className="flex flex-wrap items-center gap-2">
-                  <select
-                    value={l.product}
-                    onChange={(e) => set(l.key, { product: e.target.value, variant: "" })}
-                    className="w-full min-w-0 rounded-lg border border-zinc-200 px-2 py-1.5 text-sm sm:w-auto sm:flex-1 dark:border-zinc-800 dark:bg-zinc-900"
-                  >
-                    <option value="">Product…</option>
-                    {products.map((x) => (
-                      <option key={x._id} value={x._id}>
-                        {x.name}
-                      </option>
-                    ))}
-                  </select>
-                  {!!p?.variants?.length && (
-                    <select
-                      value={l.variant}
-                      onChange={(e) => set(l.key, { variant: e.target.value })}
-                      className="min-w-0 flex-1 rounded-lg border sm:w-32 sm:flex-none border-zinc-200 px-2 py-1.5 text-sm dark:border-zinc-800 dark:bg-zinc-900"
-                    >
-                      <option value="">Size…</option>
-                      {(p.variants ?? []).map((v) => (
-                        <option key={v._id} value={v._id}>
-                          {v.label}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                  <input
-                    value={l.qty}
-                    onChange={(e) => set(l.key, { qty: e.target.value })}
-                    inputMode="numeric"
-                    placeholder="Qty"
-                    className="w-20 rounded-lg border border-zinc-200 px-2 py-1.5 text-right text-sm dark:border-zinc-800 dark:bg-zinc-900"
-                  />
-                  <button
-                    onClick={() => setLines((ls) => (ls.length > 1 ? ls.filter((x) => x.key !== l.key) : ls))}
-                    className="rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-red-600 dark:hover:bg-zinc-900"
-                    title="Remove line"
-                  >
-                    <Trash2 size={15} />
-                  </button>
-                </div>
-              );
-            })}
-            <button
-              onClick={() =>
-                setLines((ls) => [...ls, { key: Math.max(...ls.map((x) => x.key)) + 1, product: "", variant: "", qty: "" }])
-              }
-              className="inline-flex items-center gap-1 text-sm text-brand-700 hover:underline"
-            >
-              <Plus size={14} /> Add another product
-            </button>
-          </div>
-
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <label className="text-sm">
-              <span className="mb-1 block text-xs text-zinc-500">Date</span>
-              <input
-                type="date"
-                value={date}
-                max={localDay()}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-full rounded-lg border border-zinc-200 px-2 py-1.5 text-sm sm:w-auto dark:border-zinc-800 dark:bg-zinc-900"
-              />
-            </label>
-            <label className="min-w-0 flex-1 text-sm">
-              <span className="mb-1 block text-xs text-zinc-500">
-                Note {type === "adjust" ? "(required)" : "(optional)"}
-              </span>
-              <input
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                placeholder={type === "adjust" ? "e.g. 2 bottles damaged in transit" : "e.g. from Gokak warehouse"}
-                className="w-full rounded-lg border border-zinc-200 px-2 py-1.5 text-sm dark:border-zinc-800 dark:bg-zinc-900"
-              />
-            </label>
-          </div>
-
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <p className="text-xs text-zinc-400">Entries cannot be edited or deleted. Fix a mistake with an Adjustment.</p>
-        </div>
-
-        <div className="flex flex-col-reverse gap-2 border-t border-zinc-100 px-4 py-3 sm:flex-row sm:justify-end sm:px-5 dark:border-zinc-900">
-          <button onClick={onClose} className="rounded-lg px-3 py-1.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-900">
-            Cancel
-          </button>
-          <button
-            onClick={save}
-            disabled={busy || !lines.some((l) => l.product && l.qty)}
-            className="rounded-lg bg-brand-500 px-4 py-1.5 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50"
-          >
-            {busy ? "Saving…" : "Save"}
-          </button>
-        </div>
-      </div>
     </div>
   );
 }

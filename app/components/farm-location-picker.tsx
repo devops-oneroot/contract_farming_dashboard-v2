@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { MapPin, Search } from "lucide-react";
 import { api, PlaceHit } from "../lib/api";
+import { Select } from "./ui";
 
 export type FarmLocation = { state: string; district: string; taluk: string; village: string };
 
@@ -19,7 +20,7 @@ const NEW_VILLAGE = "__new__";
  * A list that is guaranteed to hold the current value.
  *
  * A place picked from the search can be one no farmer is registered in yet,
- * so it is not among the options the dropdown was built from - and a <select>
+ * so it is not among the options the dropdown was built from - and a <Select>
  * whose value is missing from its options shows blank, hiding the choice.
  */
 function withValue(list: string[], value: string) {
@@ -185,7 +186,7 @@ export function FarmLocationPicker({
         {levels.map((l) => (
           <div key={l.key}>
             <label className="mb-1 block text-sm text-zinc-500">{l.label}</label>
-            <select
+            <Select
               value={value[l.key]}
               onChange={(e) => set(l.key, e.target.value)}
               disabled={!!l.needs}
@@ -197,7 +198,7 @@ export function FarmLocationPicker({
                   {o}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
         ))}
 
@@ -224,7 +225,7 @@ export function FarmLocationPicker({
               </button>
             </div>
           ) : (
-            <select
+            <Select
               value={value.village}
               onChange={(e) => {
                 if (e.target.value === NEW_VILLAGE) {
@@ -242,7 +243,7 @@ export function FarmLocationPicker({
                 </option>
               ))}
               <option value={NEW_VILLAGE}>+ Village not in the list…</option>
-            </select>
+            </Select>
           )}
         </div>
       </div>

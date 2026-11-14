@@ -17,6 +17,7 @@ import {
 import { AudioPlayer } from "../../components/audio-player";
 import { PhotoThumb } from "../../components/lightbox";
 import { LoadingBlock } from "../../components/loading";
+import { Select } from "../../components/ui";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -328,7 +329,7 @@ export default function FarmerDetailPage() {
             </div>
           </div>
         </div>
-        <select
+        <Select
           value={farmer.agronomist?._id ?? ""}
           disabled={savingAgro}
           onChange={(e) => onAssign(e.target.value)}
@@ -342,7 +343,7 @@ export default function FarmerDetailPage() {
               {a.name} ({a.mobile})
             </option>
           ))}
-        </select>
+        </Select>
       </div>
 
       {/*
@@ -880,7 +881,7 @@ export default function FarmerDetailPage() {
               </p>
 
               <label className="mb-1 block text-sm text-zinc-500">Crop</label>
-              <select
+              <Select
                 value={cropForm.name}
                 onChange={(e) => setCropForm((f) => ({ ...f, name: e.target.value, variety: "" }))}
                 className="mb-3 w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
@@ -891,13 +892,13 @@ export default function FarmerDetailPage() {
                     {c.name}
                   </option>
                 ))}
-              </select>
+              </Select>
 
               {cropForm.name && (
                 <>
                   <label className="mb-1 block text-sm text-zinc-500">Variety</label>
                   {varieties.length > 0 ? (
-                    <select
+                    <Select
                       value={cropForm.variety}
                       onChange={(e) => setCropForm((f) => ({ ...f, variety: e.target.value }))}
                       className="mb-3 w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
@@ -908,7 +909,7 @@ export default function FarmerDetailPage() {
                           {v}
                         </option>
                       ))}
-                    </select>
+                    </Select>
                   ) : (
                     <input
                       value={cropForm.variety}

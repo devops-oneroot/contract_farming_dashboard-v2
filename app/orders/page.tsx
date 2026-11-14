@@ -5,6 +5,7 @@ import { RefreshCw, Phone, User } from "lucide-react";
 import { api, Order, OrderStatus } from "../lib/api";
 import { LoadingBlock } from "../components/loading";
 import { Pagination, usePaged } from "../components/pagination";
+import { Select } from "../components/ui";
 
 const STATUSES: OrderStatus[] = ["pending", "confirmed", "delivered", "cancelled"];
 
@@ -74,18 +75,18 @@ export default function OrdersPage() {
           order{orders.length === 1 ? "" : "s"}
         </p>
         <div className="flex flex-wrap items-center gap-2">
-          <select
+          <Select
             value={filter}
             onChange={(e) => setFilter(e.target.value as "" | OrderStatus)}
-            className="min-w-0 flex-1 rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm sm:flex-none dark:border-zinc-700"
+            className="min-w-0 flex-1 rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm sm:w-44 sm:flex-none dark:border-zinc-700"
           >
             <option value="" className="dark:bg-zinc-900">All statuses</option>
             {STATUSES.map((s) => (
               <option key={s} value={s} className="capitalize dark:bg-zinc-900">
-                {s}
+                {s.charAt(0).toUpperCase() + s.slice(1)}
               </option>
             ))}
-          </select>
+          </Select>
           <button
             onClick={load}
             className="flex items-center gap-2 rounded-lg border border-zinc-300 px-3 py-2 text-sm hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
@@ -155,17 +156,17 @@ export default function OrdersPage() {
                   <span className={`rounded-full px-2.5 py-1 text-xs font-medium capitalize ${STATUS_STYLE[o.status]}`}>
                     {o.status}
                   </span>
-                  <select
+                  <Select
                     value={o.status}
                     onChange={(e) => changeStatus(o, e.target.value as OrderStatus)}
-                    className="rounded-lg border border-zinc-300 bg-transparent px-2 py-1 text-sm capitalize dark:border-zinc-700"
+                    className="h-8 w-auto rounded-lg border border-zinc-300 bg-transparent px-2 py-1 text-sm dark:border-zinc-700"
                   >
                     {STATUSES.map((s) => (
                       <option key={s} value={s} className="capitalize dark:bg-zinc-900">
-                        {s}
+                        {s.charAt(0).toUpperCase() + s.slice(1)}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </div>
               </div>
             </div>

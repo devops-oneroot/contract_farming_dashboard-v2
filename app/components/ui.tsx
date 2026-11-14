@@ -2,6 +2,7 @@
 
 import type { ComponentType, JSX, ReactNode } from "react";
 import { useSharedUI, type SharedUIModule } from "../lib/shared-ui";
+import { CustomSelect } from "./custom-select";
 
 /**
  * The common UI kit's controls, as this app uses them. Each one renders the
@@ -57,17 +58,17 @@ export const Input = shared((ui) => ui.Input, function FallbackInput({ isPasswor
   return <input {...props} type={isPassword ? "password" : props.type} className={cx(CONTROL, className)} />;
 }, "Input");
 
-export const Select = shared((ui) => ui.Select, function FallbackSelect({ isSearch, className, ...props }) {
-  void isSearch; // a native <select> has no search box
-  return <select {...props} className={cx(CONTROL, className)} />;
-}, "Select");
-
 /**
- * The common styled dropdown: single choice, or `multiple` with a checkbox per
- * row, and `isSearch` for a filter box. Fallback: a native <select>, a list
- * box when `multiple` (Ctrl/Cmd-click to pick several).
+ * Every dropdown in the dashboard is the custom one (components/custom-select),
+ * never a native <select>: one look and one keyboard behaviour everywhere,
+ * whether or not the shared UI kit loaded.
+ *
+ * `Select` takes the same props and <option> children as a native select;
+ * `Dropdown` takes `options`, with `multiple` for a checkbox per row.
  */
-export const Dropdown = shared((ui) => ui.Dropdown, function FallbackDropdown({
+export const Select = CustomSelect;
+
+export function Dropdown({
   options,
   value = "",
   onChange,
@@ -79,39 +80,47 @@ export const Dropdown = shared((ui) => ui.Dropdown, function FallbackDropdown({
   className,
   title,
   id,
+  isSearch,
+  searchPlaceholder,
+  emptyText,
   "aria-label": ariaLabel,
+}: {
+  options: { value: string; label: string; hint?: string; disabled?: boolean }[];
+  value?: string;
+  onChange?: (value: string) => void;
+  multiple?: boolean;
+  values?: string[];
+  onValuesChange?: (values: string[]) => void;
+  placeholder?: string;
+  disabled?: boolean;
+  className?: string;
+  title?: string;
+  id?: string;
+  isSearch?: boolean;
+  searchPlaceholder?: string;
+  emptyText?: string;
+  "aria-label"?: string;
 }) {
-  const common = { disabled, title, id, "aria-label": ariaLabel };
-  if (multiple) {
-    return (
-      <select
-        {...common}
-        multiple
-        size={Math.min(6, Math.max(2, options.length))}
-        value={values}
-        onChange={(e) => onValuesChange?.(Array.from(e.target.selectedOptions, (o) => o.value))}
-        className={cx(CONTROL, "h-auto", className)}
-      >
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-            {o.hint ? ` (${o.hint})` : ""}
-          </option>
-        ))}
-      </select>
-    );
-  }
   return (
-    <select {...common} value={value} onChange={(e) => onChange?.(e.target.value)} className={cx(CONTROL, className)}>
-      {placeholder && <option value="">{placeholder}</option>}
-      {options.map((o) => (
-        <option key={o.value} value={o.value}>
-          {o.label}
-        </option>
-      ))}
-    </select>
+    <CustomSelect
+      options={options}
+      value={value}
+      onValueChange={onChange}
+      multiple={multiple}
+      values={values}
+      onValuesChange={onValuesChange}
+      placeholder={placeholder}
+      disabled={disabled}
+      className={className}
+      title={title}
+      id={id}
+      isSearch={isSearch}
+      searchPlaceholder={searchPlaceholder}
+      emptyText={emptyText}
+      aria-label={ariaLabel}
+    />
   );
-}, "Dropdown");
+}
 
 export const DateInput = shared((ui) => ui.DateInput, function FallbackDateInput({ className, ...props }) {
   return <input {...props} type="date" className={cx(CONTROL, className)} />;

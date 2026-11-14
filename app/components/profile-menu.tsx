@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, ChevronDown, LogOut, Palette } from "lucide-react";
 import { useAuth } from "../lib/auth";
+import { roleLabel } from "../lib/rbac";
 import { ACCENTS, useAccent } from "./theme-toggle";
 
 function initials(name?: string) {
@@ -70,7 +71,7 @@ export function ProfileMenu() {
             <div className="min-w-0">
               <div className="truncate font-semibold">{admin?.name}</div>
               <div className="truncate text-xs text-zinc-500">
-                Administrator{admin?.mobile ? ` · ${admin.mobile}` : ""}
+                {roleLabel(admin?.role)}{admin?.mobile ? ` · ${admin.mobile}` : ""}
               </div>
             </div>
           </div>

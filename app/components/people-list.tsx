@@ -926,7 +926,7 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
                       afterwards — the bills already handed over keep theirs. */}
                   {showCounts && (
                     <td>
-                      <select
+                      <Select
                         value={p.region?._id ?? ""}
                         onChange={async (e) => {
                           const regionId = e.target.value || null;
@@ -945,7 +945,7 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
                             {r.taluk} · ENP-{r.code}
                           </option>
                         ))}
-                      </select>
+                      </Select>
                     </td>
                   )}
                   {showDetail && (
@@ -1022,7 +1022,7 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
               </Field>
 
               <Field label="Assign agronomist">
-                <select
+                <Select
                   value={form.agronomistId}
                   onChange={(e) => setForm((f) => ({ ...f, agronomistId: e.target.value }))}
                   className={FIELD}
@@ -1033,7 +1033,7 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
                       {a.name} ({a.mobile})
                     </option>
                   ))}
-                </select>
+                </Select>
               </Field>
 
               {/*
@@ -1070,7 +1070,7 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
 
               <div className="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2">
                 <Field label="Crop">
-                  <select
+                  <Select
                     value={form.crop}
                     onChange={(e) =>
                       // Varieties belong to a crop, so clear the old one on change.
@@ -1084,7 +1084,7 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
                         {c.name}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </Field>
 
                 {form.crop ? (
@@ -1094,19 +1094,19 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
                         Package of Practices counted from the D.O.P, a regular
                         one is not. */}
                     <Field label="Farming type">
-                      <select
+                      <Select
                         value={form.farmingType}
                         onChange={(e) => setForm((f) => ({ ...f, farmingType: e.target.value }))}
                         className={FIELD}
                       >
                         <option value="contract">Contract farming</option>
                         <option value="regular">Regular farming</option>
-                      </select>
+                      </Select>
                     </Field>
 
                     <Field label="Variety">
                       {varieties.length > 0 ? (
-                        <select
+                        <Select
                           value={form.variety}
                           onChange={(e) => setForm((f) => ({ ...f, variety: e.target.value }))}
                           className={FIELD}
@@ -1117,7 +1117,7 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
                               {v}
                             </option>
                           ))}
-                        </select>
+                        </Select>
                       ) : (
                         <input
                           value={form.variety}

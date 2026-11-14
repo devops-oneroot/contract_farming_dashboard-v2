@@ -150,7 +150,24 @@ export type Product = {
   createdAt: string;
 };
 
-export type Admin = { _id: string; name: string; mobile: string; createdAt?: string };
+/** 'admin' runs the whole dashboard; 'stock_incharge' only the Stock portal. */
+/** A dashboard account's role. What each may open is set per role (see lib/rbac.ts). */
+export type AdminRole = "super_admin" | "admin" | "sales_manager" | "sales_support" | "stock_incharge";
+export type Admin = {
+  _id: string;
+  name: string;
+  mobile: string;
+  role?: AdminRole;
+  /** The modules this account's role may open - sent with the signed-in account only. */
+  modules?: string[];
+  createdAt?: string;
+};
+
+/** Every role, its label and what it may open (GET /api/admin/roles). */
+export type RolesConfig = {
+  modules: string[];
+  roles: { key: AdminRole; label: string; modules: string[]; fixed: boolean }[];
+};
 
 export type CatalogCrop = {
   _id: string;
@@ -852,6 +869,12 @@ export type StockSummaryRow = {
   value: number;
   /** Lines below zero: sold more than they were given. */
   short: number;
+  /** Units given to them, net of returns and corrections. */
+  allocated: number;
+  /** Units they sold. */
+  sold: number;
+  /** What those sales came to, in ₹. */
+  soldAmount: number;
 };
 
 export type StockEntryType = "opening" | "issue" | "return" | "adjust";
@@ -867,9 +890,54 @@ export type StockLine = {
   returned: number;
   adjusted: number;
   sold: number;
+  /** opening + issued - returned + adjusted: allocated - sold = inHand. */
+  allocated: number;
   inHand: number;
+  /** What the units sold came to, in ₹ (line totals). */
+  soldAmount: number;
   price: number;
   value: number;
+};
+
+/** One product line in the stock in-charge's central store. */
+export type StoreLine = {
+  product: string;
+  variant: string | null;
+  name: string;
+  unit: string;
+  received: number;
+  adjusted: number;
+  /** Issued to field staff since the store was first counted. */
+  issued: number;
+  /** Handed back by field staff. */
+  returned: number;
+  /** received + adjusted - issued + returned. */
+  inStore: number;
+  price: number;
+  value: number;
+};
+
+export type StoreEntryType = "receive" | "adjust";
+
+export type StoreMovement = {
+  _id: string;
+  type: StoreEntryType;
+  product: string;
+  variant: string | null;
+  productName: string;
+  unit: string;
+  qty: number;
+  note: string;
+  by: string;
+  at: string;
+};
+
+export type StoreStock = {
+  /** The store's first entry; null until stock is first received. */
+  since: string | null;
+  lines: StoreLine[];
+  history: StoreMovement[];
+  totals: { products: number; units: number; value: number; received: number; issued: number };
 };
 
 export type StockMovement = {
@@ -903,10 +971,10 @@ export const api = {
 
   // Admin management (Account tab)
   listAdmins: () => json<Admin[]>("/api/admin"),
-  createAdmin: (name: string, mobile: string, password: string) =>
+  createAdmin: (name: string, mobile: string, password: string, role: AdminRole = "admin") =>
     json<{ admin: Admin }>("/api/admin", {
       method: "POST",
-      body: JSON.stringify({ name, mobile, password }),
+      body: JSON.stringify({ name, mobile, password, role }),
     }),
   deleteAdmin: (id: string) => json<{ _id: string }>(`/api/admin/${id}`, { method: "DELETE" }),
   resetAdminPassword: (id: string, password: string) =>
@@ -914,6 +982,14 @@ export const api = {
       method: "PATCH",
       body: JSON.stringify({ password }),
     }),
+  /** Edit an account: only the fields given change; a blank password keeps the current one. */
+  updateAdmin: (id: string, body: { name?: string; mobile?: string; role?: AdminRole; password?: string }) =>
+    json<{ admin: Admin }>(`/api/admin/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  setAdminRole: (id: string, role: AdminRole) =>
+    json<{ admin: Admin }>(`/api/admin/${id}/role`, { method: "PATCH", body: JSON.stringify({ role }) }),
+  getRoles: () => json<RolesConfig>("/api/admin/roles"),
+  saveRoles: (roleModules: Partial<Record<AdminRole, string[]>>) =>
+    json<RolesConfig>("/api/admin/roles", { method: "PUT", body: JSON.stringify({ roleModules }) }),
 
   // Users
   /**
@@ -1459,6 +1535,20 @@ export const api = {
 
   stockSummary: () => json<StockSummaryRow[]>("/api/stock"),
   staffStock: (id: string) => json<StaffStock>(`/api/stock/staff/${id}`),
+  /** Split central stock across several salespeople in one go. */
+  distributeStock: (body: {
+    allocations: { staff: string; items: { product: string; variant?: string | null; qty: number }[] }[];
+    note?: string;
+    at?: string;
+  }) => json<{ people: number; entries: number }>("/api/stock/distribute", { method: "POST", body: JSON.stringify(body) }),
+  /** The stock in-charge's central store. */
+  storeStock: () => json<StoreStock>("/api/stock/store"),
+  addStoreStock: (body: {
+    type: StoreEntryType;
+    items: { product: string; variant?: string | null; qty: number }[];
+    note?: string;
+    at?: string;
+  }) => json<StoreMovement[]>("/api/stock/store/movements", { method: "POST", body: JSON.stringify(body) }),
   addStock: (body: {
     staff: string;
     type: StockEntryType;

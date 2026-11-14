@@ -55,8 +55,15 @@ export function moduleForPath(pathname: string): string | null {
   return null;
 }
 
-/** Whether this account may open a module. */
-export const can = (admin: Admin | null | undefined, module: string) => !!admin?.modules?.includes(module);
+/**
+ * Whether this account may open a module.
+ *
+ * A signed-in account with no module list at all comes from a backend older
+ * than role-based access: it treated every account as a full admin, so show
+ * everything rather than an empty dashboard. (The server still decides.)
+ */
+export const can = (admin: Admin | null | undefined, module: string) =>
+  !!admin && (!Array.isArray(admin.modules) || admin.modules.includes(module));
 
 /** Whether this account may open a page. Pages outside every module (login) are open. */
 export function canPath(admin: Admin | null | undefined, pathname: string) {

@@ -11,7 +11,7 @@ import {
   Users,
   Phone,
 } from "lucide-react";
-import { api, NearbyResult, NotStartedAgent, Person, TrackingPause, TrackingSession } from "../lib/api";
+import { api, NearbyResult, NotStartedAgent, Person, TrackingPause, TrackingSession, TrackPoint } from "../lib/api";
 import { PhotoThumb } from "../components/lightbox";
 import { Button, Select, DateInput } from "../components/ui";
 import { LoadingBlock } from "../components/loading";
@@ -134,8 +134,32 @@ function RouteMap({
   }, []);
 
   const html = useMemo(() => {
-    // `at` travels with each fix so a dot can say when it was recorded.
-    const coords = points.map((p) => [p.latitude, p.longitude, p.at ?? null]);
+    /**
+     * The route in the order it was travelled: sorted by time, and with
+     * repeats dropped - a batch the phone re-sent is stored again, and drawing
+     * it twice sends the line back across the map to where it already was.
+     * `at` and accuracy travel with each fix so a dot can say when it was
+     * recorded and the line can skip the wild ones.
+     */
+    const ms = (p: TrackPoint) => {
+      const t = new Date(p.at).getTime();
+      return Number.isFinite(t) ? t : 0;
+    };
+    // How many times each fix is stored, so its pin can say "saved 3×".
+    const keyOf = (p: TrackPoint) => `${Math.round(ms(p) / 1000)}:${p.latitude}:${p.longitude}`;
+    const copies = new Map<string, number>();
+    for (const p of points) copies.set(keyOf(p), (copies.get(keyOf(p)) ?? 0) + 1);
+    const seen = new Set<string>();
+    const coords = [...points]
+      .sort((a, b) => ms(a) - ms(b))
+      .filter((p) => {
+        const key = keyOf(p);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .map((p) => [p.latitude, p.longitude, p.at ?? null, p.accuracy ?? null, copies.get(keyOf(p)) ?? 1]);
+    const live = !session.endAt;
     const anchor = nearby?.anchor ?? null;
     const farmers = nearby?.farmers ?? [];
     const radiusKm = nearby?.radiusKm ?? 0;
@@ -163,13 +187,16 @@ function RouteMap({
 .endlabel::before{border-top-color:rgba(24,24,27,.85)}
 .fitbtn{background:#fff;border-radius:6px;padding:5px 9px;font:600 12px system-ui,sans-serif;color:${b700};cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.3)}
 .fitbtn:hover{background:${b50}}
-.leaflet-top.leaflet-right .fitbtn{margin-top:8px}</style></head>
+.leaflet-top.leaflet-right .fitbtn{margin-top:8px}
+.arrow{width:14px;height:14px;display:flex;align-items:center;justify-content:center}
+.legline{display:inline-block;width:16px;height:4px;border-radius:2px;margin-right:6px;vertical-align:2px}</style></head>
 <body><div id="map"></div><script>
   var C = ${JSON.stringify(coords)};
   var ANCHOR = ${JSON.stringify(anchor)};
   var FARMERS = ${JSON.stringify(farmers)};
   var RADIUS_KM = ${JSON.stringify(radiusKm)};
   var HIDDEN = ${JSON.stringify(hidden)};
+  var LIVE = ${JSON.stringify(live)};
   var map = L.map('map', { attributionControl: false, maxZoom: 20 });
 
   /**
@@ -267,11 +294,13 @@ function RouteMap({
     approx: L.layerGroup(),
     own: L.layerGroup(),
     other: L.layerGroup(),
+    line: L.layerGroup(),
+    rough: L.layerGroup(),
     route: L.layerGroup(),
     end: L.layerGroup(),
     start: L.layerGroup(),
   };
-  var DRAW_ORDER = ['approx', 'own', 'other', 'route', 'end', 'start'];
+  var DRAW_ORDER = ['approx', 'own', 'other', 'line', 'rough', 'route', 'end', 'start'];
   DRAW_ORDER.forEach(function (k) { GROUPS[k].addTo(map); });
 
   // Farmers go on first, so a dense village never buries the agent's own day.
@@ -305,12 +334,111 @@ function RouteMap({
     bounds.push([f.latitude, f.longitude]);
   });
 
-  // Every recorded fix as its own dot, deliberately NOT joined into a line:
-  // a polyline draws a straight segment between consecutive fixes, which
-  // invents travel through whatever lies between them. The dots show only
-  // where the agent was actually recorded.
+  /**
+   * Fixes the phone itself says are off by more than this are left out of the
+   * line: a "you are somewhere in this 2 km circle" fix drawn as a vertex
+   * turns a straight road into a zig-zag. They still show as faint grey dots
+   * (the "Low-accuracy fix" legend row) so nothing recorded is hidden.
+   */
+  var MAX_ACCURACY_M = 150;
+  function rough(c) { return c[3] != null && c[3] > MAX_ACCURACY_M; }
+
+  /** A fix that is not usable for the line, unless it is the start or the latest. */
+  var R = C.filter(function (c, i) { return !rough(c) || i === 0 || i === C.length - 1; });
+
+  /**
+   * Gaps longer than this are drawn dashed: the phone sent nothing for that
+   * long (no signal, battery saver, app closed), so the straight line between
+   * the two ends is a guess, not a road travelled.
+   */
+  var GAP_MS = 20 * 60 * 1000;
+  function ms(c) { var t = new Date(c[2]).getTime(); return isFinite(t) ? t : 0; }
+
+  function bearing(a, b) {
+    var t = Math.PI / 180;
+    var y = Math.sin((b[1] - a[1]) * t) * Math.cos(b[0] * t);
+    var x = Math.cos(a[0] * t) * Math.sin(b[0] * t) - Math.sin(a[0] * t) * Math.cos(b[0] * t) * Math.cos((b[1] - a[1]) * t);
+    return Math.atan2(y, x) / t;
+  }
+
+  var ROUTE_COLOR = '#1E88E5';
+  if (R.length > 1) {
+    var segs = [[R[0]]];
+    for (var i = 1; i < R.length; i++) {
+      var gap = ms(R[i]) - ms(R[i - 1]) > GAP_MS;
+      if (gap) {
+        L.polyline([[R[i - 1][0], R[i - 1][1]], [R[i][0], R[i][1]]], {
+          color: '#71717a', weight: 3, opacity: 0.9, dashArray: '6 8',
+        })
+          .bindTooltip('No location for ' + Math.round((ms(R[i]) - ms(R[i - 1])) / 60000) + ' min (' + timeAt(R[i - 1][2]) + ' - ' + timeAt(R[i][2]) + ')', { sticky: true })
+          .addTo(GROUPS.line);
+        segs.push([]);
+      }
+      segs[segs.length - 1].push(R[i]);
+    }
+    segs.forEach(function (s) {
+      if (s.length < 2) return;
+      var ll = s.map(function (c) { return [c[0], c[1]]; });
+      // A white casing under the line keeps it readable over satellite imagery.
+      L.polyline(ll, { color: '#fff', weight: 8, opacity: 0.85, lineJoin: 'round', lineCap: 'round' }).addTo(GROUPS.line);
+      L.polyline(ll, { color: ROUTE_COLOR, weight: 4.5, opacity: 1, lineJoin: 'round', lineCap: 'round' }).addTo(GROUPS.line);
+    });
+  }
+
+  /**
+   * Every fix stored in the database gets a pin of its own.
+   *
+   * Where the agent moved on, the pin is an arrow pointing at the next place
+   * they were recorded, so the direction of travel reads straight off the
+   * map. Where they stayed put (the next fix is within a few metres, or the
+   * phone went quiet), it is a round pin. Hover for the time, the exact
+   * latitude/longitude and the accuracy; click to search for farmers there.
+   */
+  var STILL_M = 8;
+  function headingFrom(i) {
+    for (var k = i + 1; k < C.length; k++) {
+      if (ms(C[k]) - ms(C[i]) > GAP_MS) return null;
+      if (rough(C[k]) && k !== C.length - 1) continue;
+      if (map.distance([C[i][0], C[i][1]], [C[k][0], C[k][1]]) > STILL_M) return bearing(C[i], C[k]);
+    }
+    return null;
+  }
+  function pin(c, i) {
+    var poor = rough(c);
+    var fill = poor ? '#a1a1aa' : ROUTE_COLOR;
+    var deg = headingFrom(i);
+    var size = poor ? 14 : 18;
+    var html = deg === null
+      ? '<svg width="' + size + '" height="' + size + '" viewBox="0 0 18 18"><circle cx="9" cy="9" r="5" fill="' + fill + '" stroke="#fff" stroke-width="2"/></svg>'
+      : '<div class="arrow" style="width:' + size + 'px;height:' + size + 'px;transform:rotate(' + deg + 'deg)"><svg width="' + size + '" height="' + size + '" viewBox="0 0 18 18"><path d="M9 1.5 L15.5 15.5 L9 12 L2.5 15.5 Z" fill="' + fill + '" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg></div>';
+    L.marker([c[0], c[1]], {
+      keyboard: false,
+      opacity: poor ? 0.75 : 1,
+      icon: L.divIcon({ className: '', iconSize: [size, size], iconAnchor: [size / 2, size / 2], html: html }),
+    })
+      .addTo(GROUPS[poor ? 'rough' : 'route'])
+      .bindTooltip(
+        '<b>Point ' + (i + 1) + ' of ' + C.length + '</b>' + (timeAt(c[2]) ? ' - ' + timeAt(c[2]) : '') +
+          '<br/>' + c[0] + ', ' + c[1] +
+          (c[3] != null ? '<br/>Accuracy ±' + Math.round(c[3]) + ' m' + (poor ? ' (left off the line)' : '') : '') +
+          (c[4] > 1 ? '<br/>Saved ' + c[4] + '× in the database' : '') +
+          '<br/><span style="color:#71717a">Click to search farmers here</span>',
+        { direction: 'top', offset: [0, -size / 2] }
+      )
+      .on('click', function () {
+        parent.postMessage({ type: 'oneroot:anchor', lat: c[0], lng: c[1] }, '*');
+      });
+  }
+
+  // Start and End sit above the pins, so a busy day cannot bury them.
+  map.createPane('ends');
+  map.getPane('ends').style.zIndex = 650;
+
+  // Every recorded fix also gets a small dot of its own, to hover for the
+  // time or click to search for farmers around that spot.
   function dot(c, opts) {
     return L.circleMarker([c[0], c[1]], {
+      pane: 'ends',
       radius: opts.radius,
       color: '#fff',
       weight: opts.weight,
@@ -333,14 +461,16 @@ function RouteMap({
       });
   }
 
-  C.forEach(function (c) {
+  // The frame follows the usable route; a 2 km-off fix should not zoom the map out.
+  (R.length ? R : C).forEach(function (c) {
     bounds.push([c[0], c[1]]);
     routeBounds.push([c[0], c[1]]);
   });
 
   // The middle of the day first, so neither end can be buried under it.
-  C.slice(1, -1).forEach(function (c, i) {
-    dot(c, { group: 'route', radius: 4, weight: 1.5, fill: '#1E88E5', opacity: 0.85, label: 'Point ' + (i + 2) });
+  C.forEach(function (c, i) {
+    if (i === 0 || i === C.length - 1) return;
+    pin(c, i);
   });
 
   /**
@@ -354,7 +484,7 @@ function RouteMap({
    */
   if (C.length > 1) {
     dot(C[C.length - 1], {
-      group: 'end', radius: 9, weight: 3, fill: '#E5484D', opacity: 1, label: 'End', permanent: true,
+      group: 'end', radius: 9, weight: 3, fill: '#E5484D', opacity: 1, label: LIVE ? 'Now' : 'End', permanent: true,
     });
   }
   if (C.length) {
@@ -437,7 +567,8 @@ function RouteMap({
   function restack() {
     DRAW_ORDER.forEach(function (k) {
       if (map.hasLayer(GROUPS[k])) {
-        GROUPS[k].eachLayer(function (l) { l.bringToFront(); });
+        // Arrow markers live in their own pane and have no bringToFront.
+        GROUPS[k].eachLayer(function (l) { if (l.bringToFront) l.bringToFront(); });
       }
     });
   }
@@ -458,8 +589,10 @@ function RouteMap({
    */
   var ROWS = [
     { key: 'start', color: '#2E9E5B', label: 'Start' },
-    { key: 'route', color: '#1E88E5', label: 'Route point' },
-    { key: 'end', color: '#E5484D', label: 'End' },
+    { key: 'line', color: '#1E88E5', label: 'Route', line: true },
+    { key: 'route', color: '#1E88E5', label: 'Point (arrow = direction)' },
+    { key: 'rough', color: '#a1a1aa', label: 'Low-accuracy fix' },
+    { key: 'end', color: '#E5484D', label: LIVE ? 'Now (latest)' : 'End' },
     { key: 'own', color: '#F59E0B', label: 'Their farmer' },
     { key: 'other', color: '#A855F7', label: 'Other farmer' },
     { key: 'approx', color: '#EC4899', label: 'Village centre only' },
@@ -474,9 +607,9 @@ function RouteMap({
       var box = L.DomUtil.create('input', '', row);
       box.type = 'checkbox';
       box.checked = HIDDEN.indexOf(r.key) === -1;
-      var sw = L.DomUtil.create('i', '', row);
+      var sw = L.DomUtil.create(r.line ? 'span' : 'i', r.line ? 'legline' : '', row);
       sw.style.background = r.color;
-      row.appendChild(document.createTextNode(r.label + (r.key === 'own' || r.key === 'other' || r.key === 'approx' ? ' (' + n + ')' : '')));
+      row.appendChild(document.createTextNode(r.label + (r.key === 'own' || r.key === 'other' || r.key === 'approx' || r.key === 'rough' ? ' (' + n + ')' : '')));
       L.DomEvent.on(box, 'change', function () {
         setShown(r.key, box.checked);
         // Tell the page, so the next rebuild of this map keeps the choice.
@@ -497,7 +630,7 @@ function RouteMap({
   restack();
 </script></body></html>`;
     // eslint-disable-next-line react-hooks/exhaustive-deps -- accent is read through the CSS variables above
-  }, [points, nearby, accent]);
+  }, [points, nearby, accent, session.endAt]);
 
   if (points.length === 0) {
     return (

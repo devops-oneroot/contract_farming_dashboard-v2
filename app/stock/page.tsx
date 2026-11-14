@@ -174,7 +174,7 @@ function StockPortal() {
       {/* Tabs */}
       <div
         role="tablist"
-        className="scroll-thin flex gap-1 overflow-x-auto rounded-xl bg-zinc-100 p-1 dark:bg-zinc-900"
+        className="scroll-thin flex items-center gap-1 overflow-x-auto overflow-y-hidden rounded-xl bg-zinc-100 p-1 dark:bg-zinc-900"
       >
         {TABS.map((t) => {
           const on = tab === t.value;
@@ -184,7 +184,7 @@ function StockPortal() {
               role="tab"
               aria-selected={on}
               onClick={() => goTab(t.value)}
-              className={`flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-3.5 py-2 text-sm font-medium transition ${
+              className={`flex h-9 shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-3.5 text-sm font-medium leading-none transition ${
                 on
                   ? "bg-white text-brand-700 shadow-sm dark:bg-zinc-950 dark:text-brand-300"
                   : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
@@ -193,7 +193,7 @@ function StockPortal() {
               <t.icon size={15} />
               {t.label}
               {t.value === "people" && rows ? (
-                <span className="rounded-full bg-zinc-200 px-1.5 text-[11px] text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">{rows.length}</span>
+                <span className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-zinc-200 px-1.5 text-[11px] leading-none text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">{rows.length}</span>
               ) : null}
             </button>
           );

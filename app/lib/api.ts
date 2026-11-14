@@ -932,6 +932,41 @@ export type StoreMovement = {
   at: string;
 };
 
+/** One kind of stock movement in the history. */
+export type StockHistoryKind = "receive" | "store_adjust" | "opening" | "issue" | "return" | "adjust" | "sale";
+
+/** One entry in the stock history: who, what, how many, and who recorded it. */
+export type StockHistoryEntry = {
+  id: string;
+  kind: StockHistoryKind;
+  at: string;
+  /** The salesperson it concerns; null for central stock entries. */
+  staff: { _id: string; name: string; mobile: string } | null;
+  product: string;
+  variant: string | null;
+  name: string;
+  unit: string;
+  qty: number;
+  /** Sales only: what the line came to, in ₹. */
+  amount: number | null;
+  /** Sales only: who bought. */
+  buyer: string;
+  invoiceNo: string;
+  note: string;
+  /** The dashboard account that recorded it; null for sales (recorded in the app). */
+  by: { mobile: string; name: string } | null;
+};
+
+export type StockHistory = {
+  items: StockHistoryEntry[];
+  total: number;
+  page: number;
+  limit: number;
+  pages: number;
+  /** Per kind, over every entry the filters match. */
+  totals: Partial<Record<StockHistoryKind, { entries: number; qty: number; amount: number }>>;
+};
+
 export type StoreStock = {
   /** The store's first entry; null until stock is first received. */
   since: string | null;
@@ -1541,6 +1576,26 @@ export const api = {
     note?: string;
     at?: string;
   }) => json<{ people: number; entries: number }>("/api/stock/distribute", { method: "POST", body: JSON.stringify(body) }),
+  /** Every stock movement, newest first: received, issued to whom, returned, sold. */
+  stockHistory: (params: {
+    kind?: StockHistoryKind[];
+    staff?: string;
+    product?: string;
+    from?: string;
+    to?: string;
+    page?: number;
+    limit?: number;
+  } = {}) => {
+    const q = new URLSearchParams();
+    if (params.kind?.length) q.set("kind", params.kind.join(","));
+    if (params.staff) q.set("staff", params.staff);
+    if (params.product) q.set("product", params.product);
+    if (params.from) q.set("from", params.from);
+    if (params.to) q.set("to", params.to);
+    q.set("page", String(params.page ?? 1));
+    q.set("limit", String(params.limit ?? 50));
+    return json<StockHistory>(`/api/stock/history?${q.toString()}`);
+  },
   /** The stock in-charge's central store. */
   storeStock: () => json<StoreStock>("/api/stock/store"),
   addStoreStock: (body: {

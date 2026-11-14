@@ -7,7 +7,8 @@ import { ArrowLeft, Boxes, IndianRupee, Minus, PackageCheck, Plus, ShoppingBag, 
 
 import { api, type StaffStock, type StockEntryType } from "../../lib/api";
 import { LoadingBlock } from "../../components/loading";
-import { ActionBtn, EntryDialog, fmtDate, HistoryItem, inr, qty, Stat } from "../stock-ui";
+import { ActionBtn, EntryDialog, fmtDate, inr, qty, Stat } from "../stock-ui";
+import { StockHistoryView } from "../stock-history";
 
 const initials = (name = "") =>
   name
@@ -27,6 +28,8 @@ export default function FieldPersonStockPage() {
   const [data, setData] = useState<StaffStock | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [entry, setEntry] = useState<StockEntryType | null>(null);
+  /** Bumped after a save, so the history reloads. */
+  const [version, setVersion] = useState(0);
 
   const load = useCallback(() => {
     api
@@ -144,27 +147,10 @@ export default function FieldPersonStockPage() {
             Sold and the sales amount come from Field Sales automatically.
           </p>
 
-          {/* Every entry behind the figures */}
-          <div className="card p-4 sm:p-5">
-            <h3 className="mb-2 text-sm font-semibold">Stock entries</h3>
-            {!data.history.length ? (
-              <p className="text-sm text-zinc-500">No entries yet.</p>
-            ) : (
-              <ul className="divide-y divide-zinc-100 text-sm dark:divide-zinc-900">
-                {data.history.map((m) => (
-                  <HistoryItem
-                    key={m._id}
-                    type={m.type}
-                    productName={m.productName}
-                    unit={m.unit}
-                    signedQty={m.type === "return" ? -m.qty : m.qty}
-                    note={m.note}
-                    at={m.at}
-                    by={m.by}
-                  />
-                ))}
-              </ul>
-            )}
+          {/* Everything behind the figures: issued, returned, adjusted and sold. */}
+          <div>
+            <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold">Stock history</h3>
+            <StockHistoryView key={version} staff={[]} fixedStaff={data.staff._id} />
           </div>
         </>
       )}
@@ -176,6 +162,7 @@ export default function FieldPersonStockPage() {
           onClose={() => setEntry(null)}
           onSaved={() => {
             setEntry(null);
+            setVersion((v) => v + 1);
             load();
           }}
         />

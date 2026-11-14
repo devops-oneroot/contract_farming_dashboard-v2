@@ -137,15 +137,15 @@ function TravelCard({
           {filed ? "No meter reading was entered in the report." : "No report filed, so no meter reading."}
         </p>
       ) : (
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
           {[
             { label: "Start meter", value: String(meterStart ?? 0) },
             { label: "Stop meter", value: String(meterEnd) },
             { label: "Total km", value: `${totalKm ?? 0} km`, strong: true },
           ].map((s) => (
-            <div key={s.label} className="rounded-lg bg-white p-3 ring-1 ring-zinc-200 dark:bg-zinc-950 dark:ring-zinc-800">
+            <div key={s.label} className="min-w-0 rounded-lg bg-white p-2 ring-1 sm:p-3 ring-zinc-200 dark:bg-zinc-950 dark:ring-zinc-800">
               <div className="text-xs text-zinc-500">{s.label}</div>
-              <div className={`mt-1 text-lg font-semibold ${s.strong ? "text-blue-600" : ""}`}>{s.value}</div>
+              <div className={`mt-1 text-sm font-semibold sm:text-lg ${s.strong ? "text-blue-600" : ""}`}>{s.value}</div>
             </div>
           ))}
         </div>
@@ -180,17 +180,17 @@ function AttendanceCard({ attendance: a }: { attendance?: DayAttendance | null }
         </p>
       ) : (
         <>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
             {[
               { icon: LogIn, label: "Start time", value: fmtClock(a.startAt) },
               { icon: LogOut, label: "End time", value: a.endAt ? fmtClock(a.endAt) : "—" },
               { icon: Clock, label: "Total hours", value: a.workedMinutes != null ? hm(a.workedMinutes) : "Running" },
             ].map((s) => (
-              <div key={s.label} className="rounded-lg bg-white p-3 ring-1 ring-zinc-200 dark:bg-zinc-950 dark:ring-zinc-800">
+              <div key={s.label} className="min-w-0 rounded-lg bg-white p-2 ring-1 sm:p-3 ring-zinc-200 dark:bg-zinc-950 dark:ring-zinc-800">
                 <div className="flex items-center gap-1.5 text-xs text-zinc-500">
-                  <s.icon size={13} className="text-brand-600" /> {s.label}
+                  <s.icon size={13} className="hidden shrink-0 text-brand-600 sm:block" /> {s.label}
                 </div>
-                <div className="mt-1 text-lg font-semibold">{s.value}</div>
+                <div className="mt-1 text-sm font-semibold sm:text-lg">{s.value}</div>
               </div>
             ))}
           </div>

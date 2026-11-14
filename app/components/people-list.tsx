@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { FollowUpDialog } from "./follow-up-dialog";
 import { PhotoLightbox } from "./photo-lightbox";
 import { RefreshCw, Search, ArrowRight, Plus, X, CalendarClock, MapPin, Sprout } from "lucide-react";
@@ -141,6 +142,18 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
    * "who brought this farmer in".
    */
   const [onboardedByFilter, setOnboardedByFilter] = useState("");
+  /**
+   * Arrived from the home page's "without an agronomist" notice
+   * (/farmers?unassigned=1&highlight=<id,…>): show only unassigned farmers
+   * and mark the ones that were clicked.
+   */
+  const params = useSearchParams();
+  const [unassignedOnly, setUnassignedOnly] = useState(
+    () => role === "farmer" && params.get("unassigned") === "1"
+  );
+  const [highlight, setHighlight] = useState<Set<string>>(
+    () => new Set((params.get("highlight") || "").split(",").filter(Boolean))
+  );
   /** "" = every farmer, else only those with a crop of that kind. */
   const [farmingType, setFarmingType] = useState("");
   /**
@@ -206,6 +219,7 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
       const res =
         role === "farmer"
           ? await api.listFarmersPage({
+              agronomist: unassignedOnly ? "none" : undefined,
               onboardedBy: onboardedByFilter,
               search: query,
               farmingType,
@@ -259,7 +273,23 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
     const t = setTimeout(load, query ? 300 : 0);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [role, from, to, onboardedByFilter, farmingType, district, taluk, village, query, page]);
+  }, [role, from, to, onboardedByFilter, farmingType, district, taluk, village, query, page, unassignedOnly]);
+
+  // Bring the first highlighted farmer into view once their row is on screen.
+  useEffect(() => {
+    if (loading || highlight.size === 0) return;
+    const first = people.find((p) => highlight.has(p._id));
+    if (!first) return;
+    document.getElementById(`person-${first._id}`)?.scrollIntoView({ block: "center", behavior: "smooth" });
+  }, [loading, people, highlight]);
+
+  /** Back to every farmer: drop the unassigned filter and the highlight. */
+  const clearUnassigned = () => {
+    setUnassignedOnly(false);
+    setHighlight(new Set());
+    setPage(1);
+    window.history.replaceState(null, "", window.location.pathname);
+  };
 
   /**
    * Reload the dropdowns whenever the level above changes, so the taluk list
@@ -409,6 +439,23 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
         )}
       </div>
 
+      {unassignedOnly && (
+        <div className="flex flex-wrap items-center gap-2 border-b border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-300">
+          <span className="font-medium">Showing farmers without an agronomist</span>
+          {highlight.size > 0 && (
+            <span className="text-xs text-blue-700/80 dark:text-blue-400/80">
+              · {highlight.size} highlighted from the home page — open one to assign an agronomist
+            </span>
+          )}
+          <button
+            onClick={clearUnassigned}
+            className="ml-auto inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium hover:bg-blue-100 dark:hover:bg-blue-900/40"
+          >
+            <X size={13} /> Show all farmers
+          </button>
+        </div>
+      )}
+
       {/* Filters: which farmers to show, or which farmers the counts cover */}
       <div className="filter-bar border-b border-zinc-100 px-3 py-3 dark:border-zinc-800">
         {showDetail && (
@@ -542,7 +589,7 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
           and a large monitor both fill what they have. The 19rem reserved is
           the chrome above and below — header, toolbar, filters and pager — and
           little enough beyond that to keep the pager on screen. */}
-      <div className="scroll-thin max-h-[calc(100dvh-19rem)] min-h-[24rem] overflow-auto">
+      <div className="fill-scroll scroll-thin min-h-[24rem] overflow-auto">
         {/* Columns size to their content; when they add up to more than the
             screen, this wrapper scrolls sideways instead. The header cells get
             an opaque background so rows don't show through while it's pinned. */}
@@ -596,7 +643,15 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
               rows.map((p) => {
                 const missing = showDetail ? missingDetails(p) : [];
                 return (
-                <tr key={p._id}>
+                <tr
+                  key={p._id}
+                  id={`person-${p._id}`}
+                  className={
+                    highlight.has(p._id)
+                      ? "bg-brand-50 outline outline-2 -outline-offset-2 outline-brand-500 dark:bg-brand-950/40"
+                      : undefined
+                  }
+                >
                   {/* The photo taken when this farmer was registered. A
                       thumbnail is too small to recognise anyone by, so it is a
                       button into the full picture rather than the picture

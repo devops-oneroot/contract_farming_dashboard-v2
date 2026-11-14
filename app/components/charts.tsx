@@ -38,11 +38,16 @@ export const shortMoney = (n: number) => {
 export function TrendChart({
   points,
   height = 200,
+  format = money,
+  shortFormat = shortMoney,
+  emptyLabel = "No sales in this period",
+  color = BLUE,
 }: {
   points: {
     label: string;
     value: number;
-    sales: number;
+    /** Sales that day, shown in the tooltip; leave out for a non-sales series. */
+    sales?: number;
     /**
      * Anything else worth reading for that day, in the order it should appear
      * under the takings — "3 farmers onboarded · Haider 2, Teja 1", "5 farm
@@ -52,6 +57,13 @@ export function TrendChart({
     notes?: string[];
   }[];
   height?: number;
+  /** Tooltip value; rupees by default. */
+  format?: (n: number) => string;
+  /** Axis ticks; short rupees by default. */
+  shortFormat?: (n: number) => string;
+  emptyLabel?: string;
+  /** The series hue, a --viz-* variable. Blue by default. */
+  color?: string;
 }) {
   const gid = useId();
   const [hover, setHover] = useState<number | null>(null);
@@ -76,7 +88,7 @@ export function TrendChart({
   }, [empty]);
 
   if (empty) {
-    return <Empty height={height} />;
+    return <Empty height={height} label={emptyLabel} />;
   }
 
   const H = height;
@@ -110,8 +122,8 @@ export function TrendChart({
       <svg viewBox={`0 0 ${W} ${H}`} className="block w-full" role="img" style={{ height }}>
         <defs>
           <linearGradient id={`${gid}-fill`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={BLUE} stopOpacity="0.18" />
-            <stop offset="100%" stopColor={BLUE} stopOpacity="0.02" />
+            <stop offset="0%" stopColor={color} stopOpacity="0.18" />
+            <stop offset="100%" stopColor={color} stopOpacity="0.02" />
           </linearGradient>
         </defs>
 
@@ -132,7 +144,7 @@ export function TrendChart({
               textAnchor="end"
               className="fill-zinc-400 text-[11px]"
             >
-              {shortMoney(t)}
+              {shortFormat(t)}
             </text>
           </g>
         ))}
@@ -141,7 +153,7 @@ export function TrendChart({
         <path
           d={line}
           fill="none"
-          stroke={BLUE}
+          stroke={color}
           strokeWidth="2"
           strokeLinejoin="round"
           strokeLinecap="round"
@@ -175,7 +187,7 @@ export function TrendChart({
               cx={x(hover)}
               cy={y(points[hover].value)}
               r="5"
-              fill={BLUE}
+              fill={color}
               className="stroke-white dark:stroke-zinc-950"
               strokeWidth="2"
             />
@@ -205,8 +217,10 @@ export function TrendChart({
         >
           <div className="font-semibold">{points[hover].label}</div>
           <div className="text-zinc-500">
-            {money(points[hover].value)} · {points[hover].sales} sale
-            {points[hover].sales === 1 ? "" : "s"}
+            {format(points[hover].value)}
+            {points[hover].sales != null
+              ? ` · ${points[hover].sales} sale${points[hover].sales === 1 ? "" : "s"}`
+              : ""}
           </div>
           {points[hover].notes?.map((n, i) => (
             <div key={i} className="text-zinc-500">
@@ -230,10 +244,16 @@ export function RankedBars({
   rows,
   max: maxProp,
   emptyLabel = "Nothing to show",
+  format = money,
+  color = BLUE,
 }: {
   rows: { label: string; value: number; sub?: string }[];
   max?: number;
   emptyLabel?: string;
+  /** The figure beside each bar; rupees by default. */
+  format?: (n: number) => string;
+  /** The series hue, a --viz-* variable. Blue by default. */
+  color?: string;
 }) {
   if (rows.length === 0) {
     return <p className="py-8 text-center text-sm text-zinc-400">{emptyLabel}</p>;
@@ -250,14 +270,14 @@ export function RankedBars({
             </span>
             {/* Direct label on every row is legitimate here: the rows are few
                 and ranked, and the number IS the comparison being made. */}
-            <span className="shrink-0 font-semibold tabular-nums">{money(r.value)}</span>
+            <span className="shrink-0 font-semibold tabular-nums">{format(r.value)}</span>
           </div>
           <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
             <div
               className="h-full rounded-full transition-[width]"
               style={{
                 width: `${Math.max((r.value / max) * 100, r.value > 0 ? 2 : 0)}%`,
-                backgroundColor: BLUE,
+                backgroundColor: color,
               }}
             />
           </div>
@@ -300,10 +320,24 @@ export function DonutChart({
   slices,
   total,
   centreLabel,
+  format = money,
+  shortFormat = shortMoney,
+  emptyLabel = "Nothing to split yet",
+  hues = SLICE_HUES,
 }: {
   slices: { label: string; value: number }[];
   total: number;
   centreLabel: string;
+  /** The figure in the middle; rupees by default. */
+  format?: (n: number) => string;
+  /** The figure on each legend row; short rupees by default. */
+  shortFormat?: (n: number) => string;
+  emptyLabel?: string;
+  /**
+   * The series hues, in order - a run of adjacent --viz-* slots, which is what
+   * the palette validated. Defaults to slots 1-4.
+   */
+  hues?: string[];
 }) {
   const [hover, setHover] = useState<number | null>(null);
 
@@ -311,15 +345,18 @@ export function DonutChart({
   if (!shown.length || total <= 0) {
     return (
       <div className="flex h-[168px] items-center justify-center text-sm text-zinc-400">
-        Nothing to split yet
+        {emptyLabel}
       </div>
     );
   }
 
   const SIZE = 168;
   const c = SIZE / 2;
-  const R = 74;
   const THICK = 26;
+  // The ring must fit its box even when a slice is hovered and drawn 6px
+  // thicker: centre minus half the widest stroke, minus 1px. At R = 74 the
+  // outer edge (74 + 13 = 87) ran past the 84px half-width and was clipped.
+  const R = c - (THICK + 6) / 2 - 1;
 
   // Each slice starts where every slice before it ended, worked out from the
   // list rather than from a running variable - a value mutated during render is
@@ -335,7 +372,9 @@ export function DonutChart({
     return {
       ...s,
       frac,
-      hue: SLICE_HUES[i % SLICE_HUES.length],
+      // By position in the list given, not among the non-empty ones: colour
+      // follows the entity, so an empty slice never repaints the rest.
+      hue: hues[slices.indexOf(s) % hues.length],
       // A full circle has no arc to draw - two identical points would vanish.
       d:
         frac >= 0.999
@@ -369,7 +408,7 @@ export function DonutChart({
           textAnchor="middle"
           className="fill-zinc-900 text-[15px] font-semibold dark:fill-zinc-100"
         >
-          {hover === null ? money(total) : money(arcs[hover].value)}
+          {hover === null ? format(total) : format(arcs[hover].value)}
         </text>
         <text x={c} y={c + 14} textAnchor="middle" className="fill-zinc-400 text-[10px]">
           {hover === null ? centreLabel : `${Math.round(arcs[hover].frac * 100)}% · ${arcs[hover].label}`}
@@ -397,7 +436,7 @@ export function DonutChart({
             <span className="shrink-0 tabular-nums text-zinc-500">
               {Math.round(a.frac * 100)}%
             </span>
-            <span className="shrink-0 font-medium tabular-nums">{shortMoney(a.value)}</span>
+            <span className="shrink-0 font-medium tabular-nums">{shortFormat(a.value)}</span>
           </div>
         ))}
       </div>
@@ -418,13 +457,289 @@ export function topSlices(rows: { label: string; value: number }[], keep = 3) {
   return [...sorted.slice(0, keep), { label: `Other (${sorted.length - keep})`, value: rest }];
 }
 
-function Empty({ height }: { height: number }) {
+/**
+ * Part and whole per category: each row is one bar split into its series
+ * (contract / regular acres of a crop), ranked by the row's total.
+ *
+ * Two or more series, so a legend sits above; the row total is the one direct
+ * label, and the split is on hover. Segments are separated by a 2px surface
+ * gap, and colour follows the series - never its position in the row.
+ */
+export function StackedBars({
+  rows,
+  series,
+  format = money,
+  emptyLabel = "Nothing to show",
+  hues = SLICE_HUES,
+}: {
+  rows: { label: string; values: number[] }[];
+  /** Series names, in the order of each row's `values`. Four at most. */
+  series: string[];
+  format?: (n: number) => string;
+  emptyLabel?: string;
+  /**
+   * The series hues, in order - a run of adjacent --viz-* slots, which is what
+   * the palette validated. Defaults to slots 1-4.
+   */
+  hues?: string[];
+}) {
+  const [hover, setHover] = useState<number | null>(null);
+  if (rows.length === 0) {
+    return <p className="py-8 text-center text-sm text-zinc-400">{emptyLabel}</p>;
+  }
+  const totals = rows.map((r) => r.values.reduce((n, v) => n + v, 0));
+  const max = Math.max(...totals, 1);
+
+  return (
+    <div>
+      <div className="mb-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-500">
+        {series.map((s, i) => (
+          <span key={s} className="inline-flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: hues[i] }} aria-hidden />
+            {s}
+          </span>
+        ))}
+      </div>
+      <div className="space-y-3">
+        {rows.map((r, ri) => (
+          <div
+            key={r.label}
+            className="relative"
+            onMouseEnter={() => setHover(ri)}
+            onMouseLeave={() => setHover(null)}
+          >
+            <div className="mb-1 flex items-baseline justify-between gap-3 text-sm">
+              <span className="min-w-0 truncate" title={r.label}>
+                {r.label}
+              </span>
+              <span className="shrink-0 font-semibold tabular-nums">{format(totals[ri])}</span>
+            </div>
+            <div className="flex h-3 w-full gap-[2px] overflow-hidden rounded-[4px] bg-zinc-100 dark:bg-zinc-800">
+              {r.values.map((v, si) =>
+                v > 0 ? (
+                  <div
+                    key={si}
+                    className={`h-full transition-opacity ${hover === null || hover === ri ? "" : "opacity-60"}`}
+                    style={{ width: `${(v / max) * 100}%`, backgroundColor: hues[si] }}
+                  />
+                ) : null
+              )}
+            </div>
+            {/* The split, on hover: the bar shows its shape, this gives the figures. */}
+            {hover === ri ? (
+              <div className="pointer-events-none absolute right-0 top-full z-10 mt-1 w-max rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-xs shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
+                <div className="font-semibold">{r.label}</div>
+                {series.map((s, si) => (
+                  <div key={s} className="flex items-center gap-1.5 text-zinc-500">
+                    <span className="h-2 w-2 rounded-sm" style={{ backgroundColor: hues[si] }} aria-hidden />
+                    {s}: <span className="tabular-nums text-zinc-700 dark:text-zinc-200">{format(r.values[si] ?? 0)}</span>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Magnitude as upright columns, one per category, tallest wherever it falls.
+ *
+ * One series and one hue. The value sits above each column and the name below,
+ * truncated on a narrow screen; the full name and figure are on hover.
+ */
+export function ColumnChart({
+  rows,
+  height = 200,
+  format = money,
+  unit = "",
+  emptyLabel = "Nothing to show",
+  color = BLUE,
+  tipFormat,
+}: {
+  rows: { label: string; value: number }[];
+  height?: number;
+  /** The figure above each column - keep it short. */
+  format?: (n: number) => string;
+  /** The exact figure in the hover; `format` when not given. */
+  tipFormat?: (n: number) => string;
+  /** Said after the figure in the hover, e.g. "farmers". */
+  unit?: string;
+  emptyLabel?: string;
+  /** The series hue, a --viz-* variable. Blue by default. */
+  color?: string;
+}) {
+  const [hover, setHover] = useState<number | null>(null);
+  if (rows.length === 0) {
+    return <p className="py-8 text-center text-sm text-zinc-400">{emptyLabel}</p>;
+  }
+  const max = Math.max(...rows.map((r) => r.value), 1);
+
+  return (
+    <div>
+      <div
+        className="flex items-end gap-2 border-b border-zinc-200 sm:gap-3 dark:border-zinc-800"
+        style={{ height }}
+      >
+        {rows.map((r, i) => (
+          <div
+            key={r.label}
+            className="relative flex h-full min-w-0 flex-1 flex-col items-center justify-end"
+            onMouseEnter={() => setHover(i)}
+            onMouseLeave={() => setHover(null)}
+          >
+            <span className="mb-1 text-xs font-semibold tabular-nums">{format(r.value)}</span>
+            <div
+              className={`w-full max-w-12 rounded-t-[4px] transition-opacity ${hover === null || hover === i ? "" : "opacity-60"}`}
+              style={{ height: `${Math.max((r.value / max) * 85, r.value > 0 ? 2 : 0)}%`, backgroundColor: color }}
+            />
+            {hover === i ? (
+              <div
+                className={`pointer-events-none absolute bottom-full z-10 mb-1 w-max max-w-[14rem] rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-xs shadow-lg dark:border-zinc-700 dark:bg-zinc-900 ${
+                  i === 0 ? "left-0" : i === rows.length - 1 ? "right-0" : "left-1/2 -translate-x-1/2"
+                }`}
+              >
+                <div className="font-semibold">{r.label}</div>
+                <div className="text-zinc-500">
+                  {(tipFormat ?? format)(r.value)}
+                  {unit ? ` ${unit}` : ""}
+                </div>
+              </div>
+            ) : null}
+          </div>
+        ))}
+      </div>
+      <div className="mt-1.5 flex gap-2 sm:gap-3">
+        {rows.map((r) => (
+          <span key={r.label} className="min-w-0 flex-1 truncate text-center text-xs text-zinc-500" title={r.label}>
+            {r.label}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * One whole split into a few parts, as a single wide bar with each part's
+ * figure and share written out large beneath it.
+ *
+ * For a two- or three-way split a ring wastes most of its area on a hole;
+ * this reads in one glance and leaves room for the numbers. Parts are
+ * separated by a 2px surface gap and labelled, so identity is not colour alone.
+ */
+export function SplitBar({
+  parts,
+  format = money,
+  hues = SLICE_HUES,
+  emptyLabel = "Nothing to split yet",
+}: {
+  parts: { label: string; value: number }[];
+  format?: (n: number) => string;
+  /** One per part, in order - adjacent --viz-* slots. */
+  hues?: string[];
+  emptyLabel?: string;
+}) {
+  const [hover, setHover] = useState<number | null>(null);
+  const total = parts.reduce((n, p) => n + p.value, 0);
+  if (total <= 0) {
+    return <p className="py-8 text-center text-sm text-zinc-400">{emptyLabel}</p>;
+  }
+  return (
+    <div>
+      <div className="flex h-5 w-full gap-[2px] overflow-hidden rounded-[6px] bg-zinc-100 dark:bg-zinc-800">
+        {parts.map((p, i) =>
+          p.value > 0 ? (
+            <div
+              key={p.label}
+              title={`${p.label}: ${format(p.value)} (${Math.round((p.value / total) * 100)}%)`}
+              onMouseEnter={() => setHover(i)}
+              onMouseLeave={() => setHover(null)}
+              className={`h-full transition-opacity ${hover === null || hover === i ? "" : "opacity-50"}`}
+              style={{ width: `${(p.value / total) * 100}%`, backgroundColor: hues[i % hues.length] }}
+            />
+          ) : null
+        )}
+      </div>
+      <div className="mt-4 grid gap-3" style={{ gridTemplateColumns: `repeat(${parts.length}, minmax(0, 1fr))` }}>
+        {parts.map((p, i) => (
+          <div
+            key={p.label}
+            onMouseEnter={() => setHover(i)}
+            onMouseLeave={() => setHover(null)}
+            className={`min-w-0 rounded-lg p-3 ring-1 ring-zinc-200 transition dark:ring-zinc-800 ${hover === i ? "bg-zinc-50 dark:bg-zinc-900" : ""}`}
+          >
+            <div className="flex items-center gap-1.5 text-xs text-zinc-500">
+              <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ backgroundColor: hues[i % hues.length] }} aria-hidden />
+              <span className="truncate">{p.label}</span>
+            </div>
+            <div className="mt-1 truncate text-lg font-semibold tabular-nums">{format(p.value)}</div>
+            <div className="text-xs tabular-nums text-zinc-500">{Math.round((p.value / total) * 100)}% of total</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Ranked magnitudes as a thin stem and a dot - a bar chart with the ink taken
+ * out, for a list that sits beside other bars and should not look like them.
+ */
+export function LollipopChart({
+  rows,
+  format = money,
+  color = BLUE,
+  emptyLabel = "Nothing to show",
+}: {
+  rows: { label: string; value: number; sub?: string }[];
+  format?: (n: number) => string;
+  color?: string;
+  emptyLabel?: string;
+}) {
+  if (rows.length === 0) {
+    return <p className="py-8 text-center text-sm text-zinc-400">{emptyLabel}</p>;
+  }
+  const max = Math.max(...rows.map((r) => r.value), 1);
+  return (
+    <div className="space-y-3">
+      {rows.map((r) => {
+        const pct = Math.max((r.value / max) * 100, r.value > 0 ? 3 : 0);
+        return (
+          <div key={r.label} title={`${r.label}: ${format(r.value)}${r.sub ? ` · ${r.sub}` : ""}`}>
+            <div className="mb-1 flex items-baseline justify-between gap-3 text-sm">
+              <span className="min-w-0 truncate">{r.label}</span>
+              <span className="shrink-0 font-semibold tabular-nums">{format(r.value)}</span>
+            </div>
+            <div className="relative h-3">
+              <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-zinc-200 dark:bg-zinc-800" />
+              <div
+                className="absolute left-0 top-1/2 h-[2px] -translate-y-1/2 rounded-full"
+                style={{ width: `${pct}%`, backgroundColor: color }}
+              />
+              {/* The dot sits on the end of the stem, ringed in the surface colour. */}
+              <div
+                className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-white dark:ring-zinc-950"
+                style={{ left: `${pct}%`, backgroundColor: color }}
+              />
+            </div>
+            {r.sub ? <div className="mt-0.5 text-xs text-zinc-400">{r.sub}</div> : null}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function Empty({ height, label }: { height: number; label: string }) {
   return (
     <div
       className="flex items-center justify-center text-sm text-zinc-400"
       style={{ height }}
     >
-      No sales in this period
+      {label}
     </div>
   );
 }

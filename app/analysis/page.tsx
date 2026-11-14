@@ -9,12 +9,90 @@ import {
   Search,
   TrendingUp,
   Users,
+  UserCog,
+  Package,
+  MapPin,
+  IndianRupee,
+  ShoppingBag,
+  Receipt,
+  BadgePercent,
+  Wheat,
+  Sprout,
+  type LucideIcon,
 } from "lucide-react";
 
 import { api, Person, ProductSale, saleBuyer, Visit } from "../lib/api";
 import { AcresCovered } from "../components/acres-covered";
 import { isLateEntry, lateEntryDays, LateEntryTag } from "../components/late-entry-tag";
-import { DonutChart, money, RankedBars, shortMoney, topSlices, TrendChart } from "../components/charts";
+import {
+  ColumnChart,
+  DonutChart,
+  LollipopChart,
+  money,
+  RankedBars,
+  shortMoney,
+  SplitBar,
+  StackedBars,
+  topSlices,
+  TrendChart,
+} from "../components/charts";
+
+/**
+ * Who bought, in a fixed order with fixed colours - the split bar and the
+ * region chart show the same two parts, so they wear the same two hues.
+ */
+const BUYER_KINDS = ["Farmers", "FPOs"] as const;
+const BUYER_HUES = ["var(--viz-2)", "var(--viz-3)"];
+
+/** "Top 8 of 23 agronomists", or just "12 agronomists" when all fit. */
+const topNote = (n: number, noun: string) => (n > 8 ? `Top 8 of ${n} ${noun} · the export has them all` : `${n} ${noun}`);
+
+/**
+ * A titled card for one chart: a left edge and icon chip in the chart's own
+ * colour, so each reads as its own. Equal heights in a row, chart centred.
+ */
+function ChartPanel({
+  icon: Icon,
+  color,
+  title,
+  subtitle,
+  aside,
+  wide,
+  children,
+}: {
+  icon: LucideIcon;
+  color: string;
+  title: string;
+  subtitle?: string;
+  /** Anything to pin at the right of the header. */
+  aside?: React.ReactNode;
+  /** Spans both columns of a two-column grid. */
+  wide?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    // The card's own left border wears the colour, curving round the corners.
+    <div
+      className={`card relative flex h-full min-w-0 flex-col border-l-4 p-4 sm:p-5 ${wide ? "md:col-span-2" : ""}`}
+      style={{ borderLeftColor: color }}
+    >
+      <div className="mb-4 flex flex-wrap items-start gap-3">
+        <span
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
+          style={{ backgroundColor: `color-mix(in oklab, ${color} 14%, transparent)`, color }}
+        >
+          <Icon size={17} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <h3 className="font-semibold leading-tight">{title}</h3>
+          {subtitle ? <p className="mt-0.5 text-xs text-zinc-500">{subtitle}</p> : null}
+        </div>
+        {aside}
+      </div>
+      <div className="flex min-h-0 flex-1 flex-col justify-center">{children}</div>
+    </div>
+  );
+}
 import { AgronomistMultiSelect } from "../components/agronomist-multi-select";
 import { ExcelExport } from "../components/excel-export";
 import { SALE_COLUMNS, saleLines } from "../components/sale-export";
@@ -314,10 +392,8 @@ export default function AnalysisPage() {
     });
     return {
       products: topSlices([...byProduct.entries()].map(([label, value]) => ({ label, value }))),
-      buyers: [
-        { label: "Farmers", value: Math.round(farmers * 100) / 100 },
-        { label: "FPOs", value: Math.round(fpos * 100) / 100 },
-      ].filter((b) => b.value > 0),
+      /** In BUYER_KINDS order: farmers, then FPOs. */
+      buyerTotals: [Math.round(farmers * 100) / 100, Math.round(fpos * 100) / 100],
     };
   }, [rows]);
 
@@ -416,6 +492,24 @@ export default function AnalysisPage() {
         { key: regionOf(s, "district") || "No district recorded", value: s.total ?? 0 },
       ]),
     };
+  }, [rows]);
+
+  /**
+   * Each district's takings split by who bought: farmers, then FPOs - the same
+   * two parts, in the same colours, as "Who bought it" above.
+   */
+  const regionSplit = useMemo(() => {
+    const m = new Map<string, [number, number]>();
+    rows.forEach((s) => {
+      const key = regionOf(s, "district") || "No district recorded";
+      const cur = m.get(key) ?? [0, 0];
+      if (saleBuyer(s).kind === "fpo") cur[1] += s.total ?? 0;
+      else cur[0] += s.total ?? 0;
+      m.set(key, cur);
+    });
+    return [...m.entries()]
+      .map(([label, values]) => ({ label, values }))
+      .sort((a, b) => b.values[0] + b.values[1] - (a.values[0] + a.values[1]));
   }, [rows]);
 
   /**
@@ -546,100 +640,99 @@ export default function AnalysisPage() {
           exactly the case a bar chart handles worse than plain type. */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 2xl:grid-cols-8">
         {[
-          { label: "Revenue", value: money(kpi.revenue), hint: "after discounts" },
-          { label: "Sales", value: String(kpi.sales) },
-          { label: "Units given", value: String(kpi.units) },
-          { label: "Avg sale", value: money(kpi.avg) },
-          { label: "Discounts", value: money(kpi.discounts) },
-          { label: "Buyers", value: String(kpi.buyers) },
+          { label: "Revenue", value: money(kpi.revenue), hint: "after discounts", icon: IndianRupee, color: "var(--viz-6)" },
+          { label: "Sales", value: String(kpi.sales), icon: ShoppingBag, color: "var(--viz-1)" },
+          { label: "Units given", value: String(kpi.units), icon: Package, color: "var(--viz-2)" },
+          { label: "Avg sale", value: money(kpi.avg), icon: Receipt, color: "var(--viz-3)" },
+          { label: "Discounts", value: money(kpi.discounts), icon: BadgePercent, color: "var(--viz-8)" },
+          { label: "Buyers", value: String(kpi.buyers), icon: Users, color: "var(--viz-7)" },
           {
             label: "Acres covered",
             value: kpi.acres ? `${kpi.acres}` : "—",
             hint: "farmers' own land",
+            icon: Wheat,
+            color: "var(--accent-teal)",
           },
           {
             label: "Per acre",
             value: kpi.perAcre ? money(kpi.perAcre) : "—",
             hint: "farmer sales only",
+            icon: Sprout,
+            color: "var(--viz-5)",
           },
         ].map((k) => (
-          <div
-            key={k.label}
-            className="min-w-0 rounded-xl border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-950"
-          >
-            <div className="text-xs uppercase tracking-wide text-zinc-500">{k.label}</div>
-            <div className="mt-1 break-words text-lg font-semibold tabular-nums sm:text-xl">{k.value}</div>
+          <div key={k.label} className="card relative min-w-0 border-l-4 p-3" style={{ borderLeftColor: k.color }}>
+            <div className="flex items-center gap-2">
+              <span
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
+                style={{ backgroundColor: `color-mix(in oklab, ${k.color} 14%, transparent)`, color: k.color }}
+              >
+                <k.icon size={14} />
+              </span>
+              <span className="truncate text-[11px] font-medium uppercase tracking-wide text-zinc-500">{k.label}</span>
+            </div>
+            <div className="mt-2 break-words text-lg font-semibold tabular-nums sm:text-xl">{k.value}</div>
             {k.hint ? <div className="text-[11px] text-zinc-400">{k.hint}</div> : null}
           </div>
         ))}
       </div>
 
-      <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
-        <div className="mb-3 flex flex-wrap items-center gap-2">
-          <TrendingUp size={16} className="text-brand-600" />
-          <h3 className="font-semibold">Sales per day</h3>
-          <span className="text-xs text-zinc-500">
-            {trend.length} day{trend.length === 1 ? "" : "s"} · hover for a day&apos;s takings,
-            onboardings and visits
-          </span>
-        </div>
+      <ChartPanel
+        icon={TrendingUp}
+        color="var(--viz-1)"
+        title="Sales per day"
+        subtitle={`${trend.length} day${trend.length === 1 ? "" : "s"} · hover for a day's takings, onboardings and visits`}
+      >
         {loading ? (
           <div className="h-[200px] animate-pulse rounded-lg bg-zinc-100 dark:bg-zinc-900" />
         ) : (
-          <TrendChart points={trend} />
+          <TrendChart points={trend} color="var(--viz-1)" />
         )}
-      </div>
+      </ChartPanel>
 
       {/* Part-to-whole, where the question really is "how does it split". */}
-      <div className="grid gap-3 lg:grid-cols-2">
-        <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
-          <div className="mb-3 flex flex-wrap items-center gap-2">
-            <PieChart size={16} className="text-brand-600" />
-            <h3 className="font-semibold">Where the money came from</h3>
-            <span className="text-xs text-zinc-500">by product</span>
-          </div>
+      <div className="grid items-stretch gap-3 lg:grid-cols-2">
+        <ChartPanel icon={PieChart} color="var(--accent-teal)" title="Where the money came from" subtitle="by product">
           {loading ? (
             <div className="h-[168px] animate-pulse rounded-lg bg-zinc-100 dark:bg-zinc-900" />
           ) : (
-            <DonutChart slices={split.products} total={kpi.revenue} centreLabel="total revenue" />
+            <DonutChart
+              slices={split.products}
+              total={kpi.revenue}
+              centreLabel="total revenue"
+              hues={["var(--viz-5)", "var(--viz-6)", "var(--viz-7)", "var(--viz-8)"]}
+            />
           )}
-        </div>
+        </ChartPanel>
 
-        <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
-          <div className="mb-3 flex flex-wrap items-center gap-2">
-            <Users size={16} className="text-brand-600" />
-            <h3 className="font-semibold">Who bought it</h3>
-            <span className="text-xs text-zinc-500">farmers against FPOs</span>
-          </div>
+        <ChartPanel icon={Users} color="var(--accent-indigo)" title="Who bought it" subtitle="farmers against FPOs">
           {loading ? (
             <div className="h-[168px] animate-pulse rounded-lg bg-zinc-100 dark:bg-zinc-900" />
           ) : (
-            <DonutChart slices={split.buyers} total={kpi.revenue} centreLabel="total revenue" />
+            <SplitBar parts={BUYER_KINDS.map((k, i) => ({ label: k, value: split.buyerTotals[i] }))} hues={BUYER_HUES} />
           )}
-        </div>
+        </ChartPanel>
       </div>
 
       {/* Who came back, and where they are. */}
-      <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
-        <div className="mb-3 flex flex-wrap items-center gap-2">
-          <Repeat size={16} className="text-brand-600" />
-          <h3 className="font-semibold">Repeat buyers</h3>
-          <span className="text-xs text-zinc-500">bought from us more than once</span>
-          {repeat.buyers > 0 && (
-            <span className="ml-auto flex flex-wrap items-center gap-x-2 rounded-lg bg-brand-50 px-3 py-1.5 text-sm font-semibold text-brand-800 dark:bg-brand-950/40 dark:text-brand-300">
+      <ChartPanel
+        icon={Repeat}
+        color="var(--viz-4)"
+        title="Repeat buyers"
+        subtitle="bought from us more than once"
+        aside={
+          repeat.buyers > 0 ? (
+            <span className="flex flex-wrap items-center gap-x-2 rounded-lg bg-brand-50 px-3 py-1.5 text-sm font-semibold text-brand-800 dark:bg-brand-950/40 dark:text-brand-300">
               {repeat.returning.length} of {repeat.buyers} buyers
               <span className="text-xs font-normal text-brand-700/70 dark:text-brand-400/70">
-                {Math.round((repeat.returning.length / repeat.buyers) * 100)}% came back ·{" "}
-                {money(repeat.value)}
+                {Math.round((repeat.returning.length / repeat.buyers) * 100)}% came back · {money(repeat.value)}
               </span>
             </span>
-          )}
-        </div>
-
+          ) : null
+        }
+      >
         {repeat.returning.length === 0 ? (
-          <p className="py-6 text-center text-sm text-zinc-400">
-            Nobody has bought twice in this period yet.
-          </p>
+          <p className="py-6 text-center text-sm text-zinc-400">Nobody has bought twice in this period yet.</p>
         ) : (
           <div className="grid gap-5 lg:grid-cols-2">
             <div className="min-w-0 overflow-x-auto">
@@ -678,10 +771,9 @@ export default function AnalysisPage() {
             </div>
 
             <div>
-              <div className="mb-2 text-xs uppercase tracking-wide text-zinc-500">
-                Where they are
-              </div>
-              <RankedBars
+              <div className="mb-3 text-xs uppercase tracking-wide text-zinc-500">Where they are</div>
+              <LollipopChart
+                color="var(--viz-4)"
                 rows={repeat.places.slice(0, 8).map((p) => ({
                   label: p.label,
                   value: p.value,
@@ -692,36 +784,44 @@ export default function AnalysisPage() {
             </div>
           </div>
         )}
-      </div>
+      </ChartPanel>
 
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-        {[
-          { title: "By agronomist", rows: cuts.byPerson, empty: "No sales by anyone yet" },
-          { title: "By product", rows: cuts.byProduct, empty: "No products sold yet" },
-          { title: "By region", rows: cuts.byRegion, empty: "No regions recorded" },
-        ].map((c) => (
-          <div
-            key={c.title}
-            className="min-w-0 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950"
-          >
-            <h3 className="mb-3 font-semibold">{c.title}</h3>
-            <RankedBars
-              rows={c.rows.slice(0, 8).map((r) => ({
-                label: r.label,
-                value: r.value,
-                sub: `${r.n} sale${r.n === 1 ? "" : "s"}`,
-              }))}
-              emptyLabel={c.empty}
-            />
-            {/* Said, not silently truncated: a top-eight that looks like the
-                whole list is a chart that lies by omission. */}
-            {c.rows.length > 8 ? (
-              <p className="mt-3 text-xs text-zinc-400">
-                Top 8 of {c.rows.length} · the CSV has them all
-              </p>
-            ) : null}
-          </div>
-        ))}
+      {/* The same money cut three ways, each in its own form. Top 8 each - said,
+          not silently truncated: a top-eight that looks like the whole list is
+          a chart that lies by omission. */}
+      <div className="grid items-stretch gap-3 md:grid-cols-2">
+        <ChartPanel
+          wide
+          icon={UserCog}
+          color="var(--viz-7)"
+          title="By agronomist"
+          subtitle={topNote(cuts.byPerson.length, "agronomists")}
+        >
+          <ColumnChart
+            color="var(--viz-7)"
+            rows={cuts.byPerson.slice(0, 8).map((r) => ({ label: r.label, value: r.value }))}
+            height={220}
+            format={shortMoney}
+            tipFormat={money}
+            emptyLabel="No sales by anyone yet"
+          />
+        </ChartPanel>
+
+        <ChartPanel icon={Package} color="var(--viz-6)" title="By product" subtitle={topNote(cuts.byProduct.length, "products")}>
+          <RankedBars
+            color="var(--viz-6)"
+            rows={cuts.byProduct.slice(0, 8).map((r) => ({
+              label: r.label,
+              value: r.value,
+              sub: `${r.n} sale${r.n === 1 ? "" : "s"}`,
+            }))}
+            emptyLabel="No products sold yet"
+          />
+        </ChartPanel>
+
+        <ChartPanel icon={MapPin} color="var(--accent-cyan)" title="By region" subtitle={topNote(regionSplit.length, "districts")}>
+          <StackedBars rows={regionSplit.slice(0, 8)} series={[...BUYER_KINDS]} hues={BUYER_HUES} emptyLabel="No regions recorded" />
+        </ChartPanel>
       </div>
 
       {/* The rows behind every figure above. */}

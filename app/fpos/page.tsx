@@ -346,7 +346,7 @@ export default function FposPage() {
           and a large monitor both fill what they have. The 19rem reserved is
           the chrome above and below — header, toolbar, filters and pager — and
           little enough beyond that to keep the pager on screen. */}
-      <div className="scroll-thin overflow-x-auto sm:max-h-[calc(100dvh-19rem)] sm:min-h-[24rem] sm:overflow-auto">
+      <div className="fill-scroll scroll-thin overflow-auto">
         <table className="data-table">
           <thead className="sticky top-0 z-10 [&>tr>th]:bg-zinc-50 dark:[&>tr>th]:bg-zinc-900">
             <tr>

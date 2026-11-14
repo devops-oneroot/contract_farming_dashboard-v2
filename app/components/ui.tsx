@@ -153,7 +153,14 @@ export const Tabs = shared(
   (ui) => ui.Tabs as ComponentType<TabsProps<string>>,
   function FallbackTabs({ tabs, value, onChange }: TabsProps<string>) {
     return (
-      <div role="tablist" className="flex gap-1 border-b border-zinc-200 dark:border-zinc-800">
+      // Scrolls sideways on a phone instead of pushing the page wider.
+      <div
+        role="tablist"
+        // The base line is an inset shadow, painted under the tabs, so the
+        // active tab's underline sits on it without the -1px overlap a
+        // scrolling box would clip.
+        className="scroll-thin flex gap-1 overflow-x-auto shadow-[inset_0_-1px_0_var(--color-zinc-200)] dark:shadow-[inset_0_-1px_0_var(--color-zinc-800)]"
+      >
         {tabs.map((t) => (
           <button
             key={t.value}
@@ -161,7 +168,7 @@ export const Tabs = shared(
             aria-selected={value === t.value}
             onClick={() => onChange(t.value)}
             className={cx(
-              "-mb-px border-b-2 px-3 py-2 text-sm font-medium",
+              "shrink-0 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium",
               value === t.value ? "border-brand-500 text-brand-700" : "border-transparent text-zinc-500 hover:text-zinc-800"
             )}
           >

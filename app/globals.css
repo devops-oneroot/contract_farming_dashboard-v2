@@ -20,6 +20,19 @@
   --viz-2: #eb6834; /* orange */
   --viz-3: #1baf7a; /* aqua   */
   --viz-4: #eda100; /* yellow */
+  /* Slots 5-8 of the same validated categorical palette, for single-series
+     charts that each want their own hue. Magenta (like aqua and yellow) is
+     below 3:1 on the light surface, so those charts carry direct labels. */
+  --viz-5: #e87ba4; /* magenta */
+  --viz-6: #008300; /* green   */
+  --viz-7: #6250d6; /* violet  */
+  --viz-8: #e34948; /* red     */
+  /* Card accents only (header chip and top edge), never a data colour: the
+     extra hues that give every dashboard card its own colour once the eight
+     data hues are taken. */
+  --accent-teal: #0f766e;
+  --accent-indigo: #4338ca;
+  --accent-cyan: #0e7490;
   /* Warm neutral, lightly tinted with the accent so the page follows it. */
   --background: color-mix(in oklab, var(--brand-50) 55%, #f7f6f3);
   --foreground: #171717;
@@ -131,6 +144,13 @@
   --viz-2: #d95926;
   --viz-3: #199e70;
   --viz-4: #c98500;
+  --viz-5: #d55181;
+  --viz-6: #008300;
+  --viz-7: #9085e9;
+  --viz-8: #e66767;
+  --accent-teal: #2dd4bf;
+  --accent-indigo: #818cf8;
+  --accent-cyan: #22d3ee;
   --background: color-mix(in oklab, var(--brand-950) 22%, #0b0a09);
   --foreground: #ededed;
 }
@@ -226,12 +246,12 @@ body {
    *
    * --table-max-h leaves room for the chrome around it: the 4rem top bar, the
    * main pane's padding and the pager below. A page with more above the table
-   * can set its own on the wrapper: style={{ "--table-max-h": "calc(100dvh - 18rem)" }}.
+   * can set its own on the wrapper: style={{ "--table-max-h": "calc(100dvh - 20rem)" }}.
    * The floor keeps a usable table on a short laptop screen.
    */
   .table-wrap {
     @apply scroll-thin max-w-full overflow-auto rounded-2xl border border-zinc-200/80 bg-white shadow-[0_1px_2px_rgba(16,16,16,0.04)] dark:border-zinc-800 dark:bg-zinc-950;
-    max-height: max(20rem, var(--table-max-h, calc(100dvh - 11rem)));
+    max-height: max(20rem, var(--table-max-h, calc(100dvh - 13rem)));
     overscroll-behavior: contain;
   }
   /* Pinned header/footer: opaque, or the rows show through while scrolling.
@@ -371,4 +391,35 @@ body {
 }
 @media (prefers-reduced-motion: reduce) {
   .global-loader-bar { animation: none; width: 100%; opacity: 0.6; }
+}
+
+/*
+ * Pages with a main table fit the screen: the page itself does not scroll,
+ * the table fills whatever height is left under the filters and scrolls
+ * inside, with its header pinned and the pager still on screen.
+ *
+ * Done once here rather than page by page: .page-frame (components/shell.tsx)
+ * takes the screen's height whenever it holds a table, every element between
+ * it and the table becomes a column that passes that height down, and the
+ * table takes the rest. Pages without one (the home charts) grow and scroll
+ * as before.
+ *
+ * A table is .table-wrap, or .fill-scroll for a list that draws its own box
+ * (Farmers, Agronomists, FPOs). Grids are left alone so side-by-side layouts
+ * keep their columns. Unlayered, so it outranks the max-height utilities.
+ */
+.page-frame:has(:is(.table-wrap, .fill-scroll)) {
+  height: 100%;
+}
+.page-frame:has(:is(.table-wrap, .fill-scroll)) > .page-body,
+.page-body :where(div, section):not(.grid, .modal-backdrop, .modal-panel):has(:is(.table-wrap, .fill-scroll)) {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.page-body :is(.table-wrap, .fill-scroll) {
+  flex: 1 1 0%;
+  min-height: 14rem;
+  max-height: none;
 }

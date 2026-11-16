@@ -4,6 +4,7 @@ import { Check, MapPin, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { api, type Region } from "../lib/api";
+import { usePerm } from "../lib/use-perm";
 
 /**
  * The taluks the company sells in, and the code each one's bills carry.
@@ -17,6 +18,7 @@ import { api, type Region } from "../lib/api";
  * and the spellings match the records these bills will be reconciled against.
  */
 export function RegionsDialog({ onClose }: { onClose: () => void }) {
+  const perm = usePerm("agronomists");
   const [regions, setRegions] = useState<Region[]>([]);
   const [districts, setDistricts] = useState<string[]>([]);
   const [taluks, setTaluks] = useState<string[]>([]);
@@ -118,46 +120,48 @@ export function RegionsDialog({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="space-y-4 px-4 py-4 sm:px-5">
-          <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto_auto]">
-            <input
-              list="region-districts"
-              value={district}
-              onChange={(e) => setDistrict(e.target.value)}
-              placeholder="District"
-              className="rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
-            />
-            <datalist id="region-districts">
-              {districts.map((d) => (
-                <option key={d} value={d} />
-              ))}
-            </datalist>
-            <input
-              list="region-taluks"
-              value={taluk}
-              onChange={(e) => setTaluk(e.target.value)}
-              placeholder="Taluk"
-              className="rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
-            />
-            <datalist id="region-taluks">
-              {taluks.map((t) => (
-                <option key={t} value={t} />
-              ))}
-            </datalist>
-            <input
-              value={code}
-              onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))}
-              placeholder="CHM"
-              maxLength={6}
-              className="rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm uppercase sm:w-24 dark:border-zinc-700"
-            />
-            <button
-              onClick={add}
-              disabled={busy || !district.trim() || !taluk.trim() || code.trim().length < 2}
-              className="inline-flex items-center justify-center gap-1 rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-50"
-            >
-              <Plus size={15} /> Add
-            </button>
-          </div>
+          {perm.add && (
+            <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto_auto]">
+              <input
+                list="region-districts"
+                value={district}
+                onChange={(e) => setDistrict(e.target.value)}
+                placeholder="District"
+                className="rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
+              />
+              <datalist id="region-districts">
+                {districts.map((d) => (
+                  <option key={d} value={d} />
+                ))}
+              </datalist>
+              <input
+                list="region-taluks"
+                value={taluk}
+                onChange={(e) => setTaluk(e.target.value)}
+                placeholder="Taluk"
+                className="rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
+              />
+              <datalist id="region-taluks">
+                {taluks.map((t) => (
+                  <option key={t} value={t} />
+                ))}
+              </datalist>
+              <input
+                value={code}
+                onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))}
+                placeholder="CHM"
+                maxLength={6}
+                className="rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm uppercase sm:w-24 dark:border-zinc-700"
+              />
+              <button
+                onClick={add}
+                disabled={busy || !district.trim() || !taluk.trim() || code.trim().length < 2}
+                className="inline-flex items-center justify-center gap-1 rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-50"
+              >
+                <Plus size={15} /> Add
+              </button>
+            </div>
+          )}
 
           {editing && (regions.find((r) => r._id === editing.id)?.seq ?? 0) > 0 && (
             <p className="text-xs text-amber-600 dark:text-amber-400">
@@ -251,18 +255,20 @@ export function RegionsDialog({ onClose }: { onClose: () => void }) {
                           </>
                         ) : (
                           <>
-                            <button
-                              onClick={() =>
-                                setEditing({ id: r._id, district: r.district, taluk: r.taluk, code: r.code })
-                              }
-                              className="rounded-lg p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800"
-                              aria-label={`Edit ${r.taluk}`}
-                            >
-                              <Pencil size={15} />
-                            </button>
+                            {perm.edit && (
+                              <button
+                                onClick={() =>
+                                  setEditing({ id: r._id, district: r.district, taluk: r.taluk, code: r.code })
+                                }
+                                className="rounded-lg p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800"
+                                aria-label={`Edit ${r.taluk}`}
+                              >
+                                <Pencil size={15} />
+                              </button>
+                            )}
                             {/* A region with bills against it is never offered
                                 for deletion: those numbers are on paper. */}
-                            {r.seq === 0 && (r.agronomists ?? 0) === 0 ? (
+                            {perm.delete && r.seq === 0 && (r.agronomists ?? 0) === 0 ? (
                               <button
                                 onClick={() => remove(r)}
                                 className="rounded-lg p-1 text-zinc-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40"

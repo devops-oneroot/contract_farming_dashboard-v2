@@ -292,11 +292,11 @@ export function StockHistoryView({
         </label>
         <div className="filter-actions">
           {filtered && (
-            <Button variant="ghost" onClick={clear}>
+            <Button variant="danger" onClick={clear}>
               Clear
             </Button>
           )}
-          <ExcelExport id="stock-history" fileName="stock-history" columns={columns} rows={allRows} label="Excel" />
+          <ExcelExport id="stock-history" fileName="stock-history" columns={columns} rows={allRows} />
         </div>
       </div>
 

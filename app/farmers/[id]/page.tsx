@@ -18,6 +18,7 @@ import { AudioPlayer } from "../../components/audio-player";
 import { PhotoThumb } from "../../components/lightbox";
 import { LoadingBlock } from "../../components/loading";
 import { Select } from "../../components/ui";
+import { usePerm } from "../../lib/use-perm";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -121,6 +122,7 @@ function stageInfo(pop: PackageOfPractices | undefined, dayN: number | null) {
 
 export default function FarmerDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const perm = usePerm("farmers");
 
   const [farmer, setFarmer] = useState<Person | null>(null);
   const [crops, setCrops] = useState<Crop[]>([]);
@@ -310,12 +312,14 @@ export default function FarmerDetailPage() {
             <span>Registered {fmtDate(farmer.createdAt)}</span>
           </div>
         </div>
-        <button
-          onClick={openEdit}
-          className="flex items-center gap-2 rounded-lg border border-zinc-300 px-3 py-2 text-sm hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
-        >
-          <Pencil size={15} /> Edit details
-        </button>
+        {perm.edit && (
+          <button
+            onClick={openEdit}
+            className="flex items-center gap-2 rounded-lg border border-zinc-300 px-3 py-2 text-sm hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
+          >
+            <Pencil size={15} /> Edit details
+          </button>
+        )}
       </div>
 
       {/* Agronomist assignment */}
@@ -329,21 +333,23 @@ export default function FarmerDetailPage() {
             </div>
           </div>
         </div>
-        <Select
-          value={farmer.agronomist?._id ?? ""}
-          disabled={savingAgro}
-          onChange={(e) => onAssign(e.target.value)}
-          className="w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm disabled:opacity-60 sm:w-auto dark:border-zinc-700"
-        >
-          <option value="" className="dark:bg-zinc-900">
-            — Unassigned —
-          </option>
-          {agronomists.map((a) => (
-            <option key={a._id} value={a._id} className="dark:bg-zinc-900">
-              {a.name} ({a.mobile})
+        {perm.edit && (
+          <Select
+            value={farmer.agronomist?._id ?? ""}
+            disabled={savingAgro}
+            onChange={(e) => onAssign(e.target.value)}
+            className="w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm disabled:opacity-60 sm:w-auto dark:border-zinc-700"
+          >
+            <option value="" className="dark:bg-zinc-900">
+              — Unassigned —
             </option>
-          ))}
-        </Select>
+            {agronomists.map((a) => (
+              <option key={a._id} value={a._id} className="dark:bg-zinc-900">
+                {a.name} ({a.mobile})
+              </option>
+            ))}
+          </Select>
+        )}
       </div>
 
       {/*
@@ -488,12 +494,14 @@ export default function FarmerDetailPage() {
           <h2 className="flex items-center gap-2 text-lg font-semibold">
             <Sprout size={18} className="text-brand-600" /> Crops ({crops.length})
           </h2>
-          <button
-            onClick={openEdit}
-            className="flex items-center gap-2 rounded-lg bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600"
-          >
-            <Plus size={15} /> Add crop
-          </button>
+          {perm.add && (
+            <button
+              onClick={openEdit}
+              className="flex items-center gap-2 rounded-lg bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600"
+            >
+              <Plus size={15} /> Add crop
+            </button>
+          )}
         </div>
         {crops.length === 0 ? (
           <p className="text-sm text-zinc-500">
@@ -519,13 +527,15 @@ export default function FarmerDetailPage() {
                     </div>
                     <div className="ml-auto flex items-center gap-2">
                       <span className="text-xs text-zinc-400">Planted {fmtDate(crop.dop)}</span>
-                      <button
-                        onClick={() => removeCrop(crop._id, crop.name)}
-                        title="Remove this crop"
-                        className="rounded p-1 text-zinc-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40"
-                      >
-                        <Trash2 size={14} />
-                      </button>
+                      {perm.delete && (
+                        <button
+                          onClick={() => removeCrop(crop._id, crop.name)}
+                          title="Remove this crop"
+                          className="rounded p-1 text-zinc-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
                     </div>
                   </div>
 
@@ -818,140 +828,147 @@ export default function FarmerDetailPage() {
               </button>
             </div>
 
-            <label className="mb-1 block text-sm text-zinc-500">Name</label>
-            <input
-              value={editForm.name}
-              onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
-              required
-              autoFocus
-              className="mb-3 w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
-            />
-
-            <label className="mb-1 block text-sm text-zinc-500">Mobile number</label>
-            <input
-              value={editForm.mobile}
-              onChange={(e) => setEditForm((f) => ({ ...f, mobile: e.target.value }))}
-              required
-              inputMode="numeric"
-              className="w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
-            />
-            <p className="mt-1 text-xs text-amber-600">
-              The mobile number is how this farmer signs into the app — changing it changes their
-              login.
-            </p>
-
-            {/* Planting dates on crops this farmer already has. */}
-            {crops.length > 0 && (
-              <div className="mt-4 border-t border-zinc-100 pt-3 dark:border-zinc-800">
-                <p className="mb-1 text-sm font-medium">Planting dates (D.O.P)</p>
-                <p className="mb-2 text-xs text-zinc-500">
-                  The Package of Practices schedule is counted from this date — a crop with no
-                  date has no schedule.
+            {/* Name, mobile and planting dates are edits; the crop below is an add. */}
+            {perm.edit && (
+              <>
+                <label className="mb-1 block text-sm text-zinc-500">Name</label>
+                <input
+                  value={editForm.name}
+                  onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
+                  required
+                  autoFocus
+                  className="mb-3 w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
+                />
+    
+                <label className="mb-1 block text-sm text-zinc-500">Mobile number</label>
+                <input
+                  value={editForm.mobile}
+                  onChange={(e) => setEditForm((f) => ({ ...f, mobile: e.target.value }))}
+                  required
+                  inputMode="numeric"
+                  className="w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
+                />
+                <p className="mt-1 text-xs text-amber-600">
+                  The mobile number is how this farmer signs into the app — changing it changes their
+                  login.
                 </p>
-                <div className="space-y-2">
-                  {crops.map((c) => (
-                    <div key={c._id} className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                      <div className="min-w-0 flex-1 truncate text-sm">
-                        {c.name}
-                        {c.variety ? <span className="text-zinc-400"> · {c.variety}</span> : null}
-                        {!c.dop && !cropDops[c._id] && (
-                          <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
-                            not set
-                          </span>
-                        )}
-                      </div>
-                      <input
-                        type="date"
-                        value={cropDops[c._id] ?? ""}
-                        onChange={(e) =>
-                          setCropDops((d) => ({ ...d, [c._id]: e.target.value }))
-                        }
-                        className="shrink-0 rounded-lg border border-zinc-300 bg-transparent px-2 py-1.5 text-sm dark:border-zinc-700"
-                      />
+    
+                {/* Planting dates on crops this farmer already has. */}
+                {crops.length > 0 && (
+                  <div className="mt-4 border-t border-zinc-100 pt-3 dark:border-zinc-800">
+                    <p className="mb-1 text-sm font-medium">Planting dates (D.O.P)</p>
+                    <p className="mb-2 text-xs text-zinc-500">
+                      The Package of Practices schedule is counted from this date — a crop with no
+                      date has no schedule.
+                    </p>
+                    <div className="space-y-2">
+                      {crops.map((c) => (
+                        <div key={c._id} className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                          <div className="min-w-0 flex-1 truncate text-sm">
+                            {c.name}
+                            {c.variety ? <span className="text-zinc-400"> · {c.variety}</span> : null}
+                            {!c.dop && !cropDops[c._id] && (
+                              <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
+                                not set
+                              </span>
+                            )}
+                          </div>
+                          <input
+                            type="date"
+                            value={cropDops[c._id] ?? ""}
+                            onChange={(e) =>
+                              setCropDops((d) => ({ ...d, [c._id]: e.target.value }))
+                            }
+                            className="shrink-0 rounded-lg border border-zinc-300 bg-transparent px-2 py-1.5 text-sm dark:border-zinc-700"
+                          />
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </div>
+                  </div>
+                )}
+              </>
             )}
 
             {/* Add a crop in the same step. A farmer can have several. */}
-            <div className="mt-4 border-t border-zinc-100 pt-3 dark:border-zinc-800">
-              <p className="mb-2 text-sm font-medium">
-                Add a crop <span className="font-normal text-zinc-500">(optional)</span>
-              </p>
-
-              <label className="mb-1 block text-sm text-zinc-500">Crop</label>
-              <Select
-                value={cropForm.name}
-                onChange={(e) => setCropForm((f) => ({ ...f, name: e.target.value, variety: "" }))}
-                className="mb-3 w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
-              >
-                <option value="">— Don&apos;t add a crop —</option>
-                {catalog.map((c) => (
-                  <option key={c._id} value={c.name}>
-                    {c.name}
-                  </option>
-                ))}
-              </Select>
-
-              {cropForm.name && (
-                <>
-                  <label className="mb-1 block text-sm text-zinc-500">Variety</label>
-                  {varieties.length > 0 ? (
-                    <Select
-                      value={cropForm.variety}
-                      onChange={(e) => setCropForm((f) => ({ ...f, variety: e.target.value }))}
-                      className="mb-3 w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
-                    >
-                      <option value="">— Any —</option>
-                      {varieties.map((v) => (
-                        <option key={v} value={v}>
-                          {v}
-                        </option>
-                      ))}
-                    </Select>
-                  ) : (
-                    <input
-                      value={cropForm.variety}
-                      onChange={(e) => setCropForm((f) => ({ ...f, variety: e.target.value }))}
-                      placeholder="Variety name"
-                      className="mb-3 w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
-                    />
-                  )}
-
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <div>
-                      <label className="mb-1 block text-sm text-zinc-500">
-                        Date of planting <span className="text-zinc-400">— optional</span>
-                      </label>
+            {perm.add && (
+              <div className="mt-4 border-t border-zinc-100 pt-3 dark:border-zinc-800">
+                <p className="mb-2 text-sm font-medium">
+                  Add a crop <span className="font-normal text-zinc-500">(optional)</span>
+                </p>
+  
+                <label className="mb-1 block text-sm text-zinc-500">Crop</label>
+                <Select
+                  value={cropForm.name}
+                  onChange={(e) => setCropForm((f) => ({ ...f, name: e.target.value, variety: "" }))}
+                  className="mb-3 w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
+                >
+                  <option value="">— Don&apos;t add a crop —</option>
+                  {catalog.map((c) => (
+                    <option key={c._id} value={c.name}>
+                      {c.name}
+                    </option>
+                  ))}
+                </Select>
+  
+                {cropForm.name && (
+                  <>
+                    <label className="mb-1 block text-sm text-zinc-500">Variety</label>
+                    {varieties.length > 0 ? (
+                      <Select
+                        value={cropForm.variety}
+                        onChange={(e) => setCropForm((f) => ({ ...f, variety: e.target.value }))}
+                        className="mb-3 w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
+                      >
+                        <option value="">— Any —</option>
+                        {varieties.map((v) => (
+                          <option key={v} value={v}>
+                            {v}
+                          </option>
+                        ))}
+                      </Select>
+                    ) : (
                       <input
-                        type="date"
-                        value={cropForm.dop}
-                        onChange={(e) => setCropForm((f) => ({ ...f, dop: e.target.value }))}
-                        className="w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
+                        value={cropForm.variety}
+                        onChange={(e) => setCropForm((f) => ({ ...f, variety: e.target.value }))}
+                        placeholder="Variety name"
+                        className="mb-3 w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
                       />
+                    )}
+  
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <div>
+                        <label className="mb-1 block text-sm text-zinc-500">
+                          Date of planting <span className="text-zinc-400">— optional</span>
+                        </label>
+                        <input
+                          type="date"
+                          value={cropForm.dop}
+                          onChange={(e) => setCropForm((f) => ({ ...f, dop: e.target.value }))}
+                          className="w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-sm text-zinc-500">Area (acres)</label>
+                        <input
+                          type="number"
+                          min={0}
+                          step="0.1"
+                          placeholder="e.g. 2.5"
+                          value={cropForm.area}
+                          onChange={(e) => setCropForm((f) => ({ ...f, area: e.target.value }))}
+                          className="w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label className="mb-1 block text-sm text-zinc-500">Area (acres)</label>
-                      <input
-                        type="number"
-                        min={0}
-                        step="0.1"
-                        placeholder="e.g. 2.5"
-                        value={cropForm.area}
-                        onChange={(e) => setCropForm((f) => ({ ...f, area: e.target.value }))}
-                        className="w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
-                      />
-                    </div>
-                  </div>
-                  <p className="mt-1 text-xs text-zinc-500">
-                    The Package of Practices schedule is counted from the planting date.
-                  </p>
-                </>
-              )}
-            </div>
+                    <p className="mt-1 text-xs text-zinc-500">
+                      The Package of Practices schedule is counted from the planting date.
+                    </p>
+                  </>
+                )}
+              </div>
+            )}
 
-            {formError && <p className="mt-3 text-sm text-red-600">{formError}</p>}
+            {formError &&<p className="mt-3 text-sm text-red-600">{formError}</p>}
 
             <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <button

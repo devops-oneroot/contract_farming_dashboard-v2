@@ -17,6 +17,21 @@ export type ExportColumn<T> = {
 
 const STORE = "oneroot_export_cols:";
 
+/** A spreadsheet mark in Excel green, so the button reads as "Excel" without the word. */
+function ExcelIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" className="shrink-0">
+      <rect x="7" y="3" width="14" height="18" rx="2" fill="#21A366" />
+      <path d="M14 3h5a2 2 0 0 1 2 2v3h-7z" fill="#33C481" />
+      <path d="M14 8h7v4h-7z" fill="#21A366" />
+      <path d="M14 12h7v4h-7z" fill="#107C41" />
+      <path d="M14 16h7v3a2 2 0 0 1-2 2h-5z" fill="#185C37" />
+      <rect x="2" y="7" width="11" height="10" rx="1.5" fill="#107C41" />
+      <path d="M4.6 9.2h1.9l1.1 1.9 1.1-1.9h1.8l-1.9 2.8 2 3h-1.9l-1.1-2-1.2 2H4.5l2-3z" fill="#fff" />
+    </svg>
+  );
+}
+
 /** Which columns were ticked last time for this download, if remembered. */
 function remembered(id: string): string[] | null {
   try {
@@ -41,7 +56,7 @@ export function ExcelExport<T>({
   fileName,
   columns,
   rows,
-  label = "Download Excel",
+  label = "Download",
 }: {
   id: string;
   fileName: string;
@@ -116,7 +131,7 @@ export function ExcelExport<T>({
         onClick={start}
         className="inline-flex items-center gap-1.5 rounded-lg border border-brand-600 px-2.5 py-1.5 text-sm font-medium text-brand-700 hover:bg-brand-50 dark:text-brand-300 dark:hover:bg-brand-950"
       >
-        <Download size={15} /> {label}
+        <ExcelIcon size={16} /> {label}
       </button>
 
       {open && (
@@ -140,7 +155,7 @@ export function ExcelExport<T>({
                 <button onClick={() => setPicked(new Set(columns.map((c) => c.key)))} className="text-brand-700 hover:underline">
                   Select all
                 </button>
-                <button onClick={() => setPicked(new Set())} className="text-zinc-500 hover:underline">
+                <button onClick={() => setPicked(new Set())} className="rounded-md bg-red-600 px-2 py-0.5 font-medium text-white hover:bg-red-700">
                   Clear
                 </button>
               </div>

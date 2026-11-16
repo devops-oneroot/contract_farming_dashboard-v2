@@ -25,6 +25,7 @@ import { LoadingBlock } from "../components/loading";
 import { Pagination, usePaged } from "../components/pagination";
 import { ActionBtn, EntryDialog, fmtDate, inr, qty, Stat, type EntryTarget } from "./stock-ui";
 import { DistributeDialog } from "./distribute-dialog";
+import { usePerm } from "../lib/use-perm";
 import { RecentActivity, StockHistoryView } from "./stock-history";
 
 type Tab = "overview" | "people" | "history";
@@ -44,7 +45,7 @@ const initials = (name = "") =>
     .join("") || "?";
 
 /**
- * The Stock portal, run by the Stock in-charge.
+ * The Stock, run by the Stock in-charge.
  *
  * Overview: what central stock holds, product by product, and the latest
  * movements. Field persons: each salesperson's allocated, sold, in hand and
@@ -57,6 +58,7 @@ const initials = (name = "") =>
 function StockPortal() {
   const router = useRouter();
   const params = useSearchParams();
+  const perm = usePerm("stock");
   const [tab, setTab] = useState<Tab>(() => (["overview", "people", "history"].includes(params.get("tab") ?? "") ? (params.get("tab") as Tab) : "overview"));
   const [store, setStore] = useState<StoreStock | null>(null);
   const [rows, setRows] = useState<StockSummaryRow[] | null>(null);
@@ -122,15 +124,15 @@ function StockPortal() {
           <Warehouse size={22} />
         </span>
         <div className="min-w-0 flex-1">
-          <h2 className="text-lg font-semibold leading-tight">Stock Portal</h2>
+          <h2 className="text-lg font-semibold leading-tight">Stock</h2>
           <p className="text-xs text-zinc-500">
             Receive stock into central stock, distribute it to salespeople, and follow every movement.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <ActionBtn primary onClick={() => setEntry({ target: { kind: "store" }, type: "receive" })} icon={<Plus size={14} />} label="Receive stock" />
-          <ActionBtn primary onClick={() => setDistributing(true)} icon={<Split size={14} />} label="Distribute stock" />
-          <ActionBtn onClick={() => setEntry({ target: { kind: "store" }, type: "adjust" })} icon={<SlidersHorizontal size={14} />} label="Adjust central" />
+          {perm.add && <ActionBtn primary onClick={() => setEntry({ target: { kind: "store" }, type: "receive" })} icon={<Plus size={14} />} label="Add Stock" />}
+          {perm.add && <ActionBtn primary onClick={() => setDistributing(true)} icon={<Split size={14} />} label="Split Stock" />}
+          {perm.edit && <ActionBtn onClick={() => setEntry({ target: { kind: "store" }, type: "adjust" })} icon={<SlidersHorizontal size={14} />} label="Adjust Stock" />}
         </div>
       </div>
 
@@ -351,12 +353,14 @@ function StockPortal() {
                       </td>
                       <td className="text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={() => setEntry({ target: { kind: "staff", id: r._id, name: r.name }, type: r.since ? "issue" : "opening" })}
-                            className="whitespace-nowrap rounded-lg bg-brand-500 px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-600"
-                          >
-                            {r.since ? "Issue stock" : "Enter opening stock"}
-                          </button>
+                          {perm.add && (
+                            <button
+                              onClick={() => setEntry({ target: { kind: "staff", id: r._id, name: r.name }, type: r.since ? "issue" : "opening" })}
+                              className="whitespace-nowrap rounded-lg bg-brand-500 px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-600"
+                            >
+                              {r.since ? "Issue stock" : "Enter opening stock"}
+                            </button>
+                          )}
                           <ArrowRight size={15} className="text-zinc-400" />
                         </div>
                       </td>

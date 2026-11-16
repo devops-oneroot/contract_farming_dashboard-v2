@@ -611,7 +611,7 @@ export default function AnalysisPage() {
           {filtered && (
             <div className="filter-actions">
               <Button
-                variant="ghost"
+                variant="danger"
                 onClick={() => {
                   setWho([]);
                   setProduct("");

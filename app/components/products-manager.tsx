@@ -5,6 +5,7 @@ import { Plus, Trash2, Pencil, X, Search } from "lucide-react";
 import { api, Product } from "../lib/api";
 import { LoadingBlock } from "./loading";
 import { Pagination } from "./pagination";
+import { usePerm } from "../lib/use-perm";
 
 /**
  * A size row as typed. Strings, so a field can be empty mid-edit without
@@ -44,6 +45,7 @@ const emptyForm = (): FormState => ({
 const PAGE_SIZE = 20;
 
 export function ProductsManager() {
+  const perm = usePerm("products");
   const [products, setProducts] = useState<Product[]>([]);
   /** Matches across every page, so the heading is not just this page's count. */
   const [total, setTotal] = useState(0);
@@ -218,12 +220,14 @@ export function ProductsManager() {
               className="w-full rounded-lg border border-zinc-300 bg-transparent py-2 pl-8 pr-3 text-sm dark:border-zinc-700"
             />
           </div>
-          <button
-            onClick={openNew}
-            className="flex shrink-0 items-center justify-center gap-2 rounded-lg bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600"
-          >
-            <Plus size={16} /> Add product
-          </button>
+          {perm.add && (
+            <button
+              onClick={openNew}
+              className="flex shrink-0 items-center justify-center gap-2 rounded-lg bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600"
+            >
+              <Plus size={16} /> Add product
+            </button>
+          )}
         </div>
       </div>
 
@@ -293,20 +297,26 @@ export function ProductsManager() {
                     </span>
                   )}
                 </div>
-                <div className="mt-3 flex gap-2 border-t border-zinc-100 pt-3 dark:border-zinc-800">
-                  <button
-                    onClick={() => openEdit(p)}
-                    className="flex items-center gap-1 rounded-lg px-2 py-1 text-sm text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-900"
-                  >
-                    <Pencil size={14} /> Edit
-                  </button>
-                  <button
-                    onClick={() => remove(p)}
-                    className="flex items-center gap-1 rounded-lg px-2 py-1 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40"
-                  >
-                    <Trash2 size={14} /> Delete
-                  </button>
-                </div>
+                {(perm.edit || perm.delete) && (
+                  <div className="mt-3 flex gap-2 border-t border-zinc-100 pt-3 dark:border-zinc-800">
+                    {perm.edit && (
+                      <button
+                        onClick={() => openEdit(p)}
+                        className="flex items-center gap-1 rounded-lg px-2 py-1 text-sm text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-900"
+                      >
+                        <Pencil size={14} /> Edit
+                      </button>
+                    )}
+                    {perm.delete && (
+                      <button
+                        onClick={() => remove(p)}
+                        className="flex items-center gap-1 rounded-lg px-2 py-1 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40"
+                      >
+                        <Trash2 size={14} /> Delete
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           ))}

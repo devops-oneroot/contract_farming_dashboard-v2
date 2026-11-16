@@ -1,11 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Check, Eye, EyeOff, Pencil, RefreshCw, Save, ShieldCheck, Trash2, UserPlus, Users, X } from "lucide-react";
+import { ChevronRight, Eye, EyeOff, KeyRound, Pencil, RefreshCw, ShieldCheck, Trash2, UserPlus, Users, X } from "lucide-react";
+import Link from "next/link";
 import { api, type Admin, type AdminRole, type RolesConfig } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { Loader } from "../components/loading";
-import { MODULE_INFO, ROLE_LABELS, ROLE_STYLE } from "../lib/rbac";
+import { ROLE_LABELS, ROLE_STYLE } from "../lib/rbac";
 import { Select } from "../components/ui";
 
 const MIN_PASSWORD = 8;
@@ -206,7 +207,21 @@ export default function AccountPage() {
         />
       )}
 
-      {roles && <RoleMatrix config={roles} onSaved={(c) => { setRoles(c); say("Role access saved. It takes effect within half a minute."); }} onError={(m) => say(null, m)} />}
+      <Link
+        href="/settings/roles"
+        className="card flex items-center gap-3 p-4 transition hover:ring-1 hover:ring-brand-300"
+      >
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-500/15">
+          <KeyRound size={17} />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold">Role access</span>
+          <span className="block text-xs text-zinc-500">
+            Set what each role can view, add, edit and delete in every module - under Settings.
+          </span>
+        </span>
+        <ChevronRight size={16} className="text-zinc-400" />
+      </Link>
     </div>
   );
 }
@@ -371,121 +386,6 @@ function UserDialog({
           </button>
         </div>
       </form>
-    </div>
-  );
-}
-
-/**
- * Which modules each role may open, as a grid of ticks. The Super admin's
- * column is fixed (everything); the rest are saved together.
- */
-function RoleMatrix({
-  config,
-  onSaved,
-  onError,
-}: {
-  config: RolesConfig;
-  onSaved: (c: RolesConfig) => void;
-  onError: (m: string) => void;
-}) {
-  const initial = useMemo(
-    () => Object.fromEntries(config.roles.map((r) => [r.key, new Set(r.modules)])) as Record<AdminRole, Set<string>>,
-    [config]
-  );
-  const [draft, setDraft] = useState(initial);
-  const [saving, setSaving] = useState(false);
-
-  const dirty = config.roles.some(
-    (r) => !r.fixed && (draft[r.key].size !== initial[r.key].size || [...draft[r.key]].some((m) => !initial[r.key].has(m)))
-  );
-
-  const toggle = (role: AdminRole, m: string) =>
-    setDraft((d) => {
-      const next = new Set(d[role]);
-      if (next.has(m)) next.delete(m);
-      else next.add(m);
-      return { ...d, [role]: next };
-    });
-
-  const save = async () => {
-    setSaving(true);
-    try {
-      const body = Object.fromEntries(config.roles.filter((r) => !r.fixed).map((r) => [r.key, [...draft[r.key]]]));
-      onSaved(await api.saveRoles(body));
-    } catch (e) {
-      onError(e instanceof Error ? e.message : "Could not save role access");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div className="card overflow-hidden">
-      <div className="flex flex-wrap items-center gap-3 border-b border-zinc-100 p-3 dark:border-zinc-800">
-        <span className="flex items-center gap-2 text-sm font-semibold">
-          <ShieldCheck size={16} className="text-brand-600" /> Role access
-        </span>
-        <span className="text-xs text-zinc-500">Tick what each role can open. Super admin always has everything.</span>
-        <div className="ml-auto flex gap-2">
-          {dirty && (
-            <button
-              onClick={() => setDraft(initial)}
-              className="rounded-lg px-3 py-1.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-900"
-            >
-              Reset
-            </button>
-          )}
-          <button
-            onClick={save}
-            disabled={!dirty || saving}
-            className="flex items-center gap-1.5 rounded-lg bg-brand-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50"
-          >
-            <Save size={14} /> {saving ? "Saving…" : "Save access"}
-          </button>
-        </div>
-      </div>
-      <div className="scroll-thin overflow-x-auto">
-        <table className="data-table compact">
-          <thead>
-            <tr>
-              <th>Module</th>
-              {config.roles.map((r) => (
-                <th key={r.key} className="text-center">
-                  {r.label}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {config.modules.map((m) => (
-              <tr key={m}>
-                <td className="font-medium">{MODULE_INFO[m]?.label ?? m}</td>
-                {config.roles.map((r) => {
-                  const on = r.fixed || draft[r.key].has(m);
-                  return (
-                    <td key={r.key} className="text-center">
-                      <button
-                        type="button"
-                        disabled={r.fixed}
-                        onClick={() => toggle(r.key, m)}
-                        aria-pressed={on}
-                        aria-label={`${r.label}: ${MODULE_INFO[m]?.label ?? m}`}
-                        className={`inline-flex h-6 w-6 items-center justify-center rounded-md ring-1 transition ${
-                          on
-                            ? "bg-brand-500 text-white ring-brand-500"
-                            : "bg-white text-transparent ring-zinc-300 hover:ring-brand-400 dark:bg-zinc-950 dark:ring-zinc-700"
-                        } ${r.fixed ? "cursor-not-allowed opacity-60" : ""}`}
-                      >
-                        <Check size={14} />
-                      </button>
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
     </div>
   );
 }

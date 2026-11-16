@@ -823,7 +823,7 @@ export default function TrackingPage() {
         {(who || from) && (
           <div className="filter-actions">
             <Button
-              variant="ghost"
+              variant="danger"
               onClick={() => {
                 setWho("");
                 setFrom("");

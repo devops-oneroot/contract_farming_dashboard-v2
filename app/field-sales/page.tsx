@@ -21,6 +21,7 @@ import { SALE_COLUMNS, saleLines } from "../components/sale-export";
 import { Button, Select, DateInput, Dropdown } from "../components/ui";
 import { LoadingBlock } from "../components/loading";
 import { Pagination, usePaged } from "../components/pagination";
+import { usePerm } from "../lib/use-perm";
 
 /** The day alone — for a sale whose time was never actually observed. */
 function fmtDay(s: string) {
@@ -199,6 +200,7 @@ function ProofPhotos({
 }
 
 export default function FieldSalesPage() {
+  const perm = usePerm("field_sales");
   const [sales, setSales] = useState<ProductSale[]>([]);
   /** The sale being corrected, if any. */
   const [editing, setEditing] = useState<ProductSale | null>(null);
@@ -551,7 +553,7 @@ export default function FieldSalesPage() {
           <div className="filter-actions">
             {(who.length || from || to || buyerKind || code || query || hiddenProducts.size > 0) && (
               <Button
-                variant="ghost"
+                variant="danger"
                 onClick={() => {
                   setWho([]);
                   setHiddenProducts(new Set());
@@ -670,20 +672,24 @@ export default function FieldSalesPage() {
                     )}
                     {/* A correction from the office: a quantity typed twice, a
                         price agreed lower on the field, the wrong buyer. */}
-                    <button
-                      onClick={() => setEditing(s)}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-300 px-2.5 py-1.5 text-xs font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
-                    >
-                      <Pencil size={13} /> Edit
-                    </button>
+                    {perm.edit && (
+                      <button
+                        onClick={() => setEditing(s)}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-300 px-2.5 py-1.5 text-xs font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
+                      >
+                        <Pencil size={13} /> Edit
+                      </button>
+                    )}
                     {/* A sale entered by mistake or twice. Asks first: it is permanent. */}
-                    <button
-                      onClick={() => deleteSale(s)}
-                      disabled={deletingId === s._id}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-red-300 px-2.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950"
-                    >
-                      <Trash2 size={13} /> {deletingId === s._id ? "Deleting…" : "Delete"}
-                    </button>
+                    {perm.delete && (
+                      <button
+                        onClick={() => deleteSale(s)}
+                        disabled={deletingId === s._id}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-red-300 px-2.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950"
+                      >
+                        <Trash2 size={13} /> {deletingId === s._id ? "Deleting…" : "Delete"}
+                      </button>
+                    )}
                     {/* The same PDF the agronomist hands the farmer, so office
                         and field are never reconciling two different bills. */}
                     <a

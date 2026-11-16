@@ -17,6 +17,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   ShieldCheck,
+  KeyRound,
   ShoppingBag,
   Navigation,
   Bug,
@@ -68,7 +69,7 @@ const NAV_GROUPS = [
     icon: ShoppingBag,
     items: [
       { href: "/field-sales", label: "Field Sales", icon: ShoppingBag },
-      { href: "/stock", label: "Stock Portal", icon: Boxes },
+      { href: "/stock", label: "Stock", icon: Boxes },
     ],
   },
   {
@@ -85,7 +86,10 @@ const NAV_GROUPS = [
   {
     label: "Settings",
     icon: ShieldCheck,
-    items: [{ href: "/account", label: "Users & Roles", icon: ShieldCheck }],
+    items: [
+      { href: "/account", label: "Users & Roles", icon: ShieldCheck },
+      { href: "/settings/roles", label: "Role access", icon: KeyRound },
+    ],
   },
 ];
 
@@ -99,13 +103,15 @@ const TITLES: Record<string, string> = {
   "/orders": "Orders",
   "/field-sales": "Field Sales & Product Proof",
   "/analysis": "Sales Analysis",
-  "/stock": "Stock Portal",
+  "/stock": "Stock",
   "/calls": "Call Logs & Recordings",
   "/visits": "Farm Visits",
   "/tracking": "Tracking & Distance",
   "/disease-reports": "Crop Disease Reports",
   "/reports": "Daily Reports",
   "/account": "Account & Dashboard Access",
+  "/settings": "Settings",
+  "/settings/roles": "Settings · Role access",
 };
 
 // Detail pages (/farmers/123, /crops/paddy) take their section's title.

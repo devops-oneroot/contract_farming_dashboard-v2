@@ -9,6 +9,7 @@ import { api, type StaffStock, type StockEntryType } from "../../lib/api";
 import { LoadingBlock } from "../../components/loading";
 import { ActionBtn, EntryDialog, fmtDate, inr, qty, Stat } from "../stock-ui";
 import { StockHistoryView } from "../stock-history";
+import { usePerm } from "../../lib/use-perm";
 
 const initials = (name = "") =>
   name
@@ -25,6 +26,7 @@ const initials = (name = "") =>
  */
 export default function FieldPersonStockPage() {
   const { id } = useParams<{ id: string }>();
+  const perm = usePerm("stock");
   const [data, setData] = useState<StaffStock | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [entry, setEntry] = useState<StockEntryType | null>(null);
@@ -74,10 +76,10 @@ export default function FieldPersonStockPage() {
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
-              {!data.since && <ActionBtn onClick={() => setEntry("opening")} icon={<Plus size={14} />} label="Opening stock" primary />}
-              <ActionBtn onClick={() => setEntry("issue")} icon={<Plus size={14} />} label="Issue stock" primary={!!data.since} />
-              <ActionBtn onClick={() => setEntry("return")} icon={<Undo2 size={14} />} label="Record return" />
-              <ActionBtn onClick={() => setEntry("adjust")} icon={<Minus size={14} />} label="Adjust" />
+              {perm.add && !data.since && <ActionBtn onClick={() => setEntry("opening")} icon={<Plus size={14} />} label="Opening stock" primary />}
+              {perm.add && <ActionBtn onClick={() => setEntry("issue")} icon={<Plus size={14} />} label="Issue stock" primary={!!data.since} />}
+              {perm.add && <ActionBtn onClick={() => setEntry("return")} icon={<Undo2 size={14} />} label="Record return" />}
+              {perm.edit && <ActionBtn onClick={() => setEntry("adjust")} icon={<Minus size={14} />} label="Adjust" />}
             </div>
           </div>
 

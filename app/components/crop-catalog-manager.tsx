@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Plus, Pencil, Trash2, X, Leaf, ClipboardList } from "lucide-react";
 import { api, CatalogCrop, Practice } from "../lib/api";
 import { LoadingBlock } from "./loading";
+import { usePerm } from "../lib/use-perm";
 
 type FormState = {
   id: string | null;
@@ -26,6 +27,7 @@ const emptyForm = (): FormState => ({
 
 export function CropCatalogManager() {
   const router = useRouter();
+  const perm = usePerm("crops");
   const [crops, setCrops] = useState<CatalogCrop[]>([]);
   const [practices, setPractices] = useState<Record<string, Practice>>({});
   const [loading, setLoading] = useState(true);
@@ -135,12 +137,14 @@ export function CropCatalogManager() {
             Crops farmers can pick in the app. Click a crop to edit its Package of Practices.
           </p>
         </div>
-        <button
-          onClick={openNew}
-          className="inline-flex shrink-0 items-center gap-1.5 self-start rounded-lg bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600 sm:self-auto"
-        >
-          <Plus size={16} /> Add Crop
-        </button>
+        {perm.add && (
+          <button
+            onClick={openNew}
+            className="inline-flex shrink-0 items-center gap-1.5 self-start rounded-lg bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600 sm:self-auto"
+          >
+            <Plus size={16} /> Add Crop
+          </button>
+        )}
       </div>
 
       {error && !open && <p className="mb-3 text-sm text-red-600">{error}</p>}
@@ -223,20 +227,24 @@ export function CropCatalogManager() {
                     </td>
                     <td>
                       <div className="flex justify-end gap-1">
-                        <button
-                          onClick={() => openEdit(c)}
-                          className="rounded p-1.5 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                          title="Edit crop"
-                        >
-                          <Pencil size={15} />
-                        </button>
-                        <button
-                          onClick={() => remove(c)}
-                          className="rounded p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40"
-                          title="Delete crop"
-                        >
-                          <Trash2 size={15} />
-                        </button>
+                        {perm.edit && (
+                          <button
+                            onClick={() => openEdit(c)}
+                            className="rounded p-1.5 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                            title="Edit crop"
+                          >
+                            <Pencil size={15} />
+                          </button>
+                        )}
+                        {perm.delete && (
+                          <button
+                            onClick={() => remove(c)}
+                            className="rounded p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40"
+                            title="Delete crop"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

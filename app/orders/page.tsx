@@ -6,6 +6,7 @@ import { api, Order, OrderStatus } from "../lib/api";
 import { LoadingBlock } from "../components/loading";
 import { Pagination, usePaged } from "../components/pagination";
 import { Select } from "../components/ui";
+import { usePerm } from "../lib/use-perm";
 
 const STATUSES: OrderStatus[] = ["pending", "confirmed", "delivered", "cancelled"];
 
@@ -27,6 +28,7 @@ function fmt(s: string) {
 }
 
 export default function OrdersPage() {
+  const perm = usePerm("orders");
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -156,17 +158,19 @@ export default function OrdersPage() {
                   <span className={`rounded-full px-2.5 py-1 text-xs font-medium capitalize ${STATUS_STYLE[o.status]}`}>
                     {o.status}
                   </span>
-                  <Select
-                    value={o.status}
-                    onChange={(e) => changeStatus(o, e.target.value as OrderStatus)}
-                    className="h-8 w-auto rounded-lg border border-zinc-300 bg-transparent px-2 py-1 text-sm dark:border-zinc-700"
-                  >
-                    {STATUSES.map((s) => (
-                      <option key={s} value={s} className="capitalize dark:bg-zinc-900">
-                        {s.charAt(0).toUpperCase() + s.slice(1)}
-                      </option>
-                    ))}
-                  </Select>
+                  {perm.edit && (
+                    <Select
+                      value={o.status}
+                      onChange={(e) => changeStatus(o, e.target.value as OrderStatus)}
+                      className="h-8 w-auto rounded-lg border border-zinc-300 bg-transparent px-2 py-1 text-sm dark:border-zinc-700"
+                    >
+                      {STATUSES.map((s) => (
+                        <option key={s} value={s} className="capitalize dark:bg-zinc-900">
+                          {s.charAt(0).toUpperCase() + s.slice(1)}
+                        </option>
+                      ))}
+                    </Select>
+                  )}
                 </div>
               </div>
             </div>

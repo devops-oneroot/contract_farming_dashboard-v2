@@ -5,6 +5,7 @@ import { Plus, Trash2, Save, GripVertical, Package, X } from "lucide-react";
 import { api, Practice, PopStep, Product } from "../lib/api";
 import { LoadingBlock } from "./loading";
 import { Select } from "./ui";
+import { usePerm } from "../lib/use-perm";
 
 const emptyStep = (): PopStep => ({
   day: [0, 0],
@@ -18,6 +19,7 @@ const emptyStep = (): PopStep => ({
 // — used by the per-crop Package of Practices page.
 export function PracticesManager({ crop }: { crop?: string } = {}) {
   const scoped = !!crop;
+  const perm = usePerm("crops");
   const [practices, setPractices] = useState<Practice[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [activeKey, setActiveKey] = useState<string | null>(null);
@@ -167,7 +169,7 @@ export function PracticesManager({ crop }: { crop?: string } = {}) {
         <h2 className="min-w-0 break-words text-lg font-semibold sm:text-xl">
           {scoped ? `${crop} · Package of Practices` : "Package of Practices"}
         </h2>
-        {!scoped && (
+        {!scoped && perm.add && (
           <button
             onClick={addCrop}
             className="flex shrink-0 items-center gap-2 self-start rounded-lg bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600 sm:self-auto"
@@ -216,7 +218,7 @@ export function PracticesManager({ crop }: { crop?: string } = {}) {
                   className="w-32 rounded-lg border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700"
                 />
               </label>
-              {!scoped && (
+              {!scoped && perm.delete && (
                 <button
                   onClick={deleteCrop}
                   className="flex items-center gap-2 rounded-lg border border-red-300 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:border-red-900 dark:hover:bg-red-950/40"
@@ -333,32 +335,38 @@ export function PracticesManager({ crop }: { crop?: string } = {}) {
                       </div>
                     </div>
 
-                    <button
-                      onClick={() => removeStep(i)}
-                      className="mt-1 shrink-0 text-red-500 hover:text-red-700"
-                      title="Remove step"
-                    >
-                      <Trash2 size={18} />
-                    </button>
+                    {perm.edit && (
+                      <button
+                        onClick={() => removeStep(i)}
+                        className="mt-1 shrink-0 text-red-500 hover:text-red-700"
+                        title="Remove step"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
             </div>
 
             <div className="mt-4 flex flex-wrap items-center gap-3">
-              <button
-                onClick={addStep}
-                className="flex items-center gap-2 rounded-lg border border-zinc-300 px-3 py-2 text-sm font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
-              >
-                <Plus size={16} /> Add step
-              </button>
-              <button
-                onClick={save}
-                disabled={saving}
-                className="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-60"
-              >
-                <Save size={16} /> {saving ? "Saving…" : "Save changes"}
-              </button>
+              {perm.edit && (
+                <button
+                  onClick={addStep}
+                  className="flex items-center gap-2 rounded-lg border border-zinc-300 px-3 py-2 text-sm font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
+                >
+                  <Plus size={16} /> Add step
+                </button>
+              )}
+              {perm.edit && (
+                <button
+                  onClick={save}
+                  disabled={saving}
+                  className="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-60"
+                >
+                  <Save size={16} /> {saving ? "Saving…" : "Save changes"}
+                </button>
+              )}
               {msg && <span className="text-sm text-green-600">{msg}</span>}
               {error && <span className="text-sm text-red-600">{error}</span>}
             </div>

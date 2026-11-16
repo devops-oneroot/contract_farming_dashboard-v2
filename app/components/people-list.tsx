@@ -16,6 +16,7 @@ import { ExcelExport, type ExportColumn } from "./excel-export";
 import { Button, Select, DateInput } from "./ui";
 import { Loader } from "./loading";
 import { Pagination } from "./pagination";
+import { usePerm } from "../lib/use-perm";
 
 const when = (s?: string | null) => (s ? new Date(s) : null);
 
@@ -121,6 +122,8 @@ function Field({
 
 export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
   const label = role === "farmer" ? "farmers" : "agronomists";
+  const farmerPerm = usePerm("farmers");
+  const agronomistPerm = usePerm("agronomists");
   const showDetail = role === "farmer"; // only farmers have a detail page + agronomist
   // Agronomists get Onboarded / Assigned counts instead of the farmer-only columns.
   const showCounts = role === "agronomist";
@@ -429,7 +432,7 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
             }
           />
         )}
-        {showDetail && (
+        {showDetail && farmerPerm.add && (
           <button
             onClick={openAdd}
             className="flex items-center gap-2 rounded-lg bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600"
@@ -555,7 +558,7 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
           </Button>
           {(from || to || onboardedByFilter || farmingType || district || taluk || village) && (
             <Button
-              variant="ghost"
+              variant="danger"
               onClick={() => {
                 setFrom("");
                 setTo("");
@@ -873,13 +876,15 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
                           that needs it most is the one with nothing in it: a
                           farmer visited and then owed nothing drops off every
                           list without anyone noticing. */}
-                      <button
-                        onClick={() => setFollowUpFor(p)}
-                        className="mt-1.5 inline-flex items-center gap-1 rounded-lg border border-brand-600/40 px-2 py-1 text-[11px] font-semibold text-brand-700 hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-brand-950/40"
-                      >
-                        <CalendarClock size={11} />
-                        {p.nextFollowUpAt ? "Change" : "Set follow-up"}
-                      </button>
+                      {farmerPerm.edit && (
+                        <button
+                          onClick={() => setFollowUpFor(p)}
+                          className="mt-1.5 inline-flex items-center gap-1 rounded-lg border border-brand-600/40 px-2 py-1 text-[11px] font-semibold text-brand-700 hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-brand-950/40"
+                        >
+                          <CalendarClock size={11} />
+                          {p.nextFollowUpAt ? "Change" : "Set follow-up"}
+                        </button>
+                      )}
                     </td>
                   )}
                   {showDetail && (
@@ -926,26 +931,32 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
                       afterwards — the bills already handed over keep theirs. */}
                   {showCounts && (
                     <td>
-                      <Select
-                        value={p.region?._id ?? ""}
-                        onChange={async (e) => {
-                          const regionId = e.target.value || null;
-                          try {
-                            await api.setAgronomistRegion(p._id, regionId);
-                            await load();
-                          } catch (err) {
-                            alert(err instanceof Error ? err.message : "Could not set the region.");
-                          }
-                        }}
-                        className="rounded-lg border border-zinc-300 bg-transparent px-2 py-1 text-xs dark:border-zinc-700"
-                      >
-                        <option value="">Not mapped</option>
-                        {regions.map((r) => (
-                          <option key={r._id} value={r._id}>
-                            {r.taluk} · ENP-{r.code}
-                          </option>
-                        ))}
-                      </Select>
+                      {!agronomistPerm.edit ? (
+                        <span className="text-xs">
+                          {p.region ? `${p.region.taluk} · ENP-${p.region.code}` : "Not mapped"}
+                        </span>
+                      ) : (
+                        <Select
+                          value={p.region?._id ?? ""}
+                          onChange={async (e) => {
+                            const regionId = e.target.value || null;
+                            try {
+                              await api.setAgronomistRegion(p._id, regionId);
+                              await load();
+                            } catch (err) {
+                              alert(err instanceof Error ? err.message : "Could not set the region.");
+                            }
+                          }}
+                          className="rounded-lg border border-zinc-300 bg-transparent px-2 py-1 text-xs dark:border-zinc-700"
+                        >
+                          <option value="">Not mapped</option>
+                          {regions.map((r) => (
+                            <option key={r._id} value={r._id}>
+                              {r.taluk} · ENP-{r.code}
+                            </option>
+                          ))}
+                        </Select>
+                      )}
                     </td>
                   )}
                   {showDetail && (

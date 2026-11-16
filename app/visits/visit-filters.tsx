@@ -69,7 +69,7 @@ export function VisitFilters({
       {any && (
         <div className="filter-actions">
           <Button
-            variant="ghost"
+            variant="danger"
             onClick={() => {
               setWho([]);
               setFrom("");

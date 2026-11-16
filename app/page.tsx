@@ -30,7 +30,6 @@ import {
   DiseaseReport,
   Fpo,
   Order,
-  OrderStatus,
   Person,
   Product,
   ProductSale,
@@ -54,8 +53,6 @@ function greeting() {
   return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
 }
 
-/** Fixed order, so each status keeps its colour whichever ones have orders. */
-const ORDER_STATUSES: OrderStatus[] = ["pending", "confirmed", "delivered", "cancelled"];
 
 const countOf = (n: number) => Math.round(n).toLocaleString("en-IN");
 
@@ -71,7 +68,16 @@ const dayKey = (daysAgo: number) => {
  * `value` over the items whose `at` falls on that local day. Days with nothing
  * are zero, not missing, so the line does not skip over a quiet day.
  */
-function perDay<T>(items: T[], days: number, at: (x: T) => string, value: (x: T) => number) {
+function perDay<T>(
+  items: T[],
+  days: number,
+  at: (x: T) => string,
+  value: (x: T) => number,
+  /** Days to leave off the end: 1 = up to yesterday, without today. */
+  skip = 0,
+  /** Label by date ("10 Nov") rather than weekday. */
+  byDate = false
+) {
   const key = (d: Date) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
   const sums = new Map<string, number>();
   items.forEach((x) => {
@@ -83,9 +89,9 @@ function perDay<T>(items: T[], days: number, at: (x: T) => string, value: (x: T)
   return Array.from({ length: days }, (_, i) => {
     const d = new Date();
     d.setHours(12, 0, 0, 0);
-    d.setDate(d.getDate() - (days - 1 - i));
+    d.setDate(d.getDate() - (days - 1 - i) - skip);
     return {
-      label: d.toLocaleDateString(undefined, days <= 7 ? { weekday: "short" } : { day: "numeric", month: "short" }),
+      label: d.toLocaleDateString(undefined, days <= 7 && !byDate ? { weekday: "short" } : { day: "numeric", month: "short" }),
       value: Math.round((sums.get(key(d)) ?? 0) * 100) / 100,
     };
   });
@@ -192,7 +198,6 @@ export default function Home() {
     (async () => {
       try {
         const month = { from: dayKey(29), to: dayKey(0) };
-        const week = { from: dayKey(6), to: dayKey(0) };
         // Only what this role may open: the server would refuse the rest.
         const may = (path: string) => canPath(admin, path);
         const none = <T,>(empty: T) => Promise.resolve(empty);
@@ -206,7 +211,8 @@ export default function Home() {
           may("/land") ? api.getAcreage().catch(() => null) : none<Acreage | null>(null),
           may("/field-sales") ? api.listProductSales(month).catch(() => []) : none<ProductSale[]>([]),
           may("/visits") ? api.listVisits(month).catch(() => []) : none<Visit[]>([]),
-          may("/reports") ? api.listDailyReports(week).catch(() => []) : none<DailyReport[]>([]),
+          // The 7 days before today: the chart leaves today out.
+          may("/reports") ? api.listDailyReports({ from: dayKey(7), to: dayKey(1) }).catch(() => []) : none<DailyReport[]>([]),
           may("/disease-reports") ? api.listDiseaseReports().catch(() => []) : none<DiseaseReport[]>([]),
           may("/fpos") ? api.listFpos().catch(() => []) : none<Fpo[]>([]),
           may("/stock") ? api.stockSummary().catch(() => []) : none<StockSummaryRow[]>([]),
@@ -244,10 +250,33 @@ export default function Home() {
   })();
   const salesTotal = sales.reduce((n, s) => n + (s.total || 0), 0);
 
+  /**
+   * The best sellers over the same 30 days: each product and pack size, by
+   * what it sold for, with the quantity underneath.
+   */
+  const topProducts = (() => {
+    const m = new Map<string, { label: string; value: number; qty: number }>();
+    for (const s of sales) {
+      for (const it of s.items ?? []) {
+        const key = `${it.product}:${it.variant ?? ""}`;
+        const row = m.get(key) ?? { label: it.unit ? `${it.name} · ${it.unit}` : it.name, value: 0, qty: 0 };
+        row.value += (it.qty || 0) * (it.unitPrice || 0);
+        row.qty += it.qty || 0;
+        m.set(key, row);
+      }
+    }
+    return [...m.values()]
+      .sort((a, b) => b.value - a.value)
+      .map((r) => ({ label: r.label, value: Math.round(r.value), sub: `${countOf(r.qty)} sold` }));
+  })();
+
   const visitTrend = perDay(visits, 30, (v) => v.visitedAt, () => 1);
 
-  /** Daily reports filed per day, last 7 days. */
-  const reportsWeek = perDay(reports, 7, (r) => r.date, () => 1);
+  /**
+   * Daily reports filed per day: the last 7 COMPLETE days, yesterday back -
+   * today is left out because its reports are still coming in.
+   */
+  const reportsWeek = perDay(reports, 7, (r) => r.date, () => 1, 1, true);
 
   const diseaseOpen = diseases.filter((d) => d.status === "open").length;
 
@@ -456,23 +485,13 @@ export default function Home() {
         </ChartCard>
       </Section>
 
-      <Section title="Sales, orders & stock" hrefs={["/field-sales", "/orders", "/stock"]}>
+      <Section title="Sales & stock" hrefs={["/field-sales", "/stock"]}>
         <ChartCard icon={IndianRupee} color="var(--viz-6)" wide title="Field sales" subtitle={`Last 30 days · ${money(salesTotal)} in all`} href="/field-sales" loading={loading}>
           <TrendChart color="var(--viz-6)" points={salesTrend} height={200} emptyLabel="No field sales in the last 30 days" />
         </ChartCard>
 
-        <ChartCard icon={ShoppingCart} color="var(--viz-5)" title="Orders by status" subtitle={`${countOf(orders.length)} orders in all`} href="/orders" loading={loading}>
-          <DonutChart hues={["var(--viz-5)", "var(--viz-6)", "var(--viz-7)", "var(--viz-8)"]}
-            slices={ORDER_STATUSES.map((s) => ({
-              label: s.charAt(0).toUpperCase() + s.slice(1),
-              value: orders.filter((o) => o.status === s).length,
-            }))}
-            total={orders.length}
-            centreLabel="orders"
-            format={countOf}
-            shortFormat={countOf}
-            emptyLabel="No orders yet"
-          />
+        <ChartCard icon={Package} color="var(--viz-5)" title="Top products sold" subtitle={`Last 30 days · top ${Math.min(6, topProducts.length)} by amount`} href="/field-sales" loading={loading}>
+          <RankedBars color="var(--viz-5)" rows={topProducts.slice(0, 6)} emptyLabel="No field sales in the last 30 days" />
         </ChartCard>
 
         <ChartCard icon={Boxes} color="var(--viz-4)" title="Stock in hand by staff" subtitle={`Top ${Math.min(6, stockByStaff.length)} by value`} href="/stock" loading={loading}>
@@ -491,7 +510,7 @@ export default function Home() {
           />
         </ChartCard>
 
-        <ChartCard icon={ClipboardList} color="var(--viz-2)" title="Daily reports filed" subtitle="Last 7 days" href="/reports" loading={loading}>
+        <ChartCard icon={ClipboardList} color="var(--viz-2)" title="Daily reports filed" subtitle="Last 7 days, excluding today" href="/reports" loading={loading}>
           <ColumnChart color="var(--viz-2)" rows={reportsWeek} height={200} format={countOf} unit="reports" emptyLabel="No reports in the last 7 days" />
         </ChartCard>
 

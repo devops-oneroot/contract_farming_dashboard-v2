@@ -139,7 +139,7 @@ export function AgronomistMultiSelect({
             >
               Select {q ? "shown" : "all"}
             </button>
-            <button type="button" onClick={() => onChange([])} className="text-zinc-500 hover:underline">
+            <button type="button" onClick={() => onChange([])} className="rounded-md bg-red-600 px-2 py-0.5 font-medium text-white hover:bg-red-700">
               Clear
             </button>
           </div>

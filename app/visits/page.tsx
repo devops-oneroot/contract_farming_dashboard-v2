@@ -13,6 +13,7 @@ import { FarmerVisits } from "./farmer-visits";
 import { AgronomistVisits } from "./agronomist-visits";
 import { LoadingBlock } from "../components/loading";
 import { Pagination, usePaged } from "../components/pagination";
+import { usePerm } from "../lib/use-perm";
 
 function fmtTime(s: string) {
   return new Date(s).toLocaleString(undefined, {
@@ -97,6 +98,8 @@ const OWED: Record<Owed, { label: string; className: string }> = {
 };
 
 export default function VisitsPage() {
+  // Setting the next visit writes to the farmer, so it is a farmers edit.
+  const farmerPerm = usePerm("farmers");
   const [visits, setVisits] = useState<Visit[]>([]);
   const [agronomists, setAgronomists] = useState<Person[]>([]);
   const [loading, setLoading] = useState(true);
@@ -359,17 +362,19 @@ export default function VisitsPage() {
                         </div>
                       ) : null}
                       {v.farmer?._id ? (
-                        <button
-                          onClick={() => setSetting(v)}
-                          className="mt-1.5 inline-flex items-center gap-1 rounded-lg border border-brand-600/40 px-2 py-1 text-[11px] font-semibold text-brand-700 hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-brand-950/40"
-                        >
-                          <CalendarClock size={11} />
-                          {state === "skipped"
-                            ? "Change"
-                            : v.farmer.visitDate
-                              ? "Change visit date"
-                              : "Ask for a visit"}
-                        </button>
+                        farmerPerm.edit && (
+                          <button
+                            onClick={() => setSetting(v)}
+                            className="mt-1.5 inline-flex items-center gap-1 rounded-lg border border-brand-600/40 px-2 py-1 text-[11px] font-semibold text-brand-700 hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-brand-950/40"
+                          >
+                            <CalendarClock size={11} />
+                            {state === "skipped"
+                              ? "Change"
+                              : v.farmer.visitDate
+                                ? "Change visit date"
+                                : "Ask for a visit"}
+                          </button>
+                        )
                       ) : (
                         <div className="mt-1 text-xs text-zinc-400">Random visit</div>
                       )}

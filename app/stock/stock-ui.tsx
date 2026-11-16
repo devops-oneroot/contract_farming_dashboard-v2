@@ -5,6 +5,7 @@ import { Plus, Trash2, X, type LucideIcon } from "lucide-react";
 
 import { api, type Product, type StockEntryType, type StoreEntryType } from "../lib/api";
 import { Select } from "../components/ui";
+import { usePerm } from "../lib/use-perm";
 
 export const inr = (n: number) => `₹${Math.round(n).toLocaleString("en-IN")}`;
 export const qty = (n: number) => Math.round(n).toLocaleString("en-IN");
@@ -123,8 +124,12 @@ export function EntryDialog({
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const types: AnyEntry[] = target.kind === "store" ? ["receive", "adjust"] : ["opening", "issue", "return", "adjust"];
-  const [type, setType] = useState<AnyEntry>(types.includes(initialType) ? initialType : types[0]);
+  const perm = usePerm("stock");
+  // An adjustment is a stock edit; every other entry adds stock movement.
+  const types: AnyEntry[] = (
+    target.kind === "store" ? ["receive", "adjust"] : ["opening", "issue", "return", "adjust"]
+  ).filter((t) => (t === "adjust" ? perm.edit : perm.add)) as AnyEntry[];
+  const [type, setType] = useState<AnyEntry>(types.includes(initialType) ? initialType : (types[0] ?? initialType));
   const [products, setProducts] = useState<Product[]>([]);
   const [lines, setLines] = useState<Draft[]>([{ key: 0, product: "", variant: "", qty: "" }]);
   const [note, setNote] = useState("");

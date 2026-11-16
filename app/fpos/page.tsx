@@ -319,7 +319,7 @@ export default function FposPage() {
           </Button>
           {filtersOn && (
             <Button
-              variant="ghost"
+              variant="danger"
               onClick={() => {
                 setQuery("");
                 setRole("");

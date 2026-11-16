@@ -1,4 +1,4 @@
-import type { Admin, AdminRole } from "./api";
+import type { Admin, AdminRole, PermAction } from "./api";
 
 /**
  * The dashboard's modules, as the server knows them (backend src/utils/rbac.js),
@@ -17,13 +17,13 @@ export const MODULE_INFO: Record<string, { label: string; hrefs: string[] }> = {
   products: { label: "Products", hrefs: ["/products"] },
   orders: { label: "Orders", hrefs: ["/orders"] },
   field_sales: { label: "Field Sales", hrefs: ["/field-sales"] },
-  stock: { label: "Stock Portal", hrefs: ["/stock"] },
+  stock: { label: "Stock", hrefs: ["/stock"] },
   calls: { label: "Calls", hrefs: ["/calls"] },
   visits: { label: "Farm Visits", hrefs: ["/visits"] },
   tracking: { label: "Tracking", hrefs: ["/tracking"] },
   disease_reports: { label: "Disease Reports", hrefs: ["/disease-reports"] },
   daily_reports: { label: "Daily Reports", hrefs: ["/reports"] },
-  users: { label: "Users & Roles", hrefs: ["/account"] },
+  users: { label: "Users & Roles", hrefs: ["/account", "/settings"] },
 };
 
 export const ROLE_LABELS: Record<AdminRole, string> = {
@@ -64,6 +64,18 @@ export function moduleForPath(pathname: string): string | null {
  */
 export const can = (admin: Admin | null | undefined, module: string) =>
   !!admin && (!Array.isArray(admin.modules) || admin.modules.includes(module));
+
+/**
+ * Whether this account may take an action in a module: "view", "add", "edit"
+ * or "delete". An account sent without per-action permissions (an older
+ * backend) may do whatever its modules allow, as before.
+ */
+export function canDo(admin: Admin | null | undefined, module: string, action: PermAction) {
+  if (!admin) return false;
+  if (admin.role === "super_admin") return true;
+  if (!admin.permissions) return can(admin, module);
+  return (admin.permissions[module] ?? []).includes(action);
+}
 
 /** Whether this account may open a page. Pages outside every module (login) are open. */
 export function canPath(admin: Admin | null | undefined, pathname: string) {

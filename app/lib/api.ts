@@ -150,7 +150,7 @@ export type Product = {
   createdAt: string;
 };
 
-/** 'admin' runs the whole dashboard; 'stock_incharge' only the Stock portal. */
+/** 'admin' runs the whole dashboard; 'stock_incharge' only the Stock. */
 /** A dashboard account's role. What each may open is set per role (see lib/rbac.ts). */
 export type AdminRole = "super_admin" | "admin" | "sales_manager" | "sales_support" | "stock_incharge";
 export type Admin = {
@@ -160,13 +160,24 @@ export type Admin = {
   role?: AdminRole;
   /** The modules this account's role may open - sent with the signed-in account only. */
   modules?: string[];
+  /** What the role may do in each module - sent with the signed-in account only. */
+  permissions?: Permissions;
   createdAt?: string;
 };
 
-/** Every role, its label and what it may open (GET /api/admin/roles). */
+/** What a role may do in a module. */
+export type PermAction = "view" | "add" | "edit" | "delete";
+/** Module -> the actions allowed in it. A module missing here cannot be opened. */
+export type Permissions = Record<string, PermAction[]>;
+
+/** Every role, its label and what it may do (GET /api/admin/roles). */
 export type RolesConfig = {
   modules: string[];
-  roles: { key: AdminRole; label: string; modules: string[]; fixed: boolean }[];
+  /** Absent on a backend older than per-action access. */
+  actions?: PermAction[];
+  /** The actions each module offers (view-only modules offer just "view"). */
+  moduleActions?: Record<string, PermAction[]>;
+  roles: { key: AdminRole; label: string; modules: string[]; permissions?: Permissions; fixed: boolean }[];
 };
 
 export type CatalogCrop = {
@@ -1025,6 +1036,9 @@ export const api = {
   getRoles: () => json<RolesConfig>("/api/admin/roles"),
   saveRoles: (roleModules: Partial<Record<AdminRole, string[]>>) =>
     json<RolesConfig>("/api/admin/roles", { method: "PUT", body: JSON.stringify({ roleModules }) }),
+  /** What each role can view, add, edit and delete in each module. */
+  saveRolePermissions: (rolePermissions: Partial<Record<AdminRole, Permissions>>) =>
+    json<RolesConfig>("/api/admin/roles", { method: "PUT", body: JSON.stringify({ rolePermissions }) }),
 
   // Users
   /**

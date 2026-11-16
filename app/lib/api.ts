@@ -169,6 +169,8 @@ export type Admin = {
 export type WhatsappReportSettings = {
   enabled: boolean;
   time: string;
+  /** The PDF's colour: one of the dashboard accents. Absent on an older backend. */
+  accent?: string;
   recipients: { name: string; mobile: string }[];
 };
 
@@ -1427,6 +1429,9 @@ export const api = {
   dayReportPdfUrl: (userId: string, date?: string) => {
     const q = new URLSearchParams({ user: userId });
     if (date) q.set("date", date);
+    // The PDF takes the dashboard's accent colour.
+    const accent = typeof document !== "undefined" ? document.documentElement.getAttribute("data-accent") : null;
+    if (accent) q.set("accent", accent);
     return `${API_URL}/api/day-report.pdf?${q.toString()}`;
   },
 

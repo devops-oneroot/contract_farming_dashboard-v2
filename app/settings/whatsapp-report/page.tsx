@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { AlertTriangle, CheckCircle2, Clock, MessageCircle, Plus, Save, Send, Trash2, XCircle } from "lucide-react";
+import { ACCENTS } from "../../components/theme-toggle";
+import { AlertTriangle, Check, CheckCircle2, Clock, MessageCircle, Plus, Save, Send, Trash2, XCircle } from "lucide-react";
 
 import { api, type WhatsappReportInfo, type WhatsappReportSettings } from "../../lib/api";
 import { LoadingBlock } from "../../components/loading";
@@ -63,6 +64,7 @@ export default function WhatsappReportPage() {
   const dirty =
     draft.enabled !== saved.enabled ||
     draft.time !== saved.time ||
+    (draft.accent ?? "orange") !== (saved.accent ?? "orange") ||
     JSON.stringify(draft.recipients.map((r) => [r.name.trim(), r.mobile.replace(/\D/g, "").slice(-10)])) !==
       JSON.stringify(saved.recipients.map((r) => [r.name, local(r.mobile)]));
 
@@ -168,6 +170,33 @@ export default function WhatsappReportPage() {
             </span>
             <input type="time" value={draft.time} onChange={(e) => setDraft({ ...draft, time: e.target.value || "20:00" })} className={field} />
           </label>
+          <div className="text-sm">
+            <span className="mb-1.5 block text-zinc-500">Report colour</span>
+            <div className="flex flex-wrap gap-2">
+              {ACCENTS.map((a) => {
+                const on = (draft.accent ?? "orange") === a.key;
+                return (
+                  <button
+                    key={a.key}
+                    type="button"
+                    onClick={() => setDraft({ ...draft, accent: a.key })}
+                    title={a.label}
+                    aria-label={a.label}
+                    aria-pressed={on}
+                    className={`flex h-8 w-8 items-center justify-center rounded-full ring-offset-2 transition dark:ring-offset-zinc-950 ${
+                      on ? "ring-2 ring-zinc-900 dark:ring-zinc-100" : "hover:scale-110"
+                    }`}
+                    style={{ background: a.swatch }}
+                  >
+                    {on && <Check size={14} className="text-white" />}
+                  </button>
+                );
+              })}
+            </div>
+            <span className="mt-1 block text-xs text-zinc-400">
+              {ACCENTS.find((a) => a.key === (draft.accent ?? "orange"))?.label} - headings, tables and figures in the PDF.
+            </span>
+          </div>
           <p className="text-xs text-zinc-400">
             Sent once a day at this time or shortly after. If the server was down then, it goes out as soon as it is back
             that evening. WhatsApp template: <code>{s.template}</code>.

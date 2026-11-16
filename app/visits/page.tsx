@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CalendarClock, ExternalLink, MapPin } from "lucide-react";
+import { CalendarClock, History, MapPin } from "lucide-react";
 
 import { api, Person, Visit } from "../lib/api";
 import { PhotoThumb } from "../components/lightbox";
@@ -9,7 +9,8 @@ import { NextVisitDialog } from "../components/next-visit-dialog";
 import { ExcelExport, type ExportColumn } from "../components/excel-export";
 import { Tabs } from "../components/ui";
 import { VisitFilters, type CommonVisitFilters } from "./visit-filters";
-import { FarmerVisits } from "./farmer-visits";
+import { FarmerHistory, FarmerVisits, type HistoryFarmer } from "./farmer-visits";
+import { VisitMapPopup } from "./visit-map";
 import { AgronomistVisits } from "./agronomist-visits";
 import { LoadingBlock } from "../components/loading";
 import { Pagination, usePaged } from "../components/pagination";
@@ -120,6 +121,10 @@ export default function VisitsPage() {
 
   /** Which visit's next-visit dialog is open. */
   const [setting, setSetting] = useState<Visit | null>(null);
+  /** The visit whose location is open on the map popup. */
+  const [mapOf, setMapOf] = useState<Visit | null>(null);
+  /** The farmer whose full visit history is open (from the "visits in total" chip). */
+  const [historyOf, setHistoryOf] = useState<HistoryFarmer | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -306,16 +311,19 @@ export default function VisitsPage() {
                       ) : null}
                       {/* Every visit to this farm by anyone, ever - the filters
                           above do not narrow it. */}
-                      {v.farmerTotalVisits ? (
-                        <span
-                          title="All visits to this farmer's farm, by every agronomist, all time"
-                          className="mt-1 inline-flex whitespace-nowrap rounded-full bg-brand-100 px-2 py-0.5 text-[11px] font-medium text-brand-800 dark:bg-brand-950/50 dark:text-brand-300"
+                      {v.farmerTotalVisits && v.farmer ? (
+                        <button
+                          type="button"
+                          onClick={() => setHistoryOf(v.farmer)}
+                          title="All visits to this farmer's farm, by every agronomist, all time - click for the history"
+                          className="mt-1 inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-brand-100 px-2 py-0.5 text-[11px] font-medium text-brand-800 ring-brand-300 transition hover:bg-brand-200 hover:ring-1 dark:bg-brand-950/50 dark:text-brand-300 dark:hover:bg-brand-900/60"
                         >
+                          <History size={11} />
                           {v.farmerTotalVisits} visit{v.farmerTotalVisits === 1 ? "" : "s"} in total
                           {v.farmerTotalAgronomists
                             ? ` · ${v.farmerTotalAgronomists} agronomist${v.farmerTotalAgronomists === 1 ? "" : "s"}`
                             : ""}
-                        </span>
+                        </button>
                       ) : null}
                     </td>
                     <td className="text-zinc-500">
@@ -401,14 +409,13 @@ export default function VisitsPage() {
                     </td>
                     <td>
                       {hasLoc ? (
-                        <a
-                          href={`https://www.google.com/maps?q=${v.location.latitude},${v.location.longitude}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-xs font-medium text-brand-600 hover:underline"
+                        <button
+                          type="button"
+                          onClick={() => setMapOf(v)}
+                          className="inline-flex items-center gap-1 rounded-lg border border-brand-600/40 px-2 py-1 text-xs font-medium text-brand-700 hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-brand-950/40"
                         >
-                          <MapPin size={13} /> Map <ExternalLink size={11} />
-                        </a>
+                          <MapPin size={13} /> View on map
+                        </button>
                       ) : (
                         <span className="text-xs text-zinc-400">—</span>
                       )}
@@ -430,6 +437,9 @@ export default function VisitsPage() {
       {/* Patches every row for that farmer, not just the one clicked — the same
           farmer can appear on several visits, and they would otherwise disagree
           about what is owed. */}
+      {mapOf && <VisitMapPopup visit={mapOf} onClose={() => setMapOf(null)} />}
+      {historyOf && <FarmerHistory farmer={historyOf} onClose={() => setHistoryOf(null)} />}
+
       {setting ? (
         <NextVisitDialog
           key={setting._id}

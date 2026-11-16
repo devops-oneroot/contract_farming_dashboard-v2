@@ -10,6 +10,7 @@ import { ExcelExport, type ExportColumn } from "../components/excel-export";
 import { Dropdown, Modal, Select } from "../components/ui";
 import { VisitFilters, type CommonVisitFilters } from "./visit-filters";
 import { LoadingBlock } from "../components/loading";
+import { VisitMapPopup } from "./visit-map";
 import { Pagination, usePaged } from "../components/pagination";
 
 const fmtDate = (s?: string | null) =>
@@ -30,7 +31,11 @@ const hasNext = (f: FarmerVisitSummary["farmer"]) => !!(f.nextFollowUpAt || f.vi
 const NO_TALUK = "__none__";
 
 /** What is set for this farmer's next visit, read from the farmer as it is now. */
-function nextOf(f: FarmerVisitSummary["farmer"]): { label: string; className: string } {
+/** The farmer as the history popup needs it: from a farmer summary, or from a visit. */
+export type HistoryFarmer = Pick<FarmerVisitSummary["farmer"], "_id" | "name" | "mobile"> &
+  Partial<Pick<FarmerVisitSummary["farmer"], "village" | "taluk" | "visitDate" | "nextFollowUpAt" | "skippedAt" | "skipReason">>;
+
+function nextOf(f: HistoryFarmer): { label: string; className: string } {
   if (f.skippedAt) return { label: "Not needed", className: "bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300" };
   const due = f.nextFollowUpAt || f.visitDate;
   if (!due) return { label: "No next visit", className: "bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300" };
@@ -315,7 +320,7 @@ export function FarmerVisits({ common }: { common: CommonVisitFilters }) {
       )}
       {!loading && !error && <Pagination {...pager} noun="farmers" />}
 
-      {open && <FarmerHistory summary={open} onClose={() => setOpen(null)} />}
+      {open && <FarmerHistory farmer={open.farmer} onClose={() => setOpen(null)} />}
     </div>
   );
 }
@@ -324,10 +329,11 @@ export function FarmerVisits({ common }: { common: CommonVisitFilters }) {
  * Every visit to one farmer, newest first, from any agronomist and any date,
  * so the history is whole even when the page is filtered to a period.
  */
-function FarmerHistory({ summary, onClose }: { summary: FarmerVisitSummary; onClose: () => void }) {
+export function FarmerHistory({ farmer: f, onClose }: { farmer: HistoryFarmer; onClose: () => void }) {
   const [visits, setVisits] = useState<Visit[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const f = summary.farmer;
+  /** The visit whose location is open on the map popup. */
+  const [mapOf, setMapOf] = useState<Visit | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -349,6 +355,7 @@ function FarmerHistory({ summary, onClose }: { summary: FarmerVisitSummary; onCl
   }, [visits]);
 
   return (
+    <>
     <Modal
       open
       onClose={onClose}
@@ -429,14 +436,13 @@ function FarmerHistory({ summary, onClose }: { summary: FarmerVisitSummary; onCl
                         />
                       ))}
                       {hasLoc && (
-                        <a
-                          href={`https://www.google.com/maps?q=${v.location.latitude},${v.location.longitude}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        <button
+                          type="button"
+                          onClick={() => setMapOf(v)}
                           className="inline-flex items-center gap-1 text-xs font-medium text-brand-600 hover:underline"
                         >
                           <MapPin size={13} /> Map
-                        </a>
+                        </button>
                       )}
                     </div>
                   )}
@@ -447,5 +453,7 @@ function FarmerHistory({ summary, onClose }: { summary: FarmerVisitSummary; onCl
         )}
       </div>
     </Modal>
+    {mapOf && <VisitMapPopup visit={mapOf} onClose={() => setMapOf(null)} />}
+    </>
   );
 }

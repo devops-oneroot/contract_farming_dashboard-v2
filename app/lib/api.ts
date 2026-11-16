@@ -1589,6 +1589,13 @@ export const api = {
     const qs = q.toString();
     return json<NearbyResult>(`/api/tracking/${id}/nearby${qs ? `?${qs}` : ""}`);
   },
+  /** Farmers around any point (a visit's location); `agronomist` marks their own farmers. */
+  getNearbyPoint: (params: { lat: number; lng: number; radiusKm?: number; agronomist?: string }) => {
+    const q = new URLSearchParams({ lat: String(params.lat), lng: String(params.lng) });
+    if (params.radiusKm != null) q.set("radiusKm", String(params.radiusKm));
+    if (params.agronomist) q.set("agronomist", params.agronomist);
+    return json<NearbyResult>(`/api/tracking/nearby?${q.toString()}`);
+  },
 
   /** A single agent's measured numbers for one day. `date` is yyyy-mm-dd. */
   getDayStats: (userId: string, date?: string) => {

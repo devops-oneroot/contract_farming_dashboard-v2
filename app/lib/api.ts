@@ -165,6 +165,32 @@ export type Admin = {
   createdAt?: string;
 };
 
+/** Settings > Daily report on WhatsApp. `time` is HH:MM in India time. */
+export type WhatsappReportSettings = {
+  enabled: boolean;
+  time: string;
+  recipients: { name: string; mobile: string }[];
+};
+
+export type WhatsappReportSend = {
+  id: string;
+  day: string;
+  test: boolean;
+  to: string;
+  name: string;
+  status: "pending" | "sending" | "sent" | "failed" | "skipped";
+  attempts: number;
+  error: string;
+  sentAt: string | null;
+  createdAt: string;
+};
+
+export type WhatsappReportInfo = {
+  settings: WhatsappReportSettings;
+  recent: WhatsappReportSend[];
+  status: { live: boolean; configured: boolean; template: string; testTo: string | null; blocked: string | null };
+};
+
 /** What a role may do in a module. */
 export type PermAction = "view" | "add" | "edit" | "delete";
 /** Module -> the actions allowed in it. A module missing here cannot be opened. */
@@ -1036,6 +1062,16 @@ export const api = {
   getRoles: () => json<RolesConfig>("/api/admin/roles"),
   saveRoles: (roleModules: Partial<Record<AdminRole, string[]>>) =>
     json<RolesConfig>("/api/admin/roles", { method: "PUT", body: JSON.stringify({ roleModules }) }),
+  /** The team's daily report on WhatsApp: settings, where sends go from this server, recent sends. */
+  getWhatsappReport: () => json<WhatsappReportInfo>("/api/admin/whatsapp-report"),
+  saveWhatsappReport: (settings: WhatsappReportSettings) =>
+    json<{ settings: WhatsappReportSettings }>("/api/admin/whatsapp-report", { method: "PUT", body: JSON.stringify(settings) }),
+  /** Sends today's report so far now: to `mobile`, or to every saved number. */
+  testWhatsappReport: (body: { mobile?: string; day?: string } = {}) =>
+    json<{ day: string; testMode: string | null; results: { to_number: string; to_name: string; status: string; last_error: string }[] }>(
+      "/api/admin/whatsapp-report/test",
+      { method: "POST", body: JSON.stringify(body) }
+    ),
   /** What each role can view, add, edit and delete in each module. */
   saveRolePermissions: (rolePermissions: Partial<Record<AdminRole, Permissions>>) =>
     json<RolesConfig>("/api/admin/roles", { method: "PUT", body: JSON.stringify({ rolePermissions }) }),

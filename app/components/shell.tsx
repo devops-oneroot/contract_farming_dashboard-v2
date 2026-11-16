@@ -18,6 +18,7 @@ import {
   PanelLeftOpen,
   ShieldCheck,
   KeyRound,
+  MessageCircle,
   ShoppingBag,
   Navigation,
   Bug,
@@ -89,6 +90,7 @@ const NAV_GROUPS = [
     items: [
       { href: "/account", label: "Users & Roles", icon: ShieldCheck },
       { href: "/settings/roles", label: "Role access", icon: KeyRound },
+      { href: "/settings/whatsapp-report", label: "Daily report on WhatsApp", icon: MessageCircle },
     ],
   },
 ];
@@ -112,6 +114,7 @@ const TITLES: Record<string, string> = {
   "/account": "Account & Dashboard Access",
   "/settings": "Settings",
   "/settings/roles": "Settings · Role access",
+  "/settings/whatsapp-report": "Settings · Daily report on WhatsApp",
 };
 
 // Detail pages (/farmers/123, /crops/paddy) take their section's title.

@@ -790,6 +790,15 @@ export type DiseaseReport = {
 };
 
 /** One GPS fix along a tracked route. */
+/** A tracking route snapped to roads (GET /api/tracking/:id/road-route). Coordinates are [lat, lng]. */
+export type RoadRoute = {
+  source: "mapbox" | "none";
+  reason?: string;
+  lines: { coords: [number, number][]; matched: boolean }[];
+  gaps: { from: [number, number]; to: [number, number]; minutes: number; fromAt: string; toAt: string }[];
+  computedAt?: string;
+};
+
 export type TrackPoint = {
   latitude: number;
   longitude: number;
@@ -1560,6 +1569,8 @@ export const api = {
 
   /** One session WITH its route, for the map. */
   getTrackingSession: (id: string) => json<TrackingSession>(`/api/tracking/${id}`),
+  /** The session's route snapped to the roads driven; source "none" when unavailable. */
+  trackingRoadRoute: (id: string) => json<RoadRoute>(`/api/tracking/${id}/road-route`),
 
   /**
    * The place a route point sits in, and the farmers around it.

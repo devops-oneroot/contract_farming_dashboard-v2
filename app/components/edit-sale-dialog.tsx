@@ -70,6 +70,13 @@ function asInputDate(iso: string) {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
 
+/** The time of day for an <input type="time">, in local time: "14:49". */
+function asInputTime(iso: string) {
+  const d = new Date(iso);
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
 /**
  * Correcting a sale the office has found a mistake in.
  *
@@ -127,6 +134,9 @@ export function EditSaleDialog({
   /** Courier / packaging / other charges, in rupees, GST-inclusive. */
   const [charges, setCharges] = useState(sale.otherCharges ? String(sale.otherCharges) : "");
   const [soldAt, setSoldAt] = useState(asInputDate(sale.soldAt));
+  const [soldTime, setSoldTime] = useState(asInputTime(sale.soldAt));
+  /** Touched at all? Untouched, the sale keeps its exact recorded time. */
+  const whenChanged = soldAt !== asInputDate(sale.soldAt) || soldTime !== asInputTime(sale.soldAt);
   const [notes, setNotes] = useState(sale.notes ?? "");
   const [reason, setReason] = useState("");
   const [saving, setSaving] = useState(false);
@@ -272,9 +282,10 @@ export function EditSaleDialog({
         invoiceNo,
         cropName,
         notes,
-        // Local midday, not midnight: IST sits five and a half hours off UTC,
-        // and a bare date is close enough to the edge to file the sale a day out.
-        soldAt: new Date(`${soldAt}T12:00:00`).toISOString(),
+        // Sent only when the date or time was changed. It used to be sent on
+        // every save as the day at 12:00, which wiped the real time of every
+        // sale anyone corrected - each one then read "12:00 pm".
+        ...(whenChanged ? { soldAt: new Date(`${soldAt}T${soldTime || "12:00"}:00`).toISOString() } : {}),
         reason: reason.trim(),
       });
       onSaved(updated);
@@ -365,8 +376,17 @@ export function EditSaleDialog({
             </label>
 
             <label className="text-sm">
-              <span className={label}>Date of sale</span>
-              <input type="date" value={soldAt} onChange={(e) => setSoldAt(e.target.value)} className={field} />
+              <span className={label}>Date & time of sale</span>
+              <span className="flex gap-2">
+                <input type="date" value={soldAt} onChange={(e) => setSoldAt(e.target.value)} className={field} />
+                <input
+                  type="time"
+                  value={soldTime}
+                  onChange={(e) => setSoldTime(e.target.value)}
+                  aria-label="Time of sale"
+                  className={`${field} max-w-32`}
+                />
+              </span>
             </label>
 
             {/* Editable, but not lightly: the farmer's copy still reads the old

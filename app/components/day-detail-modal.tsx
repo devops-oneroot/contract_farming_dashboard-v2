@@ -11,6 +11,7 @@ import {
   LogIn,
   LogOut,
   MapPin,
+  UserCheck,
   UserPlus,
   Users,
   Utensils,
@@ -20,7 +21,7 @@ import {
 } from "lucide-react";
 
 import { api, DayAttendance, DayReport, DayReportRow } from "../lib/api";
-import { AttendanceChip, fmtClock, hm } from "./attendance-status";
+import { AttendanceChip, fmtClock, hm, PresenceBadge, presenceOf } from "./attendance-status";
 import { Loader } from "./loading";
 import { PhotoThumb } from "./lightbox";
 
@@ -180,11 +181,12 @@ function AttendanceCard({ attendance: a }: { attendance?: DayAttendance | null }
         </p>
       ) : (
         <>
-          <div className="grid grid-cols-3 gap-2 sm:gap-3">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
             {[
-              { icon: LogIn, label: "Start time", value: fmtClock(a.startAt) },
+              { icon: LogIn, label: "Start time", value: fmtClock(a.startAt) as React.ReactNode },
               { icon: LogOut, label: "End time", value: a.endAt ? fmtClock(a.endAt) : "—" },
               { icon: Clock, label: "Total hours", value: a.workedMinutes != null ? hm(a.workedMinutes) : "Running" },
+              { icon: UserCheck, label: "Status", value: <PresenceBadge status={presenceOf(a)} /> },
             ].map((s) => (
               <div key={s.label} className="min-w-0 rounded-lg bg-white p-2 ring-1 sm:p-3 ring-zinc-200 dark:bg-zinc-950 dark:ring-zinc-800">
                 <div className="flex items-center gap-1.5 text-xs text-zinc-500">

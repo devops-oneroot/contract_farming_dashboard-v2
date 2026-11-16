@@ -11,12 +11,13 @@ import {
   Users,
   Phone,
 } from "lucide-react";
-import { api, NearbyResult, NotStartedAgent, Person, TrackingPause, TrackingSession, TrackPoint } from "../lib/api";
+import { api, NearbyResult, NotStartedAgent, Person, TrackingPause, TrackingSession, TrackPoint, RoadRoute } from "../lib/api";
 import { PhotoThumb } from "../components/lightbox";
 import { Button, Select, DateInput } from "../components/ui";
 import { LoadingBlock } from "../components/loading";
 import { Pagination } from "../components/pagination";
 import { useAccent } from "../components/theme-toggle";
+import { PresenceBadge, presence } from "../components/attendance-status";
 
 function fmtDateTime(s: string) {
   return new Date(s).toLocaleString(undefined, {
@@ -122,6 +123,25 @@ function RouteMap({
    * It lives here, so closing the map and opening another starts fresh.
    */
   const hiddenRef = useRef<string[]>([]);
+
+  /**
+   * The route snapped to roads, from the server. null while it is being
+   * fetched (the map shows straight lines meanwhile), then the result - which
+   * may say road matching is unavailable, in which case straight lines stay.
+   */
+  const [road, setRoad] = useState<{ id: string; route: RoadRoute } | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .trackingRoadRoute(session._id)
+      .then((route) => !cancelled && setRoad({ id: session._id, route }))
+      .catch((e) => !cancelled && setRoad({ id: session._id, route: { source: "none", reason: e instanceof Error ? e.message : "", lines: [], gaps: [] } }));
+    return () => {
+      cancelled = true;
+    };
+  }, [session._id, session.points?.length]);
+  const roadForMap = road && road.id === session._id ? road.route : null;
+
   useEffect(() => {
     const onMessage = (e: MessageEvent) => {
       const d = e.data;
@@ -160,6 +180,7 @@ function RouteMap({
       })
       .map((p) => [p.latitude, p.longitude, p.at ?? null, p.accuracy ?? null, copies.get(keyOf(p)) ?? 1]);
     const live = !session.endAt;
+    const road = roadForMap;
     const anchor = nearby?.anchor ?? null;
     const farmers = nearby?.farmers ?? [];
     const radiusKm = nearby?.radiusKm ?? 0;
@@ -197,6 +218,7 @@ function RouteMap({
   var RADIUS_KM = ${JSON.stringify(radiusKm)};
   var HIDDEN = ${JSON.stringify(hidden)};
   var LIVE = ${JSON.stringify(live)};
+  var ROAD = ${JSON.stringify(road)};
   var map = L.map('map', { attributionControl: false, maxZoom: 20 });
 
   /**
@@ -362,7 +384,48 @@ function RouteMap({
   }
 
   var ROUTE_COLOR = '#1E88E5';
-  if (R.length > 1) {
+  function casedLine(ll, dashed) {
+    // A white casing under the line keeps it readable over satellite imagery.
+    L.polyline(ll, { color: '#fff', weight: 8, opacity: 0.85, lineJoin: 'round', lineCap: 'round' }).addTo(GROUPS.line);
+    L.polyline(ll, {
+      color: ROUTE_COLOR, weight: 4.5, opacity: dashed ? 0.75 : 1, lineJoin: 'round', lineCap: 'round',
+      dashArray: dashed ? '2 7' : null,
+    }).addTo(GROUPS.line);
+  }
+
+  /**
+   * The route along the roads actually driven, when the server could match
+   * it (Mapbox Map Matching). A stretch it could not match is drawn dotted,
+   * straight between fixes; a stretch with no location at all is grey dashed.
+   * Without a road match, the straight lines below are drawn instead.
+   */
+  var onRoads = !!(ROAD && ROAD.source === 'mapbox' && ROAD.lines && ROAD.lines.length);
+  if (onRoads) {
+    ROAD.lines.forEach(function (l) { casedLine(l.coords, !l.matched); });
+    (ROAD.gaps || []).forEach(function (g) {
+      L.polyline([g.from, g.to], { color: '#71717a', weight: 3, opacity: 0.9, dashArray: '6 8' })
+        .bindTooltip('No location for ' + g.minutes + ' min (' + timeAt(g.fromAt) + ' - ' + timeAt(g.toAt) + ')', { sticky: true })
+        .addTo(GROUPS.line);
+    });
+  }
+
+  /** Says which kind of line is on the map, so a straight one is not read as a road. */
+  var badge = L.control({ position: 'topleft' });
+  badge.onAdd = function () {
+    var d = L.DomUtil.create('div', 'fitbtn');
+    d.style.cursor = 'default';
+    d.style.marginTop = '8px';
+    d.innerHTML = onRoads
+      ? 'Route on roads'
+      : ROAD === null
+        ? 'Matching to roads...'
+        : 'Straight lines between points';
+    if (!onRoads && ROAD && ROAD.reason) d.title = ROAD.reason;
+    return d;
+  };
+  if (R.length > 1) badge.addTo(map);
+
+  if (!onRoads && R.length > 1) {
     var segs = [[R[0]]];
     for (var i = 1; i < R.length; i++) {
       var gap = ms(R[i]) - ms(R[i - 1]) > GAP_MS;
@@ -378,10 +441,7 @@ function RouteMap({
     }
     segs.forEach(function (s) {
       if (s.length < 2) return;
-      var ll = s.map(function (c) { return [c[0], c[1]]; });
-      // A white casing under the line keeps it readable over satellite imagery.
-      L.polyline(ll, { color: '#fff', weight: 8, opacity: 0.85, lineJoin: 'round', lineCap: 'round' }).addTo(GROUPS.line);
-      L.polyline(ll, { color: ROUTE_COLOR, weight: 4.5, opacity: 1, lineJoin: 'round', lineCap: 'round' }).addTo(GROUPS.line);
+      casedLine(s.map(function (c) { return [c[0], c[1]]; }), false);
     });
   }
 
@@ -630,7 +690,7 @@ function RouteMap({
   restack();
 </script></body></html>`;
     // eslint-disable-next-line react-hooks/exhaustive-deps -- accent is read through the CSS variables above
-  }, [points, nearby, accent, session.endAt]);
+  }, [points, nearby, accent, session.endAt, roadForMap]);
 
   if (points.length === 0) {
     return (
@@ -872,6 +932,7 @@ export default function TrackingPage() {
                 <th>Started</th>
                 <th>Ended</th>
                 <th>Duration</th>
+                <th>Attendance</th>
                 <th>Distance</th>
                 <th>Pauses</th>
                 <th>Photos</th>
@@ -924,6 +985,16 @@ export default function TrackingPage() {
                           ) : null}
                         </div>
                       )}
+                    </td>
+                    <td>
+                      {/* Working time, pauses taken out - the same hours the app counts. */}
+                      <PresenceBadge
+                        status={
+                          off
+                            ? "absent"
+                            : presence({ workedMinutes: Math.max(0, mins(s.startAt, s.endAt) - paused), running: !s.endAt })
+                        }
+                      />
                     </td>
                     <td className={off ? "cell-wrap" : undefined}>
                       {off ? (

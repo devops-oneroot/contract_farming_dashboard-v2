@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { ChevronRight, ClipboardList, Paperclip } from "lucide-react";
 import { api, DailyReport } from "../lib/api";
 import { DayDetailModal } from "../components/day-detail-modal";
-import { AttendanceChip, fmtClock, hm } from "../components/attendance-status";
+import { AttendanceChip, fmtClock, hm, PresenceBadge, presenceOf } from "../components/attendance-status";
 import { Button, DateInput } from "../components/ui";
 import { LoadingBlock } from "../components/loading";
 import { Pagination, usePaged } from "../components/pagination";
@@ -132,6 +132,7 @@ export default function ReportsPage() {
                 <th>Attendance</th>
                 <th>Start – End</th>
                 <th className="num">Total hrs</th>
+                <th>Status</th>
                 <th className="num">Meter km</th>
                 <th className="num">Food</th>
                 <th>Today&apos;s Expenses</th>
@@ -181,6 +182,9 @@ export default function ReportsPage() {
                       )}
                     </td>
                     <td className="num font-medium">{a?.workedMinutes != null ? hm(a.workedMinutes) : <Dash />}</td>
+                    <td>
+                      <PresenceBadge status={presenceOf(a)} />
+                    </td>
                     <td className="num">
                       {r.meterEnd ? <span className="font-semibold text-brand-600">{r.totalKm} km</span> : <Dash />}
                     </td>

@@ -44,6 +44,55 @@ const TONES: Record<Tone, { chip: string; dot: string }> = {
   },
 };
 
+/** A full day: at or above this many hours worked is Present, below is Absent. */
+export const PRESENT_HOURS = 9;
+
+/**
+ * Present or absent, by hours alone: 9 hours or more worked is Present,
+ * anything less is Absent - a no-field day and a day with no attendance
+ * included. A day still running reads "In progress" until it either reaches
+ * 9 hours (Present) or ends short (Absent), so nobody is marked absent at noon.
+ */
+export function presence({
+  workedMinutes,
+  running,
+}: {
+  workedMinutes: number | null | undefined;
+  running: boolean;
+}): "present" | "absent" | "pending" {
+  if ((workedMinutes ?? 0) >= PRESENT_HOURS * 60) return "present";
+  return running ? "pending" : "absent";
+}
+
+/** Presence for a day's attendance record, counting a running day's time so far. */
+export function presenceOf(a: DayAttendance | null | undefined) {
+  if (!a || a.kind === "no_field") return presence({ workedMinutes: 0, running: false });
+  const running = !a.endAt;
+  const worked =
+    a.workedMinutes ?? (running && a.startAt ? Math.max(0, Math.round((Date.now() - new Date(a.startAt).getTime()) / 60000)) : 0);
+  return presence({ workedMinutes: worked, running });
+}
+
+const PRESENCE = {
+  present: { label: "Present", chip: "bg-green-50 text-green-700 ring-green-200 dark:bg-green-950/40 dark:text-green-400 dark:ring-green-900", dot: "bg-green-600" },
+  absent: { label: "Absent", chip: "bg-red-50 text-red-700 ring-red-200 dark:bg-red-950/40 dark:text-red-400 dark:ring-red-900", dot: "bg-red-600" },
+  pending: { label: "In progress", chip: "bg-zinc-100 text-zinc-600 ring-zinc-200 dark:bg-zinc-900 dark:text-zinc-400 dark:ring-zinc-800", dot: "bg-zinc-400 animate-pulse" },
+} as const;
+
+/** The Present / Absent badge. */
+export function PresenceBadge({ status }: { status: "present" | "absent" | "pending" }) {
+  const p = PRESENCE[status];
+  return (
+    <span
+      title={`Present means ${PRESENT_HOURS} hours or more worked`}
+      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ring-1 ${p.chip}`}
+    >
+      <span className={`h-1.5 w-1.5 rounded-full ${p.dot}`} />
+      {p.label}
+    </span>
+  );
+}
+
 export function AttendanceChip({ attendance }: { attendance: DayAttendance | null | undefined }) {
   const { label, tone } = attendanceState(attendance);
   const t = TONES[tone];

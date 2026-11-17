@@ -152,7 +152,7 @@ export type Product = {
 
 /** 'admin' runs the whole dashboard; 'stock_incharge' only the Stock. */
 /** A dashboard account's role. What each may open is set per role (see lib/rbac.ts). */
-export type AdminRole = "super_admin" | "admin" | "sales_manager" | "sales_support" | "stock_incharge";
+export type AdminRole = "super_admin" | "admin" | "sales_manager" | "sales_support" | "stock_incharge" | "telecaller";
 export type Admin = {
   _id: string;
   name: string;

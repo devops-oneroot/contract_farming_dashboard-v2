@@ -32,6 +32,7 @@ export const ROLE_LABELS: Record<AdminRole, string> = {
   sales_manager: "Sales Manager",
   sales_support: "Sales Support",
   stock_incharge: "Stock in-charge",
+  telecaller: "Telecaller",
 };
 
 /** Tailwind classes for each role's chip. */
@@ -41,6 +42,7 @@ export const ROLE_STYLE: Record<AdminRole, string> = {
   sales_manager: "bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300",
   sales_support: "bg-teal-50 text-teal-700 dark:bg-teal-950/50 dark:text-teal-300",
   stock_incharge: "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300",
+  telecaller: "bg-pink-50 text-pink-700 dark:bg-pink-950/50 dark:text-pink-300",
 };
 
 export const roleLabel = (r?: AdminRole) => ROLE_LABELS[r ?? "admin"] ?? "Admin";

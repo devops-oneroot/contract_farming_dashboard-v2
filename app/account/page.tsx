@@ -10,7 +10,7 @@ import { ROLE_LABELS, ROLE_STYLE } from "../lib/rbac";
 import { Select } from "../components/ui";
 
 const MIN_PASSWORD = 8;
-const ROLE_ORDER: AdminRole[] = ["super_admin", "admin", "sales_manager", "sales_support", "stock_incharge"];
+const ROLE_ORDER: AdminRole[] = ["super_admin", "admin", "sales_manager", "sales_support", "stock_incharge", "telecaller"];
 
 function formatDate(iso?: string) {
   if (!iso) return "—";
@@ -88,7 +88,7 @@ export default function AccountPage() {
       </div>
 
       {/* Role summary */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         {ROLE_ORDER.map((r) => (
           <div key={r} className="card min-w-0 p-3">
             <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${ROLE_STYLE[r]}`}>

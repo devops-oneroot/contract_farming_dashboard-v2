@@ -85,12 +85,12 @@ const NAV_GROUPS = [
     ],
   },
   {
-    label: "Settings",
+    label: "Management",
     icon: ShieldCheck,
     items: [
       { href: "/account", label: "Users & Roles", icon: ShieldCheck },
       { href: "/settings/roles", label: "Role access", icon: KeyRound },
-      { href: "/settings/whatsapp-report", label: "Daily report on WhatsApp", icon: MessageCircle },
+      { href: "/settings/whatsapp-report", label: "Daily report (WhatsApp)", icon: MessageCircle },
     ],
   },
 ];

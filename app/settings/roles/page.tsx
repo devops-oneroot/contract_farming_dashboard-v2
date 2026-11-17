@@ -177,7 +177,7 @@ export default function RoleAccessPage() {
       {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950/40">{error}</p>}
 
       {/* Roles */}
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
         {config.roles.map((r) => {
           const on = r.key === role;
           const p = draft[r.key] ?? {};

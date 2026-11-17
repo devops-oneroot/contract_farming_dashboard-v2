@@ -31,6 +31,8 @@ import {
   ChevronDown,
   ChevronRight,
   CalendarDays,
+  Target,
+  MessageSquareHeart,
 } from "lucide-react";
 import { useAuth } from "../lib/auth";
 import { ProfileMenu } from "./profile-menu";
@@ -38,15 +40,35 @@ import { NotificationsMenu } from "./notifications-menu";
 import { can, canPath, homeFor, roleLabel } from "../lib/rbac";
 import { ThemeToggle } from "./theme-toggle";
 
-const NAV_GROUPS = [
+/**
+ * The sidebar. A group marked `single` is one page shown as a plain menu
+ * entry (no heading to open), e.g. Dashboard; the rest fold open.
+ */
+const NAV_GROUPS: {
+  label: string;
+  icon: typeof LayoutDashboard;
+  single?: boolean;
+  items: { href: string; label: string; icon: typeof LayoutDashboard }[];
+}[] = [
   {
-    label: "Overview",
+    label: "Dashboard",
     icon: LayoutDashboard,
-    items: [
-      { href: "/", label: "Dashboard", icon: LayoutDashboard },
-      { href: "/analysis", label: "Sales Analysis", icon: BarChart3 },
-      { href: "/land", label: "Land Under Cultivation", icon: Wheat },
-    ],
+    single: true,
+    items: [{ href: "/", label: "Dashboard", icon: LayoutDashboard }],
+  },
+  // The Telecaller's own pages (and the Super admin's, who sees everything):
+  // plain menu entries, like Dashboard.
+  {
+    label: "Leads",
+    icon: Target,
+    single: true,
+    items: [{ href: "/leads", label: "Leads", icon: Target }],
+  },
+  {
+    label: "Feedbacks",
+    icon: MessageSquareHeart,
+    single: true,
+    items: [{ href: "/feedbacks", label: "Feedbacks", icon: MessageSquareHeart }],
   },
   {
     label: "People",
@@ -55,6 +77,7 @@ const NAV_GROUPS = [
       { href: "/farmers", label: "Farmers", icon: Users },
       { href: "/fpos", label: "FPOs", icon: Building2 },
       { href: "/agronomists", label: "Agronomists", icon: UserCog },
+      { href: "/land", label: "Land Under Cultivation", icon: Wheat },
     ],
   },
   {
@@ -71,6 +94,7 @@ const NAV_GROUPS = [
     items: [
       { href: "/field-sales", label: "Field Sales", icon: ShoppingBag },
       { href: "/stock", label: "Stock", icon: Boxes },
+      { href: "/analysis", label: "Sales Analysis", icon: BarChart3 },
     ],
   },
   {
@@ -88,8 +112,8 @@ const NAV_GROUPS = [
     label: "Management",
     icon: ShieldCheck,
     items: [
-      { href: "/account", label: "Users & Roles", icon: ShieldCheck },
-      { href: "/settings/roles", label: "Role access", icon: KeyRound },
+      { href: "/account", label: "Users", icon: ShieldCheck },
+      { href: "/roles", label: "Roles & Access", icon: KeyRound },
       { href: "/settings/whatsapp-report", label: "Daily report (WhatsApp)", icon: MessageCircle },
     ],
   },
@@ -111,9 +135,11 @@ const TITLES: Record<string, string> = {
   "/tracking": "Tracking & Distance",
   "/disease-reports": "Crop Disease Reports",
   "/reports": "Daily Reports",
-  "/account": "Account & Dashboard Access",
+  "/account": "Users & Dashboard Access",
+  "/roles": "Roles & Access",
+  "/leads": "Leads",
+  "/feedbacks": "Feedbacks",
   "/settings": "Settings",
-  "/settings/roles": "Settings · Role access",
   "/settings/whatsapp-report": "Settings · Daily report on WhatsApp",
 };
 
@@ -160,7 +186,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (offLimits && fallback) router.replace(fallback);
   }, [offLimits, fallback, router]);
-  const myRole = roleLabel(admin?.role);
+  const myRole = roleLabel(admin?.role, admin?.roleLabel);
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -239,6 +265,35 @@ export function Shell({ children }: { children: React.ReactNode }) {
           const open = compact || openGroup === group.label;
           const holdsActive = group.items.some((i) => isActive(pathname, i.href));
           const GroupIcon = group.icon;
+          // A one-page entry (Dashboard): a plain link at the top level, styled
+          // like a heading. Collapsed to icons it falls through to the icon list.
+          if (group.single && !compact) {
+            const item = group.items[0];
+            return (
+              <Link
+                key={group.label}
+                href={item.href}
+                onClick={() => setMobileOpen(false)}
+                aria-current={holdsActive ? "page" : undefined}
+                className={`group/head mb-1 flex w-full items-center gap-3 rounded-xl px-2.5 py-2 text-left text-sm font-semibold transition-colors ${
+                  holdsActive
+                    ? "bg-gradient-to-r from-brand-500/15 to-brand-500/5 text-brand-700 dark:from-brand-500/20 dark:to-transparent dark:text-brand-300"
+                    : "text-zinc-500 hover:bg-zinc-100/80 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-100"
+                }`}
+              >
+                <span
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors ${
+                    holdsActive
+                      ? "bg-brand-500 text-white shadow-sm shadow-brand-500/40"
+                      : "text-zinc-400 group-hover/head:text-zinc-700 dark:group-hover/head:text-zinc-200"
+                  }`}
+                >
+                  <GroupIcon size={16} />
+                </span>
+                <span className="min-w-0 flex-1 truncate">{item.label}</span>
+              </Link>
+            );
+          }
           return (
             <div key={group.label} className={compact ? "mb-4 last:mb-0" : "mb-1"}>
               {compact ? (
@@ -372,7 +427,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const crumb = (() => {
     for (const g of nav) {
       const item = g.items.find((i) => isActive(pathname, i.href));
-      if (item) return { group: g.label, page: item.label };
+      // A one-page entry has no section to name: "Dashboard › Dashboard" says nothing.
+      if (item) return g.single ? null : { group: g.label, page: item.label };
     }
     return null;
   })();

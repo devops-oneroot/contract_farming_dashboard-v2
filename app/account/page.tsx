@@ -3,14 +3,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronRight, Eye, EyeOff, KeyRound, Pencil, RefreshCw, ShieldCheck, Trash2, UserPlus, Users, X } from "lucide-react";
 import Link from "next/link";
-import { api, type Admin, type AdminRole, type RolesConfig } from "../lib/api";
+import { api, type Admin, type AdminRole, type Role, type RolesConfig } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { Loader } from "../components/loading";
-import { ROLE_LABELS, ROLE_STYLE } from "../lib/rbac";
+import { roleLabel, roleStyle } from "../lib/rbac";
 import { Select } from "../components/ui";
 
 const MIN_PASSWORD = 8;
-const ROLE_ORDER: AdminRole[] = ["super_admin", "admin", "sales_manager", "sales_support", "stock_incharge", "telecaller"];
 
 function formatDate(iso?: string) {
   if (!iso) return "—";
@@ -19,8 +18,8 @@ function formatDate(iso?: string) {
 }
 
 /**
- * Users & Roles - who can sign in to the dashboard, the role each has, and
- * which modules each role may open. Super admin only (the Users module).
+ * Users - who can sign in to the dashboard and the role each has. The roles
+ * themselves (and what each may do) are on the Roles & Access page.
  */
 export default function AccountPage() {
   const { admin: current } = useAuth();
@@ -75,11 +74,15 @@ export default function AccountPage() {
     return m;
   }, [admins]);
 
+  /** Every role from the Roles page, in its order. */
+  const roleList: Role[] = roles?.roles ?? [];
+  const roleOf = (key?: string) => roleList.find((r) => r.key === (key ?? "admin"));
+
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <div>
         <h2 className="flex items-center gap-2 text-xl font-semibold">
-          <ShieldCheck size={20} className="text-brand-600" /> Users & Roles
+          <ShieldCheck size={20} className="text-brand-600" /> Users
         </h2>
         <p className="mt-1 text-sm text-zinc-500">
           Everyone who can sign in to the dashboard, and what their role lets them open. There is no
@@ -89,16 +92,14 @@ export default function AccountPage() {
 
       {/* Role summary */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        {ROLE_ORDER.map((r) => (
-          <div key={r} className="card min-w-0 p-3">
-            <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${ROLE_STYLE[r]}`}>
-              {ROLE_LABELS[r]}
+        {roleList.map((r) => (
+          <div key={r.key} className="card min-w-0 p-3">
+            <span className={`inline-block max-w-full truncate rounded-full px-2 py-0.5 text-xs font-medium ${roleStyle(r)}`}>
+              {r.label}
             </span>
-            <div className="mt-2 text-xl font-semibold tabular-nums">{counts.get(r) ?? 0}</div>
+            <div className="mt-2 text-xl font-semibold tabular-nums">{counts.get(r.key) ?? 0}</div>
             <div className="text-[11px] text-zinc-400">
-              {r === "super_admin"
-                ? "every module"
-                : `${roles?.roles.find((x) => x.key === r)?.modules.length ?? 0} module(s)`}
+              {r.locked ?? r.fixed ? "every module" : `${r.modules.length} module(s)`}
             </div>
           </div>
         ))}
@@ -163,7 +164,9 @@ export default function AccountPage() {
                     </td>
                     <td>{a.mobile}</td>
                     <td>
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${ROLE_STYLE[r]}`}>{ROLE_LABELS[r]}</span>
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${roleStyle(roleOf(r) ?? a)}`}>
+                        {roleLabel(r, roleOf(r)?.label ?? a.roleLabel)}
+                      </span>
                     </td>
                     <td className="text-zinc-500">{formatDate(a.createdAt)}</td>
                     <td>
@@ -197,6 +200,7 @@ export default function AccountPage() {
       {dialog && (
         <UserDialog
           editing={dialog === "new" ? null : dialog}
+          roles={roleList}
           isSelf={dialog !== "new" && dialog._id === current?._id}
           onClose={() => setDialog(null)}
           onSaved={async (msg) => {
@@ -208,16 +212,16 @@ export default function AccountPage() {
       )}
 
       <Link
-        href="/settings/roles"
+        href="/roles"
         className="card flex items-center gap-3 p-4 transition hover:ring-1 hover:ring-brand-300"
       >
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-500/15">
           <KeyRound size={17} />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-sm font-semibold">Role access</span>
+          <span className="block text-sm font-semibold">Roles & Access</span>
           <span className="block text-xs text-zinc-500">
-            Set what each role can view, add, edit and delete in every module - under Settings.
+            Add, rename or delete roles, and set what each can view, add, edit and delete in every module.
           </span>
         </span>
         <ChevronRight size={16} className="text-zinc-400" />
@@ -233,11 +237,13 @@ export default function AccountPage() {
  */
 function UserDialog({
   editing,
+  roles,
   isSelf,
   onClose,
   onSaved,
 }: {
   editing: Admin | null;
+  roles: Role[];
   isSelf: boolean;
   onClose: () => void;
   onSaved: (message: string) => void;
@@ -284,7 +290,7 @@ function UserDialog({
         const { admin } = await api.createAdmin(name.trim(), mobile.trim(), password, role);
         // Surfaced once, here: the backend never sends a password back, and there is no email
         // or SMS step - if this isn't passed on now, the only way back in is a new password.
-        onSaved(`${admin.name} can now sign in with ${admin.mobile} as ${ROLE_LABELS[role]}. Give them the password you just set.`);
+        onSaved(`${admin.name} can now sign in with ${admin.mobile} as ${roleLabel(role, roles.find((r) => r.key === role)?.label)}. Give them the password you just set.`);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save");
@@ -338,9 +344,10 @@ function UserDialog({
               aria-label="Role"
               className="w-full"
             >
-              {ROLE_ORDER.map((r) => (
-                <option key={r} value={r}>
-                  {ROLE_LABELS[r]}
+              {/* The account's current role stays pickable even if the list has not loaded. */}
+              {(roles.length ? roles : [{ key: role, label: roleLabel(role, editing?.roleLabel) } as Role]).map((r) => (
+                <option key={r.key} value={r.key}>
+                  {r.label}
                 </option>
               ))}
             </Select>

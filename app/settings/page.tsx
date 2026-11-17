@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-/** Settings has no page of its own yet: Role access is its first. */
+/** Settings has no page of its own: the daily WhatsApp report is its one page. */
 export default function SettingsPage() {
-  redirect("/settings/roles");
+  redirect("/settings/whatsapp-report");
 }

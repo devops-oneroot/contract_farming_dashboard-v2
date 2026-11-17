@@ -71,7 +71,7 @@ export function ProfileMenu() {
             <div className="min-w-0">
               <div className="truncate font-semibold">{admin?.name}</div>
               <div className="truncate text-xs text-zinc-500">
-                {roleLabel(admin?.role)}{admin?.mobile ? ` · ${admin.mobile}` : ""}
+                {roleLabel(admin?.role, admin?.roleLabel)}{admin?.mobile ? ` · ${admin.mobile}` : ""}
               </div>
             </div>
           </div>

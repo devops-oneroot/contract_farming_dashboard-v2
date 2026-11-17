@@ -150,14 +150,22 @@ export type Product = {
   createdAt: string;
 };
 
-/** 'admin' runs the whole dashboard; 'stock_incharge' only the Stock. */
-/** A dashboard account's role. What each may open is set per role (see lib/rbac.ts). */
-export type AdminRole = "super_admin" | "admin" | "sales_manager" | "sales_support" | "stock_incharge" | "telecaller";
+/**
+ * A dashboard account's role: a key from the Roles page (the server's cf_roles
+ * table). Built in: super_admin, admin, sales_manager, sales_support,
+ * stock_incharge, telecaller - and any role added since.
+ */
+export type AdminRole = string;
+/** The colours a role's chip can take. */
+export type RoleColor = "brand" | "zinc" | "blue" | "teal" | "indigo" | "pink" | "amber" | "emerald" | "violet" | "red";
 export type Admin = {
   _id: string;
   name: string;
   mobile: string;
   role?: AdminRole;
+  /** The role's name and colour, as set on the Roles page. */
+  roleLabel?: string;
+  roleColor?: RoleColor;
   /** The modules this account's role may open - sent with the signed-in account only. */
   modules?: string[];
   /** What the role may do in each module - sent with the signed-in account only. */
@@ -198,6 +206,53 @@ export type PermAction = "view" | "add" | "edit" | "delete";
 /** Module -> the actions allowed in it. A module missing here cannot be opened. */
 export type Permissions = Record<string, PermAction[]>;
 
+/** A lead from markhet_leads: a place, with whether it was verified. */
+export type Lead = {
+  _id: string;
+  village: string;
+  taluk: string;
+  district: string;
+  latitude: number | null;
+  longitude: number | null;
+  actualLatitude: number | null;
+  actualLongitude: number | null;
+  verified: boolean;
+  userId: string | null;
+  createdAt: string;
+  importedAt: string;
+};
+
+export type LeadsPage = {
+  /** False where markhet_leads does not exist (the dev database). */
+  available: boolean;
+  items: Lead[];
+  total: number;
+  page: number;
+  limit: number;
+  /** Every district with its taluks and lead count, for the filters. */
+  places: { district: string; taluks: string[]; n: number }[];
+  totals: { all: number; verified: number };
+};
+
+/** One role on the Roles page. */
+export type Role = {
+  key: AdminRole;
+  label: string;
+  description?: string;
+  color?: RoleColor;
+  modules: string[];
+  permissions?: Permissions;
+  /** Built in and relied on by the server: cannot be deleted. */
+  system?: boolean;
+  /** Super admin: always everything, its access cannot be edited. */
+  locked?: boolean;
+  /** Older name for `locked`. */
+  fixed: boolean;
+  /** How many dashboard accounts have this role. */
+  users?: number;
+  createdAt?: string;
+};
+
 /** Every role, its label and what it may do (GET /api/admin/roles). */
 export type RolesConfig = {
   modules: string[];
@@ -205,7 +260,17 @@ export type RolesConfig = {
   actions?: PermAction[];
   /** The actions each module offers (view-only modules offer just "view"). */
   moduleActions?: Record<string, PermAction[]>;
-  roles: { key: AdminRole; label: string; modules: string[]; permissions?: Permissions; fixed: boolean }[];
+  colors?: RoleColor[];
+  roles: Role[];
+};
+
+export type RoleInput = {
+  label?: string;
+  description?: string;
+  color?: RoleColor;
+  permissions?: Permissions;
+  /** On create: start with this role's access. */
+  copyFrom?: AdminRole;
 };
 
 export type CatalogCrop = {
@@ -1086,6 +1151,19 @@ export const api = {
   /** What each role can view, add, edit and delete in each module. */
   saveRolePermissions: (rolePermissions: Partial<Record<AdminRole, Permissions>>) =>
     json<RolesConfig>("/api/admin/roles", { method: "PUT", body: JSON.stringify({ rolePermissions }) }),
+  /** Leads (markhet_leads), one page at a time. */
+  listLeads: (params: { search?: string; district?: string; taluk?: string; verified?: "yes" | "no"; page?: number; limit?: number }) => {
+    const q = new URLSearchParams();
+    for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== "") q.set(k, String(v));
+    return json<LeadsPage>(`/api/leads?${q.toString()}`);
+  },
+  /** Roles page: add, edit (name, description, colour, access) and delete a role. */
+  createRole: (body: RoleInput) =>
+    json<{ role: Role }>("/api/admin/roles", { method: "POST", body: JSON.stringify(body) }),
+  updateRole: (key: AdminRole, body: RoleInput) =>
+    json<{ role: Role }>(`/api/admin/roles/${encodeURIComponent(key)}`, { method: "PATCH", body: JSON.stringify(body) }),
+  deleteRole: (key: AdminRole) =>
+    json<{ key: string; message: string }>(`/api/admin/roles/${encodeURIComponent(key)}`, { method: "DELETE" }),
 
   // Users
   /**

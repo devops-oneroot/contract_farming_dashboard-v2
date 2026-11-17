@@ -1,4 +1,4 @@
-import type { Admin, AdminRole, PermAction } from "./api";
+import type { Admin, AdminRole, PermAction, RoleColor } from "./api";
 
 /**
  * The dashboard's modules, as the server knows them (backend src/utils/rbac.js),
@@ -23,10 +23,14 @@ export const MODULE_INFO: Record<string, { label: string; hrefs: string[] }> = {
   tracking: { label: "Tracking", hrefs: ["/tracking"] },
   disease_reports: { label: "Disease Reports", hrefs: ["/disease-reports"] },
   daily_reports: { label: "Daily Reports", hrefs: ["/reports"] },
-  users: { label: "Users & Roles", hrefs: ["/account", "/settings"] },
+  users: { label: "Users", hrefs: ["/account", "/settings"] },
+  roles: { label: "Roles & Access", hrefs: ["/roles"] },
+  leads: { label: "Leads", hrefs: ["/leads"] },
+  feedbacks: { label: "Feedbacks", hrefs: ["/feedbacks"] },
 };
 
-export const ROLE_LABELS: Record<AdminRole, string> = {
+/** The built-in roles' names - used only until the role list (with any renames) has loaded. */
+export const ROLE_LABELS: Record<string, string> = {
   super_admin: "Super admin",
   admin: "Admin",
   sales_manager: "Sales Manager",
@@ -35,17 +39,57 @@ export const ROLE_LABELS: Record<AdminRole, string> = {
   telecaller: "Telecaller",
 };
 
-/** Tailwind classes for each role's chip. */
-export const ROLE_STYLE: Record<AdminRole, string> = {
-  super_admin: "bg-brand-100 text-brand-800 dark:bg-brand-500/15 dark:text-brand-300",
-  admin: "bg-zinc-100 text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300",
-  sales_manager: "bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300",
-  sales_support: "bg-teal-50 text-teal-700 dark:bg-teal-950/50 dark:text-teal-300",
-  stock_incharge: "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300",
-  telecaller: "bg-pink-50 text-pink-700 dark:bg-pink-950/50 dark:text-pink-300",
+/** Tailwind classes for each chip colour a role can take (spelt out so Tailwind keeps them). */
+export const COLOR_STYLE: Record<RoleColor, string> = {
+  brand: "bg-brand-100 text-brand-800 dark:bg-brand-500/15 dark:text-brand-300",
+  zinc: "bg-zinc-100 text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300",
+  blue: "bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300",
+  teal: "bg-teal-50 text-teal-700 dark:bg-teal-950/50 dark:text-teal-300",
+  indigo: "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300",
+  pink: "bg-pink-50 text-pink-700 dark:bg-pink-950/50 dark:text-pink-300",
+  amber: "bg-amber-50 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300",
+  emerald: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300",
+  violet: "bg-violet-50 text-violet-700 dark:bg-violet-950/50 dark:text-violet-300",
+  red: "bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-300",
 };
 
-export const roleLabel = (r?: AdminRole) => ROLE_LABELS[r ?? "admin"] ?? "Admin";
+/** A swatch for each colour, for the colour picker. */
+export const COLOR_DOT: Record<RoleColor, string> = {
+  brand: "bg-brand-500",
+  zinc: "bg-zinc-500",
+  blue: "bg-blue-500",
+  teal: "bg-teal-500",
+  indigo: "bg-indigo-500",
+  pink: "bg-pink-500",
+  amber: "bg-amber-500",
+  emerald: "bg-emerald-500",
+  violet: "bg-violet-500",
+  red: "bg-red-500",
+};
+
+/** The built-in roles' colours, for a backend that does not send them. */
+const DEFAULT_COLOR: Record<string, RoleColor> = {
+  super_admin: "brand",
+  admin: "zinc",
+  sales_manager: "blue",
+  sales_support: "teal",
+  stock_incharge: "indigo",
+  telecaller: "pink",
+};
+
+/** The chip classes for a role (or an account): its colour, else the built-in one, else grey. */
+export function roleStyle(r?: { key?: string; role?: string; color?: RoleColor; roleColor?: RoleColor } | string) {
+  if (typeof r === "string" || !r) return COLOR_STYLE[DEFAULT_COLOR[r ?? "admin"] ?? "zinc"];
+  const color = r.color ?? r.roleColor ?? DEFAULT_COLOR[r.key ?? r.role ?? "admin"] ?? "zinc";
+  return COLOR_STYLE[color] ?? COLOR_STYLE.zinc;
+}
+
+/** "field_officer" -> "Field officer": a readable name for a role key with no label to hand. */
+const fromKey = (k: string) => (k.charAt(0).toUpperCase() + k.slice(1)).replace(/_/g, " ");
+
+/** A role's name: the label sent with it, else the built-in name, else made from the key. */
+export const roleLabel = (r?: AdminRole, label?: string) =>
+  label || ROLE_LABELS[r ?? "admin"] || fromKey(r ?? "admin");
 
 /** The module a page belongs to (detail pages take their section's), or null for none. */
 export function moduleForPath(pathname: string): string | null {

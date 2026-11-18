@@ -220,6 +220,75 @@ export type Lead = {
   userId: string | null;
   createdAt: string;
   importedAt: string;
+  /** Who to call (from cf_lead_contacts); blank until a contact is matched. */
+  name?: string;
+  phone?: string;
+  /** False for a lead without a number, or with mock (test) data. */
+  callable?: boolean;
+  lastCall?: { at: string; status: TeleCallStatus; outcome: TeleOutcome | null } | null;
+};
+
+export type TeleCallStatus = "initiated" | "ringing" | "in_progress" | "completed" | "no_answer" | "busy" | "failed" | "canceled";
+/** The call's status: No issues, Follow-up (call again on a date) or Feedback. */
+export type TeleOutcome = "no_issues" | "follow_up" | "feedback";
+export type Satisfaction = "satisfied" | "not_satisfied";
+
+/** One telecaller call to a lead, with what the telecaller noted. */
+export type TeleCall = {
+  _id: string;
+  leadId: string | null;
+  leadName: string;
+  toPhone: string;
+  telecallerId: string | null;
+  telecallerName: string;
+  status: TeleCallStatus;
+  durationSec: number;
+  hasRecording: boolean;
+  startedAt: string;
+  endedAt: string | null;
+  outcome: TeleOutcome | null;
+  feedback: string;
+  rating: number | null;
+  satisfaction: Satisfaction | null;
+  followUpAt: string | null;
+  followUpNote: string;
+  feedbackAt: string | null;
+  isMock: boolean;
+  /** Exotel's CallSid, and the telecaller's number that was rung. */
+  providerCallId: string;
+  fromPhone: string;
+  village: string | null;
+  taluk: string | null;
+  district: string | null;
+};
+
+export type TeleCallTab = "recent" | "followup" | "feedback";
+export type TeleCallsPage = {
+  tab: TeleCallTab;
+  items: TeleCall[];
+  total: number;
+  counts: Record<TeleCallTab, number>;
+  followUps: { overdue: number; today: number };
+  page: number;
+  limit: number;
+  calling: { configured: boolean; missing: string[] };
+};
+
+export type FeedbacksPage = {
+  items: TeleCall[];
+  total: number;
+  page: number;
+  limit: number;
+  summary: { total: number; avgRating: number | null; satisfied: number; notSatisfied: number };
+};
+
+export type TeleFeedbackInput = {
+  outcome: TeleOutcome | null;
+  feedback: string;
+  rating: number | null;
+  satisfaction: Satisfaction | null;
+  followUpAt: string | null;
+  followUpNote: string;
 };
 
 export type LeadsPage = {
@@ -1157,6 +1226,26 @@ export const api = {
     for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== "") q.set(k, String(v));
     return json<LeadsPage>(`/api/leads?${q.toString()}`);
   },
+  /** Telecalling: ring the telecaller's mobile, then the lead (Exotel, recorded). */
+  placeTeleCall: (leadId: string) =>
+    json<{ call: TeleCall }>("/api/tele-calls", { method: "POST", body: JSON.stringify({ leadId }) }),
+  /** The call now - the server asks Exotel while it is still live. */
+  getTeleCall: (id: string) => json<{ call: TeleCall }>(`/api/tele-calls/${id}`),
+  saveTeleFeedback: (id: string, body: TeleFeedbackInput) =>
+    json<{ call: TeleCall }>(`/api/tele-calls/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  listTeleCalls: (params: { tab: TeleCallTab; search?: string; page?: number; limit?: number }) => {
+    const q = new URLSearchParams();
+    for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== "") q.set(k, String(v));
+    return json<TeleCallsPage>(`/api/tele-calls?${q.toString()}`);
+  },
+  leadCallHistory: (leadId: string) => json<{ items: TeleCall[] }>(`/api/tele-calls/lead/${leadId}`),
+  listFeedbacks: (params: { satisfaction?: Satisfaction; rating?: number; outcome?: TeleOutcome; search?: string; page?: number; limit?: number }) => {
+    const q = new URLSearchParams();
+    for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== "") q.set(k, String(v));
+    return json<FeedbacksPage>(`/api/feedbacks?${q.toString()}`);
+  },
+  /** Plays in an <audio> tag; streamed through the backend from Exotel. */
+  teleCallRecordingUrl: (id: string) => `${API_URL}/api/exotel/recording/${id}`,
   /** Roles page: add, edit (name, description, colour, access) and delete a role. */
   createRole: (body: RoleInput) =>
     json<{ role: Role }>("/api/admin/roles", { method: "POST", body: JSON.stringify(body) }),

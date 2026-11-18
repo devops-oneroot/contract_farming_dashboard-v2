@@ -32,6 +32,8 @@ import {
   ChevronRight,
   CalendarDays,
   Target,
+  PhoneCall,
+  Headset,
   MessageSquareHeart,
 } from "lucide-react";
 import { useAuth } from "../lib/auth";
@@ -56,19 +58,15 @@ const NAV_GROUPS: {
     single: true,
     items: [{ href: "/", label: "Dashboard", icon: LayoutDashboard }],
   },
-  // The Telecaller's own pages (and the Super admin's, who sees everything):
-  // plain menu entries, like Dashboard.
+  // The Telecaller's own pages, in one group (the Super admin sees them too).
   {
-    label: "Leads",
-    icon: Target,
-    single: true,
-    items: [{ href: "/leads", label: "Leads", icon: Target }],
-  },
-  {
-    label: "Feedbacks",
-    icon: MessageSquareHeart,
-    single: true,
-    items: [{ href: "/feedbacks", label: "Feedbacks", icon: MessageSquareHeart }],
+    label: "Telecalling",
+    icon: Headset,
+    items: [
+      { href: "/leads", label: "Leads", icon: Target },
+      { href: "/feedbacks", label: "Feedbacks", icon: MessageSquareHeart },
+      { href: "/tele-calls", label: "Calls", icon: PhoneCall },
+    ],
   },
   {
     label: "People",
@@ -139,6 +137,7 @@ const TITLES: Record<string, string> = {
   "/roles": "Roles & Access",
   "/leads": "Leads",
   "/feedbacks": "Feedbacks",
+  "/tele-calls": "Calls",
   "/settings": "Settings",
   "/settings/whatsapp-report": "Settings · Daily report on WhatsApp",
 };

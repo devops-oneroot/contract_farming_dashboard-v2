@@ -1,27 +1,26 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { BadgeCheck, MapPin, RefreshCw, Search } from "lucide-react";
+import { MapPin, Phone, RefreshCw, Search } from "lucide-react";
 
-import { api, type Lead, type LeadsPage } from "../lib/api";
+import { api, type Lead, type LeadsPage, type TeleCall } from "../lib/api";
 import { Button, Select } from "../components/ui";
 import { Loader } from "../components/loading";
 import { Pagination } from "../components/pagination";
+import { TeleCallDialog, OutcomePill, fmtWhen } from "../components/tele-call";
 
 const PAGE_SIZE = 20;
 
 const num = (n: number) => n.toLocaleString("en-IN");
 
-function fmtDate(s: string) {
-  return new Date(s).toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" });
-}
-
 /** Google Maps at the lead's pin. */
 const mapUrl = (l: Lead) => `https://www.google.com/maps?q=${l.latitude},${l.longitude}`;
 
 /**
- * Leads - the places imported from the Markhet app (markhet_leads), for the
- * telecallers to follow up. Searched, filtered and paged on the server.
+ * Leads - the people imported from the Markhet app, for the telecallers to
+ * call: name and place, and a Call button that rings the telecaller's phone
+ * and then the lead through Exotel (recorded). The call window opens at once
+ * for notes while they talk.
  */
 export default function LeadsPage() {
   const [data, setData] = useState<LeadsPage | null>(null);
@@ -31,22 +30,16 @@ export default function LeadsPage() {
   const [query, setQuery] = useState("");
   const [district, setDistrict] = useState("");
   const [taluk, setTaluk] = useState("");
-  const [verified, setVerified] = useState<"" | "yes" | "no">("");
   const [reloadKey, setReloadKey] = useState(0);
+  const [calling, setCalling] = useState<string | null>(null);
+  const [active, setActive] = useState<TeleCall | null>(null);
 
   // Debounced: searching happens on the server, so not one request per keystroke.
   useEffect(() => {
     const t = setTimeout(() => {
       setLoading(true);
       api
-        .listLeads({
-          search: query || undefined,
-          district: district || undefined,
-          taluk: taluk || undefined,
-          verified: verified || undefined,
-          page,
-          limit: PAGE_SIZE,
-        })
+        .listLeads({ search: query || undefined, district: district || undefined, taluk: taluk || undefined, page, limit: PAGE_SIZE })
         .then((r) => {
           setData(r);
           setError(null);
@@ -55,22 +48,30 @@ export default function LeadsPage() {
         .finally(() => setLoading(false));
     }, 300);
     return () => clearTimeout(t);
-  }, [query, district, taluk, verified, page, reloadKey]);
+  }, [query, district, taluk, page, reloadKey]);
 
   /** Every filter change goes back to page one. */
-  const applyFilter =
-    <T,>(set: (v: T) => void) =>
-    (value: T) => {
-      set(value);
-      setPage(1);
-    };
+  const applyFilter = (set: (v: string) => void) => (value: string) => {
+    set(value);
+    setPage(1);
+  };
+
+  const call = async (l: Lead) => {
+    setCalling(l._id);
+    setError(null);
+    try {
+      const { call: c } = await api.placeTeleCall(l._id);
+      setActive(c);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not place the call");
+    } finally {
+      setCalling(null);
+    }
+  };
 
   const places = useMemo(() => data?.places ?? [], [data]);
   const talukOptions = useMemo(
-    () =>
-      district
-        ? places.find((p) => p.district === district)?.taluks ?? []
-        : [...new Set(places.flatMap((p) => p.taluks))].sort(),
+    () => (district ? places.find((p) => p.district === district)?.taluks ?? [] : [...new Set(places.flatMap((p) => p.taluks))].sort()),
     [places, district]
   );
 
@@ -78,19 +79,15 @@ export default function LeadsPage() {
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const current = Math.min(page, pageCount);
   const rows = data?.items ?? [];
-  const filtersOn = !!(query || district || taluk || verified);
+  const filtersOn = !!(query || district || taluk);
 
   return (
     <div className="space-y-4">
       {/* Totals */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <div className="card p-3">
           <div className="text-xs text-zinc-500">All leads</div>
           <div className="mt-1 text-xl font-semibold tabular-nums">{num(data?.totals.all ?? 0)}</div>
-        </div>
-        <div className="card p-3">
-          <div className="text-xs text-zinc-500">Verified</div>
-          <div className="mt-1 text-xl font-semibold tabular-nums">{num(data?.totals.verified ?? 0)}</div>
         </div>
         <div className="card p-3">
           <div className="text-xs text-zinc-500">Districts</div>
@@ -116,7 +113,7 @@ export default function LeadsPage() {
             <input
               value={query}
               onChange={(e) => applyFilter(setQuery)(e.target.value)}
-              placeholder="Search by village, taluk or district…"
+              placeholder="Search by name, phone or place…"
               className="w-full rounded-lg border border-zinc-300 bg-transparent py-2 pl-9 pr-3 text-sm dark:border-zinc-700"
             />
           </div>
@@ -156,19 +153,6 @@ export default function LeadsPage() {
               ))}
             </Select>
           </div>
-          <div className="filter-field">
-            <span className="filter-label">Verified</span>
-            <Select
-              aria-label="Verified"
-              value={verified}
-              onChange={(e) => applyFilter(setVerified)(e.target.value as "" | "yes" | "no")}
-              className="w-full"
-            >
-              <option value="">All</option>
-              <option value="yes">Verified</option>
-              <option value="no">Not verified</option>
-            </Select>
-          </div>
           {filtersOn && (
             <div className="filter-field justify-end">
               <Button
@@ -177,7 +161,6 @@ export default function LeadsPage() {
                   setQuery("");
                   setDistrict("");
                   setTaluk("");
-                  setVerified("");
                   setPage(1);
                 }}
               >
@@ -195,25 +178,22 @@ export default function LeadsPage() {
             <thead className="sticky top-0 z-10 [&>tr>th]:bg-zinc-50 dark:[&>tr>th]:bg-zinc-900">
               <tr>
                 <th>#</th>
-                <th>Village</th>
-                <th>Taluk</th>
-                <th>District</th>
+                <th>Name</th>
                 <th>Location</th>
-                <th>Status</th>
-                <th>Created</th>
+                <th className="text-right">Call</th>
               </tr>
             </thead>
             <tbody>
               {!loading && data && !data.available && (
                 <tr>
-                  <td colSpan={7} className="py-10 text-center text-zinc-500">
+                  <td colSpan={4} className="py-10 text-center text-zinc-500">
                     Leads are not on this database (markhet_leads is only on the live database).
                   </td>
                 </tr>
               )}
               {!loading && data?.available && rows.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="py-10 text-center text-zinc-500">
+                  <td colSpan={4} className="py-10 text-center text-zinc-500">
                     {filtersOn ? "No leads match these filters." : "No leads yet."}
                   </td>
                 </tr>
@@ -221,36 +201,37 @@ export default function LeadsPage() {
               {rows.map((l, i) => (
                 <tr key={l._id}>
                   <td className="tabular-nums text-zinc-400">{(current - 1) * PAGE_SIZE + i + 1}</td>
-                  <td className="font-medium">{l.village || "-"}</td>
-                  <td>{l.taluk || "-"}</td>
-                  <td>{l.district || "-"}</td>
                   <td>
-                    {l.latitude != null && l.longitude != null ? (
-                      <a
-                        href={mapUrl(l)}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1 text-brand-600 hover:underline"
-                        title={`${l.latitude.toFixed(5)}, ${l.longitude.toFixed(5)}`}
-                      >
-                        <MapPin size={14} /> View map
-                      </a>
-                    ) : (
-                      <span className="text-zinc-400">-</span>
+                    <div className="font-medium">{l.name || <span className="text-zinc-400">No name yet</span>}</div>
+                    <div className="text-xs text-zinc-500">{l.phone || "No phone"}</div>
+                    {l.lastCall && (
+                      <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-zinc-400">
+                        Last call {fmtWhen(l.lastCall.at)}
+                        <OutcomePill outcome={l.lastCall.outcome} />
+                      </div>
                     )}
                   </td>
                   <td>
-                    {l.verified ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
-                        <BadgeCheck size={12} /> Verified
-                      </span>
-                    ) : (
-                      <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400">
-                        Not verified
-                      </span>
-                    )}
+                    <div>{[l.village, l.taluk].filter(Boolean).join(", ") || "-"}</div>
+                    <div className="flex items-center gap-2 text-xs text-zinc-500">
+                      {l.district}
+                      {l.latitude != null && l.longitude != null && (
+                        <a href={mapUrl(l)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-0.5 text-brand-600 hover:underline">
+                          <MapPin size={12} /> Map
+                        </a>
+                      )}
+                    </div>
                   </td>
-                  <td className="whitespace-nowrap text-zinc-500">{fmtDate(l.createdAt)}</td>
+                  <td className="text-right">
+                    <button
+                      onClick={() => call(l)}
+                      disabled={!l.callable || calling === l._id}
+                      title={l.callable ? `Call ${l.name || l.phone}` : l.phone ? "Test data - cannot be called" : "No phone number yet"}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      {calling === l._id ? <Loader label="" size={14} /> : <Phone size={14} />} Call
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -267,6 +248,16 @@ export default function LeadsPage() {
           className="border-t border-zinc-100 p-3 dark:border-zinc-800"
         />
       </div>
+
+      {active && (
+        <TeleCallDialog
+          call={active}
+          onClose={() => {
+            setActive(null);
+            setReloadKey((k) => k + 1);
+          }}
+        />
+      )}
     </div>
   );
 }

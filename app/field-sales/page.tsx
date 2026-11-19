@@ -1,16 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  Download,
-  ExternalLink,
-  Pencil,
-  MapPin,
-  RefreshCw,
-  Search,
-  ShoppingBag,
-  Trash2,
-} from "lucide-react";
+import { Download, ExternalLink, Pencil, MapPin, RefreshCw, Search, ShoppingBag, Trash2 } from "lucide-react";
 import { api, Person, ProductSale, Region, saleBuyer } from "../lib/api";
 import { EditSaleDialog } from "../components/edit-sale-dialog";
 import { isLateEntry, LateEntryNote, LateEntryTag } from "../components/late-entry-tag";
@@ -18,7 +9,8 @@ import { PhotoThumb } from "../components/lightbox";
 import { AgronomistMultiSelect } from "../components/agronomist-multi-select";
 import { ExcelExport } from "../components/excel-export";
 import { SALE_COLUMNS, saleLines } from "../components/sale-export";
-import { Button, Select, DateInput, Dropdown } from "../components/ui";
+import { Select, Dropdown } from "../components/ui";
+import { DateRangeFilter } from "../components/date-range-filter";
 import { LoadingBlock } from "../components/loading";
 import { Pagination, usePaged } from "../components/pagination";
 import { usePerm } from "../lib/use-perm";
@@ -46,20 +38,6 @@ const money = (n: number) =>
   `₹${(n ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
-
-/**
- * A period ending today, as the two yyyy-mm-dd ends of a closed window.
- *
- * Both ends always, so no choice can leave one side open — an open side is what
- * made a single date read as "everything up to then" and pull in earlier days.
- */
-function daysBack(days: number) {
-  const iso = (d: Date) =>
-    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  const start = new Date();
-  start.setDate(start.getDate() - days);
-  return { from: iso(start), to: iso(new Date()) };
-}
 
 /**
  * GST on farm inputs is 5%, and it is already inside every price — the figure
@@ -506,67 +484,30 @@ export default function FieldSalesPage() {
             <AgronomistMultiSelect agronomists={agronomists} value={who} onChange={setWho} allLabel="All" />
           </div>
 
-          <div className="filter-field">
-            <span className="filter-label">Given from</span>
-            <DateInput aria-label="Given from" value={from} onChange={(e) => setFrom(e.target.value)} className="w-full" />
-          </div>
-          <div className="filter-field">
-            <span className="filter-label">Given to</span>
-            <DateInput aria-label="Given to" value={to} onChange={(e) => setTo(e.target.value)} className="w-full" />
-          </div>
-
-          {/* One tap for the day, and for the periods worth asking about.
-              Each sets BOTH ends — an open-ended window is what made a single
-              date read as "everything from then onward". */}
-          <div className="filter-field">
-            <span className="filter-label">Quick range</span>
-            <div className="flex h-9 gap-1.5">
-              {(
-                [
-                  { key: "today", label: "Today", days: 0 },
-                  { key: "7d", label: "7 days", days: 6 },
-                  { key: "30d", label: "30 days", days: 29 },
-                ] as const
-              ).map((o) => {
-                const range = daysBack(o.days);
-                const on = from === range.from && to === range.to;
-                return (
-                  <button
-                    key={o.key}
-                    onClick={() => {
-                      setFrom(on ? "" : range.from);
-                      setTo(on ? "" : range.to);
-                    }}
-                    className={`flex-1 whitespace-nowrap rounded-lg border px-2 ${
-                      on
-                        ? "border-brand-500 bg-brand-500 text-white"
-                        : "border-zinc-300 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
-                    }`}
-                  >
-                    {o.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          <DateRangeFilter
+            onClear={
+              (who.length || from || to || buyerKind || code || query || hiddenProducts.size > 0)
+                ? () => {
+                    setWho([]);
+                    setHiddenProducts(new Set());
+                    setFrom("");
+                    setTo("");
+                    setBuyerKind("");
+                    setCode("");
+                    setQuery("");
+                  }
+                : undefined
+            }
+            label="Sold"
+            from={from}
+            to={to}
+            onChange={(f, t) => {
+              setFrom(f);
+              setTo(t);
+            }}
+          />
 
           <div className="filter-actions">
-            {(who.length || from || to || buyerKind || code || query || hiddenProducts.size > 0) && (
-              <Button
-                variant="danger"
-                onClick={() => {
-                  setWho([]);
-                  setHiddenProducts(new Set());
-                  setFrom("");
-                  setTo("");
-                  setBuyerKind("");
-                  setCode("");
-                  setQuery("");
-                }}
-              >
-                Clear
-              </Button>
-            )}
             <ExcelExport
               id="field-sales"
               fileName="field-sales"
@@ -660,6 +601,26 @@ export default function FieldSalesPage() {
                   <LateEntryNote sale={s} className="min-w-0 flex-1 sm:px-4" />
 
                   <div className="flex flex-wrap items-center gap-3">
+                    {/* How it was paid, and the proof the agent attached
+                        afterwards (a UPI screenshot or receipt) - tap to view. */}
+                    {s.paymentMethod ? (
+                      <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-semibold uppercase text-zinc-600 dark:bg-zinc-900 dark:text-zinc-300">
+                        {s.paymentMethod === "upi" ? "UPI" : "Cash"}
+                      </span>
+                    ) : null}
+                    {s.paymentProofUrl ? (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                        <PhotoThumb
+                          url={s.paymentProofUrl}
+                          caption="Payment proof"
+                          alt="Payment proof"
+                          className="h-8 w-8 rounded-md object-cover ring-1 ring-emerald-300 hover:ring-emerald-500 dark:ring-emerald-800"
+                        />
+                        Payment proof
+                      </span>
+                    ) : (
+                      <span className="text-xs text-zinc-400">No payment proof</span>
+                    )}
                     {hasLoc && (
                       <a
                         href={`https://www.google.com/maps?q=${s.location.latitude},${s.location.longitude}`}

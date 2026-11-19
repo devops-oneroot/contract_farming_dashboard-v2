@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Phone, PhoneOutgoing, User, Sprout } from "lucide-react";
 import { api, CallLog } from "../lib/api";
 import { LoadingBlock } from "../components/loading";
 import { Pagination, usePaged } from "../components/pagination";
+import { DateRangeFilter, inDateRange } from "../components/date-range-filter";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 
@@ -34,7 +35,11 @@ const STATUS_STYLE: Record<string, string> = {
 };
 
 export default function CallsPage() {
-  const [logs, setLogs] = useState<CallLog[]>([]);
+  const [allLogs, setLogs] = useState<CallLog[]>([]);
+  // Date filter, applied here: the list is loaded whole.
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const logs = useMemo(() => allLogs.filter((r) => inDateRange(r.calledAt, from, to)), [allLogs, from, to]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -46,7 +51,7 @@ export default function CallsPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const { pageItems, pager } = usePaged(logs);
+  const { pageItems, pager } = usePaged(logs, undefined, `${from}|${to}`);
 
   if (loading) return <LoadingBlock />;
   if (error) return <p className="text-red-600">{error}</p>;
@@ -58,9 +63,31 @@ export default function CallsPage() {
         <h2 className="text-lg font-semibold">Call Logs ({logs.length})</h2>
       </div>
 
+      <div className="card filter-bar p-3">
+        <DateRangeFilter
+          onClear={
+            (from || to)
+              ? () => {
+                  setFrom("");
+                  setTo("");
+                }
+              : undefined
+          }
+          label="Called"
+          from={from}
+          to={to}
+          onChange={(f, t) => {
+            setFrom(f);
+            setTo(t);
+          }}
+        />
+      </div>
+
       {logs.length === 0 ? (
         <p className="text-sm text-zinc-500">
-          No calls yet. Calls appear here when an agronomist taps the call button in the app.
+          {from || to
+            ? "No calls in these dates."
+            : "No calls yet. Calls appear here when an agronomist taps the call button in the app."}
         </p>
       ) : (
         <div className="table-wrap">

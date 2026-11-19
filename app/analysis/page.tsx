@@ -1,25 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  BarChart3,
-  PieChart,
-  RefreshCw,
-  Repeat,
-  Search,
-  TrendingUp,
-  Users,
-  UserCog,
-  Package,
-  MapPin,
-  IndianRupee,
-  ShoppingBag,
-  Receipt,
-  BadgePercent,
-  Wheat,
-  Sprout,
-  type LucideIcon,
-} from "lucide-react";
+import { BarChart3, PieChart, RefreshCw, Repeat, Search, TrendingUp, Users, UserCog, Package, MapPin, IndianRupee, ShoppingBag, Receipt, BadgePercent, Wheat, Sprout, type LucideIcon } from "lucide-react";
 
 import { api, Person, ProductSale, saleBuyer, Visit } from "../lib/api";
 import { AcresCovered } from "../components/acres-covered";
@@ -96,7 +78,8 @@ function ChartPanel({
 import { AgronomistMultiSelect } from "../components/agronomist-multi-select";
 import { ExcelExport } from "../components/excel-export";
 import { SALE_COLUMNS, saleLines } from "../components/sale-export";
-import { Button, Select, DateInput } from "../components/ui";
+import { Select } from "../components/ui";
+import { DateRangeFilter } from "../components/date-range-filter";
 import { Loader } from "../components/loading";
 import { Pagination, usePaged } from "../components/pagination";
 
@@ -599,31 +582,27 @@ export default function AnalysisPage() {
             </Select>
           </div>
 
-          <div className="filter-field">
-            <span className="filter-label">Sold from</span>
-            <DateInput aria-label="Sold from" value={from} onChange={(e) => setFrom(e.target.value)} className="w-full" />
-          </div>
-          <div className="filter-field">
-            <span className="filter-label">Sold to date</span>
-            <DateInput aria-label="Sold to date" value={to} onChange={(e) => setTo(e.target.value)} className="w-full" />
-          </div>
+          <DateRangeFilter
+            onClear={
+              filtered
+                ? () => {
+                    setWho([]);
+                    setProduct("");
+                    setRegion("");
+                    setBuyerKind("");
+                    setQuery("");
+                  }
+                : undefined
+            }
+            label="Sold"
+            from={from}
+            to={to}
+            onChange={(f, t) => {
+              setFrom(f);
+              setTo(t);
+            }}
+          />
 
-          {filtered && (
-            <div className="filter-actions">
-              <Button
-                variant="danger"
-                onClick={() => {
-                  setWho([]);
-                  setProduct("");
-                  setRegion("");
-                  setBuyerKind("");
-                  setQuery("");
-                }}
-              >
-                Clear filters
-              </Button>
-            </div>
-          )}
         </div>
 
         {/* The same lookup the Farmers tab carries, and the same component -

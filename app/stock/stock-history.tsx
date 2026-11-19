@@ -1,20 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  ArrowDownToLine,
-  ArrowUpFromLine,
-  ClipboardCheck,
-  History,
-  PackagePlus,
-  ShoppingCart,
-  SlidersHorizontal,
-  Undo2,
-  type LucideIcon,
-} from "lucide-react";
+import { ArrowDownToLine, ArrowUpFromLine, ClipboardCheck, History, PackagePlus, ShoppingCart, SlidersHorizontal, Undo2, type LucideIcon } from "lucide-react";
 
 import { api, type Product, type StockHistory, type StockHistoryEntry, type StockHistoryKind } from "../lib/api";
-import { Button, DateInput, Select } from "../components/ui";
+import { Select } from "../components/ui";
+import { DateRangeFilter } from "../components/date-range-filter";
 import { LoadingBlock } from "../components/loading";
 import { Pagination } from "../components/pagination";
 import { ExcelExport, type ExportColumn } from "../components/excel-export";
@@ -282,20 +273,18 @@ export function StockHistoryView({
             ))}
           </Select>
         </label>
-        <label className="filter-field">
-          <span className="filter-label">From</span>
-          <DateInput aria-label="From" value={from} onChange={(e) => pick(setFrom)(e.target.value)} className="w-full" />
-        </label>
-        <label className="filter-field">
-          <span className="filter-label">To</span>
-          <DateInput aria-label="To" value={to} onChange={(e) => pick(setTo)(e.target.value)} className="w-full" />
-        </label>
+        <DateRangeFilter
+          onClear={filtered ? clear : undefined}
+          from={from}
+          to={to}
+          onChange={(f, t) => {
+            setLoading(true);
+            setPage(1);
+            setFrom(f);
+            setTo(t);
+          }}
+        />
         <div className="filter-actions">
-          {filtered && (
-            <Button variant="danger" onClick={clear}>
-              Clear
-            </Button>
-          )}
           <ExcelExport id="stock-history" fileName="stock-history" columns={columns} rows={allRows} />
         </div>
       </div>

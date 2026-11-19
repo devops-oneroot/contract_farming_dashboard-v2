@@ -57,12 +57,15 @@ export function ExcelExport<T>({
   columns,
   rows,
   label = "Download",
+  className,
 }: {
   id: string;
   fileName: string;
   columns: ExportColumn<T>[];
   rows: () => T[] | Promise<T[]>;
   label?: string;
+  /** Replaces the button's look, for a page that styles its downloads together. */
+  className?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [picked, setPicked] = useState<Set<string>>(new Set());
@@ -129,7 +132,10 @@ export function ExcelExport<T>({
       <button
         type="button"
         onClick={start}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-brand-600 px-2.5 py-1.5 text-sm font-medium text-brand-700 hover:bg-brand-50 dark:text-brand-300 dark:hover:bg-brand-950"
+        className={
+          className ||
+          "inline-flex items-center gap-1.5 rounded-lg border border-brand-600 px-2.5 py-1.5 text-sm font-medium text-brand-700 hover:bg-brand-50 dark:text-brand-300 dark:hover:bg-brand-950"
+        }
       >
         <ExcelIcon size={16} /> {label}
       </button>

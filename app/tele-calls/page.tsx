@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { AlertTriangle, CalendarClock, History, MessageSquareText, RefreshCw, Search } from "lucide-react";
 
 import { api, type TeleCall, type TeleCallTab, type TeleCallsPage } from "../lib/api";
+import { DateRangeFilter } from "../components/date-range-filter";
 import { Loader } from "../components/loading";
 import { Pagination } from "../components/pagination";
 import {
@@ -54,12 +55,15 @@ export default function TeleCallsPage() {
   const [query, setQuery] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
   const [open, setOpen] = useState<TeleCall | null>(null);
+  // Date filter (IST days), sent to the server with the rest.
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
 
   useEffect(() => {
     const t = setTimeout(() => {
       setLoading(true);
       api
-        .listTeleCalls({ tab, search: query || undefined, page, limit: PAGE_SIZE })
+        .listTeleCalls({ tab, search: query || undefined, from: from || undefined, to: to || undefined, page, limit: PAGE_SIZE })
         .then((r) => {
           setData(r);
           setError(null);
@@ -68,7 +72,7 @@ export default function TeleCallsPage() {
         .finally(() => setLoading(false));
     }, 250);
     return () => clearTimeout(t);
-  }, [tab, query, page, reloadKey]);
+  }, [tab, query, from, to, page, reloadKey]);
 
   const rows = data?.items ?? [];
   const total = data?.total ?? 0;
@@ -139,6 +143,28 @@ export default function TeleCallsPage() {
             />
           </div>
           {loading && <Loader />}
+        </div>
+
+        <div className="filter-bar border-b border-zinc-100 px-3 py-3 dark:border-zinc-800">
+          <DateRangeFilter
+            onClear={
+              (from || to)
+                ? () => {
+                    setFrom("");
+                    setTo("");
+                    setPage(1);
+                  }
+                : undefined
+            }
+            label="Called"
+            from={from}
+            to={to}
+            onChange={(f, t) => {
+              setFrom(f);
+              setTo(t);
+              setPage(1);
+            }}
+          />
         </div>
 
         {error && <p className="m-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950/40">{error}</p>}

@@ -1,10 +1,12 @@
 "use client";
 
+
 import type { ReactNode } from "react";
 
 import type { Person } from "../lib/api";
 import { AgronomistMultiSelect } from "../components/agronomist-multi-select";
-import { Button, DateInput, SearchInput } from "../components/ui";
+import { SearchInput } from "../components/ui";
+import { DateRangeFilter } from "../components/date-range-filter";
 
 /**
  * The filters every Visits tab shares: which agronomists and which dates.
@@ -58,30 +60,26 @@ export function VisitFilters({
         <span className="filter-label">{agronomistLabel}</span>
         <AgronomistMultiSelect agronomists={agronomists} value={who} onChange={setWho} />
       </div>
-      <div className="filter-field">
-        <span className="filter-label">Visited from</span>
-        <DateInput aria-label="Visited from" value={from} onChange={(e) => setFrom(e.target.value)} className="w-full" />
-      </div>
-      <div className="filter-field">
-        <span className="filter-label">Visited to</span>
-        <DateInput aria-label="Visited to" value={to} onChange={(e) => setTo(e.target.value)} className="w-full" />
-      </div>
-      {any && (
-        <div className="filter-actions">
-          <Button
-            variant="danger"
-            onClick={() => {
-              setWho([]);
-              setFrom("");
-              setTo("");
-              onSearch("");
-              onClear();
-            }}
-          >
-            Clear filters
-          </Button>
-        </div>
-      )}
+      <DateRangeFilter
+        onClear={
+          any
+            ? () => {
+                setWho([]);
+                setFrom("");
+                setTo("");
+                onSearch("");
+                onClear();
+              }
+            : undefined
+        }
+        label="Visited"
+        from={from}
+        to={to}
+        onChange={(f, t) => {
+          setFrom(f);
+          setTo(t);
+        }}
+      />
     </div>
   );
 }

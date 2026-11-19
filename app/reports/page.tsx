@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronRight, ClipboardList, Paperclip } from "lucide-react";
-import { api, DailyReport } from "../lib/api";
+import { ChevronRight, ClipboardList, FileDown, Info, Loader2, Paperclip } from "lucide-react";
+import { api, DailyReport, Person } from "../lib/api";
 import { DayDetailModal } from "../components/day-detail-modal";
 import { AttendanceChip, fmtClock, hm, PresenceBadge, presenceOf } from "../components/attendance-status";
-import { Button, DateInput } from "../components/ui";
+import { Select } from "../components/ui";
+import { DateRangeFilter } from "../components/date-range-filter";
+import { ExcelExport, type ExportColumn } from "../components/excel-export";
 import { LoadingBlock } from "../components/loading";
 import { Pagination, usePaged } from "../components/pagination";
 
@@ -30,6 +32,26 @@ const initials = (name: string) =>
 
 const Dash = () => <span className="text-zinc-400">—</span>;
 
+/** The Excel download: one row per report shown, for the filters set. */
+const REPORT_COLUMNS: ExportColumn<DailyReport>[] = [
+  { key: "agent", label: "Field agent", value: (r) => r.user?.name || r.userName || "" },
+  { key: "mobile", label: "Mobile", value: (r) => r.user?.mobile || "" },
+  { key: "date", label: "Date", value: (r) => new Date(r.date).toLocaleDateString("en-IN") },
+  { key: "start", label: "Start", value: (r) => (r.attendance?.startAt ? fmtClock(r.attendance.startAt) : "") },
+  { key: "end", label: "End", value: (r) => (r.attendance?.endAt ? fmtClock(r.attendance.endAt) : "") },
+  { key: "meterStart", label: "Meter start", value: (r) => r.meterStart ?? "" },
+  { key: "meterEnd", label: "Meter end", value: (r) => r.meterEnd ?? "" },
+  { key: "km", label: "Meter km", value: (r) => r.totalKm ?? "" },
+  { key: "gpsKm", label: "GPS km", value: (r) => r.stats?.distanceKm ?? "" },
+  { key: "food", label: "Food (₹)", value: (r) => r.foodExpense ?? "" },
+  { key: "visits", label: "Visits", value: (r) => r.stats?.visits ?? "" },
+  { key: "onboarded", label: "Onboarded", value: (r) => r.stats?.newFarmers ?? "" },
+  { key: "sales", label: "Sales", value: (r) => r.stats?.sales ?? "" },
+  { key: "report", label: "Daily report", value: (r) => r.dailyReport || "" },
+  { key: "expenses", label: "Expenses", value: (r) => r.dailyExpenses || "" },
+  { key: "plan", label: "Plan for tomorrow", value: (r) => r.planOfActionTomorrow || "" },
+];
+
 export default function ReportsPage() {
   const [reports, setReports] = useState<DailyReport[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,31 +59,67 @@ export default function ReportsPage() {
   /** The report open in the details view. Null closes it. */
   const [viewing, setViewing] = useState<{ userId: string; name: string; date: string } | null>(null);
 
-  /** The day shown. Opens on today; empty shows every report. */
-  const [date, setDate] = useState(localToday);
+  /** The days shown. Opens on today; empty shows every report. */
+  const [from, setFrom] = useState(localToday);
+  const [to, setTo] = useState(localToday);
+  /** One salesperson, or "" for everyone. */
+  const [who, setWho] = useState("");
+  const [agents, setAgents] = useState<Person[]>([]);
+  const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
 
-  /** Picks a day (or "" for all) and shows the loader while it is fetched. */
-  const pickDate = (d: string) => {
-    if (d === date) return;
+  /** Sets the filters and shows the loader while the new list is fetched. */
+  const applyFilters = (next: { from?: string; to?: string; who?: string }) => {
     setLoading(true);
     setError(null);
-    setDate(d);
+    setDownloadError(null);
+    if (next.from !== undefined) setFrom(next.from);
+    if (next.to !== undefined) setTo(next.to);
+    if (next.who !== undefined) setWho(next.who);
   };
+
+  useEffect(() => {
+    api.listAgronomists().then(setAgents).catch(() => {});
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
     api
-      .listDailyReports(date ? { from: date, to: date } : {})
+      .listDailyReports({ from: from || undefined, to: to || undefined, user: who || undefined })
       .then((list) => !cancelled && setReports(list))
       .catch((e) => !cancelled && setError(e instanceof Error ? e.message : "Failed to load reports"))
       .finally(() => !cancelled && setLoading(false));
     return () => {
       cancelled = true;
     };
-  }, [date]);
+  }, [from, to, who]);
 
   const { pageItems, pager } = usePaged(reports);
+  const date = from && from === to ? from : "";
   const isToday = date === localToday();
+  const filtered = !!(who || from || to);
+
+  /**
+   * The PDF covers the dates and salesperson picked: one person or the whole
+   * team, one day or a range (up to 31 days). Says why when it cannot.
+   */
+  const spanDays = from && to ? Math.round((new Date(to).getTime() - new Date(from).getTime()) / 86_400_000) + 1 : 0;
+  const pdfBlocked = !from || !to ? "Pick the dates to download." : spanDays > 31 ? "Pick 31 days or fewer." : null;
+  const fmtDay = (d: string) =>
+    new Date(`${d}T00:00:00`).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  const rangeText = !from || !to ? "" : from === to ? fmtDay(from) : `${fmtDay(from)} – ${fmtDay(to)}`;
+  const downloadPdf = async () => {
+    if (pdfBlocked) return;
+    setDownloading(true);
+    setDownloadError(null);
+    try {
+      await api.downloadDailyReportsPdf({ from, to, user: who || undefined });
+    } catch (e) {
+      setDownloadError(e instanceof Error ? e.message : "Download failed");
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   // Summary across the reports shown.
   const sum = (f: (r: DailyReport) => number) => reports.reduce((s, r) => s + (f(r) || 0), 0);
@@ -82,20 +140,61 @@ export default function ReportsPage() {
 
       <div className="card filter-bar p-3">
         <div className="filter-field">
-          <span className="filter-label">Date</span>
-          <DateInput aria-label="Date" value={date} onChange={(e) => pickDate(e.target.value)} className="w-full" />
+          <span className="filter-label">Salesperson</span>
+          <Select aria-label="Salesperson" value={who} onChange={(e) => applyFilters({ who: e.target.value })} className="w-full">
+            <option value="">All salespeople</option>
+            {agents.map((a) => (
+              <option key={a._id} value={a._id}>
+                {a.name}
+              </option>
+            ))}
+          </Select>
         </div>
-        <div className="filter-actions">
-          {!isToday && (
-            <Button variant="secondary" onClick={() => pickDate(localToday())}>
-              Today
-            </Button>
-          )}
-          {date && (
-            <Button variant="ghost" onClick={() => pickDate("")}>
-              All dates
-            </Button>
-          )}
+        <DateRangeFilter
+          onClear={filtered ? () => applyFilters({ from: "", to: "", who: "" }) : undefined}
+          from={from}
+          to={to}
+          onChange={(f, t) => applyFilters({ from: f, to: t })}
+        />
+
+        {/* Downloads on their own row under the filters: what will be downloaded
+            on the left, the two buttons on the right. On a phone the buttons
+            share the full width. */}
+        <div className="col-span-full flex flex-col gap-3 border-t border-zinc-100 pt-3 sm:flex-row sm:items-center sm:justify-between dark:border-zinc-800">
+          <p
+            className={`flex min-w-0 items-start gap-1.5 text-xs leading-5 ${
+              downloadError ? "text-red-600" : pdfBlocked ? "text-amber-700 dark:text-amber-400" : "text-zinc-500"
+            }`}
+          >
+            <Info size={14} className="mt-0.5 shrink-0" />
+            <span>
+              {downloadError
+                ? downloadError
+                : pdfBlocked
+                  ? `PDF: ${pdfBlocked} Excel downloads the rows below.`
+                  : `Download ${who ? agents.find((x) => x._id === who)?.name || "this salesperson" : "the whole team"}, ${rangeText}.`}
+            </span>
+          </p>
+          <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:shrink-0">
+            <button
+              type="button"
+              onClick={downloadPdf}
+              disabled={!!pdfBlocked || downloading}
+              title={pdfBlocked || "Download the report PDF for these dates and salesperson"}
+              className="inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-brand-600 px-4 text-sm font-semibold text-white shadow-sm shadow-brand-600/25 transition hover:bg-brand-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:text-zinc-400 disabled:shadow-none dark:disabled:bg-zinc-800 dark:disabled:text-zinc-500"
+            >
+              {downloading ? <Loader2 size={16} className="animate-spin" /> : <FileDown size={16} />}
+              {downloading ? "Preparing…" : "Download PDF"}
+            </button>
+            <ExcelExport
+              id="daily-reports"
+              fileName="daily-reports"
+              columns={REPORT_COLUMNS}
+              rows={() => reports}
+              label="Download Excel"
+              className="inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-emerald-600/30 bg-emerald-50 px-4 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-100 active:scale-[0.98] dark:border-emerald-500/30 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-950/70"
+            />
+          </div>
         </div>
       </div>
 

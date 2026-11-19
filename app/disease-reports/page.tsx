@@ -7,6 +7,7 @@ import { PhotoThumb } from "../components/lightbox";
 import { AudioPlayer } from "../components/audio-player";
 import { LoadingBlock } from "../components/loading";
 import { Pagination, usePaged } from "../components/pagination";
+import { DateRangeFilter, inDateRange } from "../components/date-range-filter";
 
 function fmtDateTime(s: string) {
   return new Date(s).toLocaleString(undefined, {
@@ -26,7 +27,11 @@ function waited(from: string, to: string | null) {
 }
 
 export default function DiseaseReportsPage() {
-  const [reports, setReports] = useState<DiseaseReport[]>([]);
+  const [allReports, setReports] = useState<DiseaseReport[]>([]);
+  // Date filter, applied here: the list is loaded whole.
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const reports = useMemo(() => allReports.filter((r) => inDateRange(r.createdAt, from, to)), [allReports, from, to]);
   const [filter, setFilter] = useState<"" | "open" | "answered">("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +49,7 @@ export default function DiseaseReportsPage() {
   }, [filter]);
 
   // Report cards are tall (photos, replies), so fewer to a page.
-  const { pageItems, pager } = usePaged(reports, 10, filter);
+  const { pageItems, pager } = usePaged(reports, 10, `${filter}|${from}|${to}`);
 
   const stats = useMemo(() => {
     const open = reports.filter((r) => r.status === "open");
@@ -91,6 +96,26 @@ export default function DiseaseReportsPage() {
         </div>
       </div>
 
+      <div className="card filter-bar p-3">
+        <DateRangeFilter
+          onClear={
+            (from || to)
+              ? () => {
+                  setFrom("");
+                  setTo("");
+                }
+              : undefined
+          }
+          label="Reported"
+          from={from}
+          to={to}
+          onChange={(f, t) => {
+            setFrom(f);
+            setTo(t);
+          }}
+        />
+      </div>
+
       <div className="grid grid-cols-3 gap-2 sm:gap-3">
         {[
           { label: "Waiting for advice", value: String(stats.open), alert: stats.open > 0 },
@@ -115,7 +140,9 @@ export default function DiseaseReportsPage() {
         <p className="text-red-600">{error}</p>
       ) : reports.length === 0 ? (
         <p className="text-sm text-zinc-500">
-          No reports yet. They appear when a field agent photographs a diseased crop in the app.
+          {from || to
+            ? "No reports in these dates."
+            : "No reports yet. They appear when a field agent photographs a diseased crop in the app."}
         </p>
       ) : (
         <div className="space-y-3">

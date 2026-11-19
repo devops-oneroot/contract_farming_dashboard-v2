@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { MessageSquareHeart, RefreshCw, Search, Star, ThumbsDown, ThumbsUp } from "lucide-react";
 
 import { api, type FeedbacksPage, type Satisfaction, type TeleCall, type TeleOutcome } from "../lib/api";
-import { Button, Select } from "../components/ui";
+import { Select } from "../components/ui";
+import { DateRangeFilter } from "../components/date-range-filter";
 import { Loader } from "../components/loading";
 import { Pagination } from "../components/pagination";
 import { OUTCOMES, OutcomePill, SatisfactionPill, Stars, TeleCallDialog, fmtWhen } from "../components/tele-call";
@@ -27,6 +28,9 @@ export default function FeedbacksPage() {
   const [outcome, setOutcome] = useState<"" | TeleOutcome>("");
   const [reloadKey, setReloadKey] = useState(0);
   const [open, setOpen] = useState<TeleCall | null>(null);
+  // Date filter (IST days), sent to the server with the rest.
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -37,6 +41,8 @@ export default function FeedbacksPage() {
           satisfaction: satisfaction || undefined,
           rating: rating ? Number(rating) : undefined,
           outcome: outcome || undefined,
+          from: from || undefined,
+          to: to || undefined,
           page,
           limit: PAGE_SIZE,
         })
@@ -48,13 +54,13 @@ export default function FeedbacksPage() {
         .finally(() => setLoading(false));
     }, 250);
     return () => clearTimeout(t);
-  }, [query, satisfaction, rating, outcome, page, reloadKey]);
+  }, [query, satisfaction, rating, outcome, from, to, page, reloadKey]);
 
   const s = data?.summary;
   const rows = data?.items ?? [];
   const total = data?.total ?? 0;
   const current = Math.min(page, Math.max(1, Math.ceil(total / PAGE_SIZE)));
-  const filtersOn = !!(query || satisfaction || rating || outcome);
+  const filtersOn = !!(query || satisfaction || rating || outcome || from || to);
   const pct = (n: number) => (s?.total ? `${Math.round((n / s.total) * 100)}%` : "0%");
   const filter = <T,>(set: (v: T) => void) => (v: T) => {
     set(v);
@@ -166,22 +172,29 @@ export default function FeedbacksPage() {
               ))}
             </Select>
           </div>
-          {filtersOn && (
-            <div className="filter-field justify-end">
-              <Button
-                variant="danger"
-                onClick={() => {
-                  setQuery("");
-                  setSatisfaction("");
-                  setRating("");
-                  setOutcome("");
-                  setPage(1);
-                }}
-              >
-                Clear
-              </Button>
-            </div>
-          )}
+          <DateRangeFilter
+            onClear={
+              filtersOn
+                ? () => {
+                    setQuery("");
+                    setSatisfaction("");
+                    setRating("");
+                    setOutcome("");
+                    setFrom("");
+                    setTo("");
+                    setPage(1);
+                  }
+                : undefined
+            }
+            label="Noted"
+            from={from}
+            to={to}
+            onChange={(f, t) => {
+              setFrom(f);
+              setTo(t);
+              setPage(1);
+            }}
+          />
         </div>
 
         {error && <p className="m-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950/40">{error}</p>}

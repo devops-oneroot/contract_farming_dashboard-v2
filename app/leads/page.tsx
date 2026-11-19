@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { MapPin, Phone, RefreshCw, Search } from "lucide-react";
 
 import { api, type Lead, type LeadsPage, type TeleCall } from "../lib/api";
-import { Button, Select } from "../components/ui";
+import { Select } from "../components/ui";
+import { DateRangeFilter } from "../components/date-range-filter";
 import { Loader } from "../components/loading";
 import { Pagination } from "../components/pagination";
 import { TeleCallDialog, OutcomePill, fmtWhen } from "../components/tele-call";
@@ -30,6 +31,9 @@ export default function LeadsPage() {
   const [query, setQuery] = useState("");
   const [district, setDistrict] = useState("");
   const [taluk, setTaluk] = useState("");
+  // Date filter (IST days), sent to the server with the rest.
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
   const [calling, setCalling] = useState<string | null>(null);
   const [active, setActive] = useState<TeleCall | null>(null);
@@ -39,7 +43,15 @@ export default function LeadsPage() {
     const t = setTimeout(() => {
       setLoading(true);
       api
-        .listLeads({ search: query || undefined, district: district || undefined, taluk: taluk || undefined, page, limit: PAGE_SIZE })
+        .listLeads({
+          search: query || undefined,
+          district: district || undefined,
+          taluk: taluk || undefined,
+          from: from || undefined,
+          to: to || undefined,
+          page,
+          limit: PAGE_SIZE,
+        })
         .then((r) => {
           setData(r);
           setError(null);
@@ -48,7 +60,7 @@ export default function LeadsPage() {
         .finally(() => setLoading(false));
     }, 300);
     return () => clearTimeout(t);
-  }, [query, district, taluk, page, reloadKey]);
+  }, [query, district, taluk, from, to, page, reloadKey]);
 
   /** Every filter change goes back to page one. */
   const applyFilter = (set: (v: string) => void) => (value: string) => {
@@ -153,21 +165,28 @@ export default function LeadsPage() {
               ))}
             </Select>
           </div>
-          {filtersOn && (
-            <div className="filter-field justify-end">
-              <Button
-                variant="danger"
-                onClick={() => {
-                  setQuery("");
-                  setDistrict("");
-                  setTaluk("");
-                  setPage(1);
-                }}
-              >
-                Clear
-              </Button>
-            </div>
-          )}
+          <DateRangeFilter
+            onClear={
+              (filtersOn || from || to)
+                ? () => {
+                    setQuery("");
+                    setDistrict("");
+                    setTaluk("");
+                    setFrom("");
+                    setTo("");
+                    setPage(1);
+                  }
+                : undefined
+            }
+            label="Created"
+            from={from}
+            to={to}
+            onChange={(f, t) => {
+              setFrom(f);
+              setTo(t);
+              setPage(1);
+            }}
+          />
         </div>
 
         {error && <p className="m-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950/40">{error}</p>}

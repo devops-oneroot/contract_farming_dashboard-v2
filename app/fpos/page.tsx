@@ -1,13 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import {
-  RefreshCw,
-  Search,
-} from "lucide-react";
+import { RefreshCw, Search } from "lucide-react";
 import { api, Fpo, Person } from "../lib/api";
 import { PhotoThumb } from "../components/lightbox";
-import { Button, Select, DateInput } from "../components/ui";
+import { Select } from "../components/ui";
+import { DateRangeFilter } from "../components/date-range-filter";
 import { Loader } from "../components/loading";
 import { Pagination } from "../components/pagination";
 
@@ -90,15 +88,6 @@ export default function FposPage() {
     return () => clearTimeout(t);
   }, [query, role, crop, district, taluk, onboardedBy, from, to, page, reloadKey]);
 
-  /**
-   * Every filter goes through here so it cannot be changed without returning
-   * to page one. Staying on page 4 of a result set that now has two shows an
-   * empty table, which reads as "nothing matches" rather than "past the end".
-   */
-  const applyFilter = (set: (v: string) => void) => (value: string) => {
-    set(value);
-    setPage(1);
-  };
 
   // The API returns the onboarding agent as an id only, so names are resolved here.
   useEffect(() => {
@@ -294,48 +283,31 @@ export default function FposPage() {
           </Select>
         </div>
 
-        <div className="filter-field">
-          <span className="filter-label">Onboarded from</span>
-          <DateInput aria-label="Onboarded from" value={from} onChange={(e) => applyFilter(setFrom)(e.target.value)} className="w-full" />
-        </div>
-        <div className="filter-field">
-          <span className="filter-label">Onboarded to</span>
-          <DateInput aria-label="Onboarded to" value={to} onChange={(e) => applyFilter(setTo)(e.target.value)} className="w-full" />
-        </div>
-
-        <div className="filter-actions">
-          <Button
-            variant="secondary"
-            onClick={() => {
-              // The browser's own date: toISOString is UTC, which is still yesterday before 05:30 IST.
-              const n = new Date();
-              const today = `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`;
-              setFrom(today);
-              setTo(today);
-              setPage(1);
-            }}
-          >
-            Today
-          </Button>
-          {filtersOn && (
-            <Button
-              variant="danger"
-              onClick={() => {
-                setQuery("");
-                setRole("");
-                setCrop("");
-                setDistrict("");
-                setTaluk("");
-                setOnboardedBy("");
-                setFrom("");
-                setTo("");
-                setPage(1);
-              }}
-            >
-              Clear
-            </Button>
-          )}
-        </div>
+        <DateRangeFilter
+          onClear={
+            filtersOn
+              ? () => {
+                  setQuery("");
+                  setRole("");
+                  setCrop("");
+                  setDistrict("");
+                  setTaluk("");
+                  setOnboardedBy("");
+                  setFrom("");
+                  setTo("");
+                  setPage(1);
+                }
+              : undefined
+          }
+          label="Onboarded"
+          from={from}
+          to={to}
+          onChange={(f, t) => {
+            setFrom(f);
+            setTo(t);
+            setPage(1);
+          }}
+        />
       </div>
 
       {/* Table */}

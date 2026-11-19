@@ -13,7 +13,8 @@ import { AudioPlayer } from "./audio-player";
 import { EMPTY_LOCATION, FarmLocation, FarmLocationPicker } from "./farm-location-picker";
 import { AgronomistMultiSelect } from "./agronomist-multi-select";
 import { ExcelExport, type ExportColumn } from "./excel-export";
-import { Button, Select, DateInput } from "./ui";
+import { Select } from "./ui";
+import { DateRangeFilter } from "./date-range-filter";
 import { Loader } from "./loading";
 import { Pagination } from "./pagination";
 import { usePerm } from "../lib/use-perm";
@@ -534,46 +535,30 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
             </div>
           </>
         )}
-        <div className="filter-field">
-          <span className="filter-label">{showDetail ? "Registered from" : "Counts for farmers registered from"}</span>
-          <DateInput aria-label="Registered from" value={from} onChange={(e) => applyFilter(setFrom)(e.target.value)} className="w-full" />
-        </div>
-        <div className="filter-field">
-          <span className="filter-label">Registered to</span>
-          <DateInput aria-label="Registered to" value={to} onChange={(e) => applyFilter(setTo)(e.target.value)} className="w-full" />
-        </div>
-        <div className="filter-actions">
-          <Button
-            variant="secondary"
-            onClick={() => {
-              // The browser's own date: toISOString is UTC, which is still yesterday before 05:30 IST.
-              const n = new Date();
-              const today = `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`;
-              setFrom(today);
-              setTo(today);
-              setPage(1);
-            }}
-          >
-            Today
-          </Button>
-          {(from || to || onboardedByFilter || farmingType || district || taluk || village) && (
-            <Button
-              variant="danger"
-              onClick={() => {
-                setFrom("");
-                setTo("");
-                setOnboardedByFilter("");
-                setFarmingType("");
-                setDistrict("");
-                setTaluk("");
-                setVillage("");
-                setPage(1);
-              }}
-            >
-              Clear
-            </Button>
-          )}
-        </div>
+        <DateRangeFilter
+          onClear={
+            (from || to || onboardedByFilter || farmingType || district || taluk || village)
+              ? () => {
+                  setFrom("");
+                  setTo("");
+                  setOnboardedByFilter("");
+                  setFarmingType("");
+                  setDistrict("");
+                  setTaluk("");
+                  setVillage("");
+                  setPage(1);
+                }
+              : undefined
+          }
+          label="Registered"
+          from={from}
+          to={to}
+          onChange={(f, t) => {
+            setFrom(f);
+            setTo(t);
+            setPage(1);
+          }}
+        />
       </div>
 
       {/* How much land one agronomist covers. Shared with Sales Analysis, so

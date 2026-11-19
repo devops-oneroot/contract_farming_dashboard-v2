@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { Navigation, Clock, MapPin, CloudRain, PauseCircle } from "lucide-react";
 import { api, NotStartedAgent, Person, TrackingPause, TrackingSession } from "../lib/api";
 import { PhotoThumb } from "../components/lightbox";
-import { Button, Select, DateInput } from "../components/ui";
+import { Select } from "../components/ui";
+import { DateRangeFilter } from "../components/date-range-filter";
 import { LoadingBlock } from "../components/loading";
 import { Pagination } from "../components/pagination";
 import { PresenceBadge, presence } from "../components/attendance-status";
@@ -94,8 +95,9 @@ export default function TrackingPage() {
   const [totals, setTotals] = useState({ km: 0, hours: 0, tracked: 0, live: 0, off: 0 });
   const [agents, setAgents] = useState<Person[]>([]);
   const [who, setWho] = useState("");
-  // Opens on today; Clear shows every day.
+  // Opens on today (both ends); Clear shows every day.
   const [from, setFrom] = useState(localToday);
+  const [to, setTo] = useState(localToday);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -109,10 +111,10 @@ export default function TrackingPage() {
     Promise.all([
       api.listTrackingPage({
         userId: who || undefined,
-        // The filter is one "Date": that day alone. Sending only `from` asked
-        // for that day AND every day after it.
+        // A closed range: both ends always go together (a preset or two
+        // dates). "Not started" is listed when the range is a single day.
         from: from || undefined,
-        to: from || undefined,
+        to: to || undefined,
         page,
         limit: PAGE_SIZE,
       }),
@@ -128,7 +130,7 @@ export default function TrackingPage() {
       })
       .catch((e) => setError(e instanceof Error ? e.message : "Failed to load tracking"))
       .finally(() => setLoading(false));
-  }, [who, from, page]);
+  }, [who, from, to, page]);
 
   /** Changing agent or date must land on page one of the new results. */
   const applyFilter = (set: (v: string) => void) => (value: string) => {
@@ -169,24 +171,25 @@ export default function TrackingPage() {
             ))}
           </Select>
         </div>
-        <div className="filter-field">
-          <span className="filter-label">Date</span>
-          <DateInput aria-label="Date" value={from} onChange={(e) => applyFilter(setFrom)(e.target.value)} className="w-full" />
-        </div>
-        {(who || from) && (
-          <div className="filter-actions">
-            <Button
-              variant="danger"
-              onClick={() => {
-                setWho("");
-                setFrom("");
-                setPage(1);
-              }}
-            >
-              Clear
-            </Button>
-          </div>
-        )}
+        <DateRangeFilter
+          onClear={
+            (who || from || to)
+              ? () => {
+                  setWho("");
+                  setFrom("");
+                  setTo("");
+                  setPage(1);
+                }
+              : undefined
+          }
+          from={from}
+          to={to}
+          onChange={(f, t) => {
+            setFrom(f);
+            setTo(t);
+            setPage(1);
+          }}
+        />
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">

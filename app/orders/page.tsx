@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { RefreshCw, Phone, User } from "lucide-react";
 import { api, Order, OrderStatus } from "../lib/api";
 import { LoadingBlock } from "../components/loading";
 import { Pagination, usePaged } from "../components/pagination";
+import { DateRangeFilter, inDateRange } from "../components/date-range-filter";
 import { Select } from "../components/ui";
 import { usePerm } from "../lib/use-perm";
 
@@ -29,12 +30,16 @@ function fmt(s: string) {
 
 export default function OrdersPage() {
   const perm = usePerm("orders");
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [allOrders, setOrders] = useState<Order[]>([]);
+  // Date filter, applied here: the list is loaded whole.
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const orders = useMemo(() => allOrders.filter((r) => inDateRange(r.createdAt, from, to)), [allOrders, from, to]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<"" | OrderStatus>("");
   // A new status filter starts again from page 1.
-  const { pageItems, pager } = usePaged(orders, 24, filter);
+  const { pageItems, pager } = usePaged(orders, 24, `${filter}|${from}|${to}`);
 
   const load = async () => {
     setLoading(true);
@@ -98,12 +103,32 @@ export default function OrdersPage() {
         </div>
       </div>
 
+      <div className="card filter-bar mb-4 p-3">
+        <DateRangeFilter
+          onClear={
+            (from || to)
+              ? () => {
+                  setFrom("");
+                  setTo("");
+                }
+              : undefined
+          }
+          label="Ordered"
+          from={from}
+          to={to}
+          onChange={(f, t) => {
+            setFrom(f);
+            setTo(t);
+          }}
+        />
+      </div>
+
       {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
 
       {loading ? (
         <LoadingBlock />
       ) : orders.length === 0 ? (
-        <p className="mt-6 text-zinc-500">No orders yet.</p>
+        <p className="mt-6 text-zinc-500">{from || to ? "No orders in these dates." : "No orders yet."}</p>
       ) : (
         <div className="mt-2 grid grid-cols-1 gap-4 xl:grid-cols-2">
           {pageItems.map((o) => (

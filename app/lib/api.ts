@@ -765,6 +765,11 @@ export type Region = {
 
 export type ProductSale = {
   _id: string;
+  /** How the buyer paid; null on sales recorded before the app asked. */
+  paymentMethod?: "cash" | "upi" | null;
+  /** Proof of payment the agent attached after the sale (UPI screenshot / receipt); '' until then. */
+  paymentProofUrl?: string;
+  paymentProofAt?: string | null;
   agronomist: { _id: string; name: string; mobile: string } | null;
   agronomistName: string;
   /**
@@ -1221,7 +1226,7 @@ export const api = {
   saveRolePermissions: (rolePermissions: Partial<Record<AdminRole, Permissions>>) =>
     json<RolesConfig>("/api/admin/roles", { method: "PUT", body: JSON.stringify({ rolePermissions }) }),
   /** Leads (markhet_leads), one page at a time. */
-  listLeads: (params: { search?: string; district?: string; taluk?: string; verified?: "yes" | "no"; page?: number; limit?: number }) => {
+  listLeads: (params: { search?: string; district?: string; taluk?: string; verified?: "yes" | "no"; from?: string; to?: string; page?: number; limit?: number }) => {
     const q = new URLSearchParams();
     for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== "") q.set(k, String(v));
     return json<LeadsPage>(`/api/leads?${q.toString()}`);
@@ -1233,13 +1238,13 @@ export const api = {
   getTeleCall: (id: string) => json<{ call: TeleCall }>(`/api/tele-calls/${id}`),
   saveTeleFeedback: (id: string, body: TeleFeedbackInput) =>
     json<{ call: TeleCall }>(`/api/tele-calls/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
-  listTeleCalls: (params: { tab: TeleCallTab; search?: string; page?: number; limit?: number }) => {
+  listTeleCalls: (params: { tab: TeleCallTab; search?: string; from?: string; to?: string; page?: number; limit?: number }) => {
     const q = new URLSearchParams();
     for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== "") q.set(k, String(v));
     return json<TeleCallsPage>(`/api/tele-calls?${q.toString()}`);
   },
   leadCallHistory: (leadId: string) => json<{ items: TeleCall[] }>(`/api/tele-calls/lead/${leadId}`),
-  listFeedbacks: (params: { satisfaction?: Satisfaction; rating?: number; outcome?: TeleOutcome; search?: string; page?: number; limit?: number }) => {
+  listFeedbacks: (params: { satisfaction?: Satisfaction; rating?: number; outcome?: TeleOutcome; search?: string; from?: string; to?: string; page?: number; limit?: number }) => {
     const q = new URLSearchParams();
     for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== "") q.set(k, String(v));
     return json<FeedbacksPage>(`/api/feedbacks?${q.toString()}`);
@@ -1512,12 +1517,39 @@ export const api = {
 
   // Daily reports submitted by field agents
   /** `from` / `to` are YYYY-MM-DD days; omit both for every report. */
-  listDailyReports: (params: { from?: string; to?: string } = {}) => {
+  listDailyReports: (params: { from?: string; to?: string; user?: string } = {}) => {
     const q = new URLSearchParams();
     if (params.from) q.set("from", params.from);
     if (params.to) q.set("to", params.to);
+    if (params.user) q.set("user", params.user);
     const s = q.toString();
     return json<DailyReport[]>(`/api/daily-reports${s ? `?${s}` : ""}`);
+  },
+
+  /**
+   * Download the Daily Reports PDF for the page's filters: one salesperson's
+   * report for the range, or the whole team's for a single day. Fetched with
+   * the sign-in token (it is not a public link) and saved as a file.
+   */
+  downloadDailyReportsPdf: async (params: { from: string; to: string; user?: string }) => {
+    const q = new URLSearchParams({ from: params.from, to: params.to });
+    if (params.user) q.set("user", params.user);
+    const accent = typeof document !== "undefined" ? document.documentElement.getAttribute("data-accent") : null;
+    if (accent) q.set("accent", accent);
+    const res = await fetch(`${API_URL}/api/daily-reports.pdf?${q.toString()}`, { headers: authHeaders(), cache: "no-store" });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error((data as { message?: string })?.message || `Download failed (${res.status})`);
+    }
+    const name = /filename="([^"]+)"/.exec(res.headers.get("Content-Disposition") || "")?.[1] || "daily-report.pdf";
+    const url = URL.createObjectURL(await res.blob());
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10_000);
   },
 
   // ---- Regions: which taluk an agronomist works out of, and so which series

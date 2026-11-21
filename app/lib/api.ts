@@ -252,6 +252,10 @@ export type TeleCall = {
   satisfaction: Satisfaction | null;
   followUpAt: string | null;
   followUpNote: string;
+  /** The field executive a follow-up was handed to (their app's Farm Visits), and the farmer record. */
+  assignedToId?: string | null;
+  assignedToName?: string;
+  farmerId?: string | null;
   feedbackAt: string | null;
   isMock: boolean;
   /** Exotel's CallSid, and the telecaller's number that was rung. */
@@ -299,6 +303,28 @@ export type TeleFeedbackInput = {
   satisfaction: Satisfaction | null;
   followUpAt: string | null;
   followUpNote: string;
+  /**
+   * Follow-up only: the field executive to hand it to - assigned in their
+   * app's Farm Visits with a push. "" = nobody; left out = unchanged.
+   */
+  executiveId?: string;
+};
+
+/** Who a follow-up's Field executive dropdown starts on, and why. */
+export type ExecutiveSuggestion = {
+  executiveId: string;
+  /** "assigned" (given before), "onboarded" (who onboarded the farmer), "agronomist" (their current one), "" (none). */
+  reason: "assigned" | "onboarded" | "agronomist" | "";
+  /** Our farmer with the lead's phone, if there is one. */
+  farmer: {
+    _id: string;
+    name: string;
+    deleted: boolean;
+    onboardedBy: { _id: string; name: string } | null;
+    agronomist: { _id: string; name: string } | null;
+  } | null;
+  /** The phone belongs to staff, not a farmer: cannot be assigned. */
+  blocked: boolean;
 };
 
 export type LeadsPage = {
@@ -1272,7 +1298,13 @@ export const api = {
   /** The call now - the server asks Exotel while it is still live. */
   getTeleCall: (id: string) => json<{ call: TeleCall }>(`/api/tele-calls/${id}`),
   saveTeleFeedback: (id: string, body: TeleFeedbackInput) =>
-    json<{ call: TeleCall }>(`/api/tele-calls/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+    json<{
+      call: TeleCall;
+      /** Set when a follow-up was handed to a field executive; `notified` false on a repeat save. */
+      assignment: { executive: { _id: string; name: string }; farmer: { _id: string; name: string }; notified: boolean } | null;
+    }>(`/api/tele-calls/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  /** Who a follow-up's Field executive dropdown starts on: who onboarded the farmer, by default. */
+  teleCallExecutive: (id: string) => json<ExecutiveSuggestion>(`/api/tele-calls/${id}/executive`),
   listTeleCalls: (params: { tab: TeleCallTab; search?: string; from?: string; to?: string; page?: number; limit?: number } & PlaceFilter) => {
     const q = new URLSearchParams();
     for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== "") q.set(k, String(v));

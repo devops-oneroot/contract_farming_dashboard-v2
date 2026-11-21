@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { CalendarClock, Phone, PhoneCall, PhoneOff, Save, Star, ThumbsDown, ThumbsUp, X } from "lucide-react";
+import { CalendarClock, Phone, PhoneCall, PhoneOff, Save, Star, ThumbsDown, ThumbsUp, UserCheck, X } from "lucide-react";
 
 import {
   api,
+  type ExecutiveSuggestion,
+  type Person,
   type Satisfaction,
   type TeleCall,
   type TeleCallStatus,
@@ -162,8 +164,13 @@ export function TeleCallDialog({
     satisfaction: initial.satisfaction,
     followUpAt: initial.followUpAt,
     followUpNote: initial.followUpNote,
+    // Filled from the suggestion below unless the call already names someone.
+    executiveId: initial.assignedToId ?? undefined,
   });
   const [history, setHistory] = useState<TeleCall[] | null>(null);
+  /** Field executives for a follow-up, and who the dropdown starts on (who onboarded the farmer). */
+  const [executives, setExecutives] = useState<Person[]>([]);
+  const [suggested, setSuggested] = useState<ExecutiveSuggestion | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -208,6 +215,18 @@ export function TeleCallDialog({
   }, [initial.leadId, initial._id]);
 
   useEffect(() => {
+    api.listAgronomists().then(setExecutives).catch(() => setExecutives([]));
+    api
+      .teleCallExecutive(initial._id)
+      .then((s) => {
+        setSuggested(s);
+        // Pre-select whoever onboarded the farmer, unless one is already chosen.
+        setForm((f) => (f.executiveId === undefined ? { ...f, executiveId: s.executiveId } : f));
+      })
+      .catch(() => setSuggested(null));
+  }, [initial._id]);
+
+  useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -226,9 +245,18 @@ export function TeleCallDialog({
     setSaving(true);
     setError(null);
     try {
-      const { call: c } = await api.saveTeleFeedback(call._id, form);
+      // The executive goes only with a follow-up; otherwise the server clears it.
+      const body: TeleFeedbackInput =
+        form.outcome === "follow_up" ? { ...form, executiveId: form.executiveId ?? "" } : { ...form, executiveId: undefined };
+      const { call: c, assignment } = await api.saveTeleFeedback(call._id, body);
       setCall(c);
-      setNotice("Feedback saved.");
+      setNotice(
+        assignment
+          ? `Feedback saved. ${assignment.farmer.name} is in ${assignment.executive.name}'s Farm Visits${
+              assignment.notified ? " and they got a notification." : "."
+            }`
+          : "Feedback saved."
+      );
       onSaved?.(c);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not save");
@@ -422,8 +450,51 @@ export function TeleCallDialog({
                 className={field}
               />
             </label>
+            {/* Hand the follow-up to a field executive: assigned in their app's
+                Farm Visits for that day, with a push. Starts on whoever
+                onboarded the farmer; the telecaller can pick anyone else. */}
+            <label className="block sm:col-span-2">
+              <span className="mb-1.5 flex items-center gap-1 text-xs font-medium text-amber-800 dark:text-amber-300">
+                <UserCheck size={12} /> Field executive
+              </span>
+              <Select
+                aria-label="Field executive"
+                value={form.executiveId ?? ""}
+                onChange={(e) => set("executiveId", e.target.value)}
+                disabled={suggested?.blocked}
+                className="w-full"
+              >
+                <option value="">Don&apos;t assign to anyone</option>
+                {executives.map((a) => (
+                  <option key={a._id} value={a._id}>
+                    {a.name} · {a.mobile}
+                    {suggested?.farmer?.onboardedBy?._id === a._id ? " (onboarded this farmer)" : ""}
+                  </option>
+                ))}
+              </Select>
+              <span className="mt-1 block text-xs text-zinc-500">
+                {suggested?.blocked
+                  ? "This number belongs to a staff account, so it can't be sent for a farm visit."
+                  : suggested?.farmer
+                    ? suggested.farmer.onboardedBy
+                      ? `Onboarded by ${suggested.farmer.onboardedBy.name}${
+                          suggested.farmer.agronomist && suggested.farmer.agronomist._id !== suggested.farmer.onboardedBy._id
+                            ? ` · now with ${suggested.farmer.agronomist.name}`
+                            : ""
+                        }.`
+                      : suggested.farmer.agronomist
+                        ? `Added from the dashboard · now with ${suggested.farmer.agronomist.name}.`
+                        : "Already a farmer, with no field executive yet."
+                    : suggested
+                      ? "Not a farmer in our app yet - they'll be added when you assign someone."
+                      : ""}
+              </span>
+            </label>
             <p className="text-xs text-amber-800 sm:col-span-2 dark:text-amber-300">
               This lead moves to the Follow-up tab - call them again on that day.
+              {form.executiveId
+                ? " The field executive gets it in their app's Farm Visits for that day, with a notification."
+                : ""}
             </p>
           </div>
           )}

@@ -269,16 +269,26 @@ export type TeleCallsPage = {
   total: number;
   counts: Record<TeleCallTab, number>;
   followUps: { overdue: number; today: number };
+  /** Every district / taluk / village the calls reach, for the filters. */
+  places?: LeadPlace[];
   page: number;
   limit: number;
   calling: { configured: boolean; missing: string[] };
 };
+
+/** One place a lead sits in (markhet_leads), for location filters. */
+export type LeadPlace = { district: string | null; taluk: string | null; village: string | null };
+
+/** The location filter sent with the call / feedback lists. */
+export type PlaceFilter = { district?: string; taluk?: string; village?: string };
 
 export type FeedbacksPage = {
   items: TeleCall[];
   total: number;
   page: number;
   limit: number;
+  /** Every district / taluk / village the feedback covers, for the filters. */
+  places?: LeadPlace[];
   summary: { total: number; avgRating: number | null; satisfied: number; notSatisfied: number };
 };
 
@@ -300,6 +310,8 @@ export type LeadsPage = {
   limit: number;
   /** Every district with its taluks and lead count, for the filters. */
   places: { district: string; taluks: string[]; n: number }[];
+  /** Villages within the chosen district / taluk, with lead counts. */
+  villages?: { village: string; n: number }[];
   totals: { all: number; verified: number };
 };
 
@@ -762,6 +774,29 @@ export type Region = {
   /** How many agronomists work out of it — a region in use cannot be deleted. */
   agronomists?: number;
 };
+
+/** A row of cf_users, as Field Operations > Users manages it. */
+export type FieldUserRole = "farmer" | "agronomist" | "senior_agronomist" | "attendance_staff";
+export type FieldUser = Omit<Person, "role" | "agronomist"> & {
+  role: FieldUserRole;
+  agronomist?: { _id: string; name: string; mobile: string; role?: string } | null;
+  /** Set when deleted (soft delete); null when live. */
+  deletedAt?: string | null;
+  updatedAt?: string;
+};
+export type FieldUserInput = {
+  name?: string;
+  mobile?: string;
+  role?: FieldUserRole;
+  /** Farmers only. "" unassigns. */
+  agronomistId?: string;
+  /** Agronomists only. "" unmaps. */
+  regionId?: string;
+  farmAddress?: { village?: string; taluk?: string; district?: string; state?: string };
+  /** Optional. Blank keeps the current one (new users get Oneroot@<mobile>). */
+  password?: string;
+};
+export type FieldUsersPage = Paged<FieldUser> & { counts: Partial<Record<FieldUserRole, number>> };
 
 export type ProductSale = {
   _id: string;
@@ -1226,7 +1261,7 @@ export const api = {
   saveRolePermissions: (rolePermissions: Partial<Record<AdminRole, Permissions>>) =>
     json<RolesConfig>("/api/admin/roles", { method: "PUT", body: JSON.stringify({ rolePermissions }) }),
   /** Leads (markhet_leads), one page at a time. */
-  listLeads: (params: { search?: string; district?: string; taluk?: string; verified?: "yes" | "no"; from?: string; to?: string; page?: number; limit?: number }) => {
+  listLeads: (params: { search?: string; district?: string; taluk?: string; village?: string; verified?: "yes" | "no"; from?: string; to?: string; page?: number; limit?: number }) => {
     const q = new URLSearchParams();
     for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== "") q.set(k, String(v));
     return json<LeadsPage>(`/api/leads?${q.toString()}`);
@@ -1238,13 +1273,13 @@ export const api = {
   getTeleCall: (id: string) => json<{ call: TeleCall }>(`/api/tele-calls/${id}`),
   saveTeleFeedback: (id: string, body: TeleFeedbackInput) =>
     json<{ call: TeleCall }>(`/api/tele-calls/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
-  listTeleCalls: (params: { tab: TeleCallTab; search?: string; from?: string; to?: string; page?: number; limit?: number }) => {
+  listTeleCalls: (params: { tab: TeleCallTab; search?: string; from?: string; to?: string; page?: number; limit?: number } & PlaceFilter) => {
     const q = new URLSearchParams();
     for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== "") q.set(k, String(v));
     return json<TeleCallsPage>(`/api/tele-calls?${q.toString()}`);
   },
   leadCallHistory: (leadId: string) => json<{ items: TeleCall[] }>(`/api/tele-calls/lead/${leadId}`),
-  listFeedbacks: (params: { satisfaction?: Satisfaction; rating?: number; outcome?: TeleOutcome; search?: string; from?: string; to?: string; page?: number; limit?: number }) => {
+  listFeedbacks: (params: { satisfaction?: Satisfaction; rating?: number; outcome?: TeleOutcome; search?: string; from?: string; to?: string; page?: number; limit?: number } & PlaceFilter) => {
     const q = new URLSearchParams();
     for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== "") q.set(k, String(v));
     return json<FeedbacksPage>(`/api/feedbacks?${q.toString()}`);
@@ -1433,10 +1468,12 @@ export const api = {
     json<Person>(`/api/users/farmers/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
   // `from`/`to` (yyyy-mm-dd) narrow the onboarded/assigned counts to farmers
   // registered in that window.
-  listAgronomists: (range?: { from?: string; to?: string }) => {
+  /** `includeAttendance` adds attendance staff - for tracking pickers, never for assigning farmers. */
+  listAgronomists: (range?: { from?: string; to?: string; includeAttendance?: boolean }) => {
     const q = new URLSearchParams();
     if (range?.from) q.set("from", range.from);
     if (range?.to) q.set("to", range.to);
+    if (range?.includeAttendance) q.set("include", "attendance");
     const qs = q.toString();
     return json<Person[]>(`/api/users/agronomists${qs ? `?${qs}` : ""}`);
   },
@@ -1551,6 +1588,19 @@ export const api = {
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 10_000);
   },
+
+  // ---- Field Operations > Users: CRUD over cf_users (farmers and agronomists).
+  listFieldUsers: (params: { role?: string; status?: "live" | "deleted"; search?: string; page?: number; limit?: number }) => {
+    const q = new URLSearchParams();
+    for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== "") q.set(k, String(v));
+    return json<FieldUsersPage>(`/api/field-users?${q}`);
+  },
+  createFieldUser: (body: FieldUserInput) =>
+    json<FieldUser>("/api/field-users", { method: "POST", body: JSON.stringify(body) }),
+  updateFieldUser: (id: string, body: FieldUserInput) =>
+    json<FieldUser>(`/api/field-users/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  deleteFieldUser: (id: string) => json<FieldUser>(`/api/field-users/${id}`, { method: "DELETE" }),
+  restoreFieldUser: (id: string) => json<FieldUser>(`/api/field-users/${id}/restore`, { method: "POST" }),
 
   // ---- Regions: which taluk an agronomist works out of, and so which series
   // numbers their bills.

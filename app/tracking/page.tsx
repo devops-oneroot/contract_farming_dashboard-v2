@@ -118,7 +118,7 @@ export default function TrackingPage() {
         page,
         limit: PAGE_SIZE,
       }),
-      api.listAgronomists().catch(() => [] as Person[]),
+      api.listAgronomists({ includeAttendance: true }).catch(() => [] as Person[]),
     ])
       .then(([res, a]) => {
         setSessions(res.items);

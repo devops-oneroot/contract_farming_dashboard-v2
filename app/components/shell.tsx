@@ -35,6 +35,7 @@ import {
   PhoneCall,
   Headset,
   MessageSquareHeart,
+  Contact,
 } from "lucide-react";
 import { useAuth } from "../lib/auth";
 import { ProfileMenu } from "./profile-menu";
@@ -104,6 +105,7 @@ const NAV_GROUPS: {
       { href: "/tracking", label: "Tracking", icon: Navigation },
       { href: "/disease-reports", label: "Disease Reports", icon: Bug },
       { href: "/reports", label: "Daily Reports", icon: ClipboardList },
+      { href: "/field-users", label: "Users", icon: Contact },
     ],
   },
   {
@@ -133,6 +135,7 @@ const TITLES: Record<string, string> = {
   "/tracking": "Tracking & Distance",
   "/disease-reports": "Crop Disease Reports",
   "/reports": "Daily Reports",
+  "/field-users": "Field Users · Farmers & Agronomists",
   "/account": "Users & Dashboard Access",
   "/roles": "Roles & Access",
   "/leads": "Leads",

@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { MessageSquareHeart, RefreshCw, Search, Star, ThumbsDown, ThumbsUp } from "lucide-react";
 
-import { api, type FeedbacksPage, type Satisfaction, type TeleCall, type TeleOutcome } from "../lib/api";
+import { api, type FeedbacksPage, type PlaceFilter, type Satisfaction, type TeleCall, type TeleOutcome } from "../lib/api";
 import { Select } from "../components/ui";
+import { PlaceFilters } from "../components/place-filter";
 import { DateRangeFilter } from "../components/date-range-filter";
 import { Loader } from "../components/loading";
 import { Pagination } from "../components/pagination";
@@ -26,6 +27,7 @@ export default function FeedbacksPage() {
   const [satisfaction, setSatisfaction] = useState<"" | Satisfaction>("");
   const [rating, setRating] = useState("");
   const [outcome, setOutcome] = useState<"" | TeleOutcome>("");
+  const [place, setPlace] = useState<PlaceFilter>({});
   const [reloadKey, setReloadKey] = useState(0);
   const [open, setOpen] = useState<TeleCall | null>(null);
   // Date filter (IST days), sent to the server with the rest.
@@ -41,6 +43,7 @@ export default function FeedbacksPage() {
           satisfaction: satisfaction || undefined,
           rating: rating ? Number(rating) : undefined,
           outcome: outcome || undefined,
+          ...place,
           from: from || undefined,
           to: to || undefined,
           page,
@@ -54,13 +57,13 @@ export default function FeedbacksPage() {
         .finally(() => setLoading(false));
     }, 250);
     return () => clearTimeout(t);
-  }, [query, satisfaction, rating, outcome, from, to, page, reloadKey]);
+  }, [query, satisfaction, rating, outcome, place, from, to, page, reloadKey]);
 
   const s = data?.summary;
   const rows = data?.items ?? [];
   const total = data?.total ?? 0;
   const current = Math.min(page, Math.max(1, Math.ceil(total / PAGE_SIZE)));
-  const filtersOn = !!(query || satisfaction || rating || outcome || from || to);
+  const filtersOn = !!(query || satisfaction || rating || outcome || place.district || place.taluk || place.village || from || to);
   const pct = (n: number) => (s?.total ? `${Math.round((n / s.total) * 100)}%` : "0%");
   const filter = <T,>(set: (v: T) => void) => (v: T) => {
     set(v);
@@ -172,6 +175,7 @@ export default function FeedbacksPage() {
               ))}
             </Select>
           </div>
+          <PlaceFilters places={data?.places ?? []} value={place} onChange={filter(setPlace)} />
           <DateRangeFilter
             onClear={
               filtersOn
@@ -180,6 +184,7 @@ export default function FeedbacksPage() {
                     setSatisfaction("");
                     setRating("");
                     setOutcome("");
+                    setPlace({});
                     setFrom("");
                     setTo("");
                     setPage(1);

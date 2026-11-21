@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { AlertTriangle, CalendarClock, History, MessageSquareText, RefreshCw, Search } from "lucide-react";
 
-import { api, type TeleCall, type TeleCallTab, type TeleCallsPage } from "../lib/api";
+import { api, type PlaceFilter, type TeleCall, type TeleCallTab, type TeleCallsPage } from "../lib/api";
 import { DateRangeFilter } from "../components/date-range-filter";
+import { PlaceFilters } from "../components/place-filter";
 import { Loader } from "../components/loading";
 import { Pagination } from "../components/pagination";
 import {
@@ -53,6 +54,7 @@ export default function TeleCallsPage() {
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [query, setQuery] = useState("");
+  const [place, setPlace] = useState<PlaceFilter>({});
   const [reloadKey, setReloadKey] = useState(0);
   const [open, setOpen] = useState<TeleCall | null>(null);
   // Date filter (IST days), sent to the server with the rest.
@@ -63,7 +65,7 @@ export default function TeleCallsPage() {
     const t = setTimeout(() => {
       setLoading(true);
       api
-        .listTeleCalls({ tab, search: query || undefined, from: from || undefined, to: to || undefined, page, limit: PAGE_SIZE })
+        .listTeleCalls({ tab, search: query || undefined, ...place, from: from || undefined, to: to || undefined, page, limit: PAGE_SIZE })
         .then((r) => {
           setData(r);
           setError(null);
@@ -72,11 +74,12 @@ export default function TeleCallsPage() {
         .finally(() => setLoading(false));
     }, 250);
     return () => clearTimeout(t);
-  }, [tab, query, from, to, page, reloadKey]);
+  }, [tab, query, place, from, to, page, reloadKey]);
 
   const rows = data?.items ?? [];
   const total = data?.total ?? 0;
   const current = Math.min(page, Math.max(1, Math.ceil(total / PAGE_SIZE)));
+  const placeOn = !!(place.district || place.taluk || place.village);
 
   return (
     <div className="space-y-4">
@@ -146,10 +149,19 @@ export default function TeleCallsPage() {
         </div>
 
         <div className="filter-bar border-b border-zinc-100 px-3 py-3 dark:border-zinc-800">
+          <PlaceFilters
+            places={data?.places ?? []}
+            value={place}
+            onChange={(p) => {
+              setPlace(p);
+              setPage(1);
+            }}
+          />
           <DateRangeFilter
             onClear={
-              (from || to)
+              (from || to || placeOn)
                 ? () => {
+                    setPlace({});
                     setFrom("");
                     setTo("");
                     setPage(1);
@@ -188,7 +200,9 @@ export default function TeleCallsPage() {
               {!loading && rows.length === 0 && (
                 <tr>
                   <td colSpan={9} className="py-10 text-center text-zinc-500">
-                    {tab === "followup" ? "No follow-ups set." : tab === "feedback" ? "No feedback noted yet." : "No calls yet. Call a lead from the Leads page."}
+                    {placeOn || from || to || query
+                      ? "No calls match these filters."
+                      : tab === "followup" ? "No follow-ups set." : tab === "feedback" ? "No feedback noted yet." : "No calls yet. Call a lead from the Leads page."}
                   </td>
                 </tr>
               )}

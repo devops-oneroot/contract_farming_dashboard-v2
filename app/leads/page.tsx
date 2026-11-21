@@ -31,6 +31,7 @@ export default function LeadsPage() {
   const [query, setQuery] = useState("");
   const [district, setDistrict] = useState("");
   const [taluk, setTaluk] = useState("");
+  const [village, setVillage] = useState("");
   // Date filter (IST days), sent to the server with the rest.
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
@@ -47,6 +48,7 @@ export default function LeadsPage() {
           search: query || undefined,
           district: district || undefined,
           taluk: taluk || undefined,
+          village: village || undefined,
           from: from || undefined,
           to: to || undefined,
           page,
@@ -60,7 +62,7 @@ export default function LeadsPage() {
         .finally(() => setLoading(false));
     }, 300);
     return () => clearTimeout(t);
-  }, [query, district, taluk, from, to, page, reloadKey]);
+  }, [query, district, taluk, village, from, to, page, reloadKey]);
 
   /** Every filter change goes back to page one. */
   const applyFilter = (set: (v: string) => void) => (value: string) => {
@@ -91,7 +93,8 @@ export default function LeadsPage() {
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const current = Math.min(page, pageCount);
   const rows = data?.items ?? [];
-  const filtersOn = !!(query || district || taluk);
+  const villageOptions = data?.villages ?? [];
+  const filtersOn = !!(query || district || taluk || village);
 
   return (
     <div className="space-y-4">
@@ -142,6 +145,7 @@ export default function LeadsPage() {
               onChange={(e) => {
                 setDistrict(e.target.value);
                 setTaluk("");
+                setVillage("");
                 setPage(1);
               }}
               className="w-full"
@@ -156,11 +160,33 @@ export default function LeadsPage() {
           </div>
           <div className="filter-field">
             <span className="filter-label">Taluk</span>
-            <Select aria-label="Taluk" value={taluk} onChange={(e) => applyFilter(setTaluk)(e.target.value)} className="w-full">
+            <Select
+              aria-label="Taluk"
+              value={taluk}
+              onChange={(e) => {
+                setTaluk(e.target.value);
+                setVillage("");
+                setPage(1);
+              }}
+              className="w-full"
+            >
               <option value="">{district ? `All of ${district}` : "All taluks"}</option>
               {talukOptions.map((t) => (
                 <option key={t} value={t}>
                   {t}
+                </option>
+              ))}
+            </Select>
+          </div>
+          <div className="filter-field">
+            <span className="filter-label">Village</span>
+            <Select aria-label="Village" value={village} onChange={(e) => applyFilter(setVillage)(e.target.value)} className="w-full">
+              <option value="">{taluk ? `All of ${taluk}` : district ? `All of ${district}` : "All villages"}</option>
+              {/* Keep the picked village listed even before the reload returns. */}
+              {village && !villageOptions.some((v) => v.village === village) && <option value={village}>{village}</option>}
+              {villageOptions.map((v) => (
+                <option key={v.village} value={v.village}>
+                  {v.village} ({num(v.n)})
                 </option>
               ))}
             </Select>
@@ -172,6 +198,7 @@ export default function LeadsPage() {
                     setQuery("");
                     setDistrict("");
                     setTaluk("");
+                    setVillage("");
                     setFrom("");
                     setTo("");
                     setPage(1);
@@ -198,21 +225,24 @@ export default function LeadsPage() {
               <tr>
                 <th>#</th>
                 <th>Name</th>
-                <th>Location</th>
+                <th>District</th>
+                <th>Taluk</th>
+                <th>Village</th>
+                <th>Map</th>
                 <th className="text-right">Call</th>
               </tr>
             </thead>
             <tbody>
               {!loading && data && !data.available && (
                 <tr>
-                  <td colSpan={4} className="py-10 text-center text-zinc-500">
+                  <td colSpan={7} className="py-10 text-center text-zinc-500">
                     Leads are not on this database (markhet_leads is only on the live database).
                   </td>
                 </tr>
               )}
               {!loading && data?.available && rows.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="py-10 text-center text-zinc-500">
+                  <td colSpan={7} className="py-10 text-center text-zinc-500">
                     {filtersOn ? "No leads match these filters." : "No leads yet."}
                   </td>
                 </tr>
@@ -230,16 +260,17 @@ export default function LeadsPage() {
                       </div>
                     )}
                   </td>
+                  <td>{l.district || "-"}</td>
+                  <td>{l.taluk || "-"}</td>
+                  <td>{l.village || "-"}</td>
                   <td>
-                    <div>{[l.village, l.taluk].filter(Boolean).join(", ") || "-"}</div>
-                    <div className="flex items-center gap-2 text-xs text-zinc-500">
-                      {l.district}
-                      {l.latitude != null && l.longitude != null && (
-                        <a href={mapUrl(l)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-0.5 text-brand-600 hover:underline">
-                          <MapPin size={12} /> Map
-                        </a>
-                      )}
-                    </div>
+                    {l.latitude != null && l.longitude != null ? (
+                      <a href={mapUrl(l)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-0.5 text-xs text-brand-600 hover:underline">
+                        <MapPin size={12} /> Map
+                      </a>
+                    ) : (
+                      <span className="text-xs text-zinc-400">-</span>
+                    )}
                   </td>
                   <td className="text-right">
                     <button

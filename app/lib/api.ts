@@ -488,7 +488,31 @@ async function jsonRequest<T>(path: string, options?: RequestInit): Promise<T> {
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error((data as { message?: string })?.message || `Request failed (${res.status})`);
-  return data as T;
+  return onThisBackend(data) as T;
+}
+
+/**
+ * Points every stored file URL (`<some host>/api/media/<key>`) at the backend
+ * this dashboard talks to.
+ *
+ * A record keeps whatever host saved it: a photo uploaded while the backend ran
+ * on a laptop can carry the Render address even though the file sits in the
+ * dev bucket, and the other way round. The file is always served by the
+ * backend in API_URL - live on Render, local on a laptop, where the backend
+ * hands anything not in the dev bucket on to production.
+ */
+const MEDIA_URL = /^https?:\/\/[^/]+\/api\/media\//;
+function onThisBackend(value: unknown): unknown {
+  if (typeof value === "string") {
+    return MEDIA_URL.test(value) ? value.replace(MEDIA_URL, `${API_URL}/api/media/`) : value;
+  }
+  if (Array.isArray(value)) return value.map(onThisBackend);
+  if (value && typeof value === "object") {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value)) out[k] = onThisBackend(v);
+    return out;
+  }
+  return value;
 }
 
 // multipart (for image uploads) — do NOT set Content-Type, the browser adds the boundary.
@@ -505,7 +529,7 @@ async function formRequest<T>(path: string, method: string, body: FormData): Pro
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error((data as { message?: string })?.message || `Request failed (${res.status})`);
-  return data as T;
+  return onThisBackend(data) as T;
 }
 
 export type CallLog = {

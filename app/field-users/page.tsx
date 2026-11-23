@@ -177,10 +177,10 @@ export default function FieldUsersPage() {
         <h2 className="flex items-center gap-2 text-xl font-semibold">
           <Contact size={20} className="text-brand-600" /> Users
         </h2>
-        <p className="mt-1 text-sm text-zinc-500">
+        {/* <p className="mt-1 text-sm text-zinc-500">
           Everyone who uses the field app: farmers, agronomists and senior agronomists. Dashboard accounts are under
           Management › Users.
-        </p>
+        </p> */}
       </div>
 
       {/* Live users per role; a tile filters the table. */}
@@ -211,18 +211,25 @@ export default function FieldUsersPage() {
       )}
 
       <div className="card overflow-hidden">
-        <div className="flex flex-wrap items-center gap-2 border-b border-zinc-100 p-3 dark:border-zinc-800">
-          <div className="relative min-w-[200px] flex-1 sm:max-w-xs">
+        {/* One line from sm up: search, role, status, then the buttons. The
+            shared Select is full-width by default, so each gets a fixed width. */}
+        <div className="flex flex-wrap items-center gap-2 border-b border-zinc-100 p-3 sm:flex-nowrap dark:border-zinc-800">
+          <div className="relative w-full min-w-0 sm:w-auto sm:flex-1 sm:max-w-xs">
             <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search name or mobile"
               aria-label="Search users"
-              className="w-full rounded-lg border border-zinc-300 bg-transparent py-2 pl-9 pr-3 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-zinc-700"
+              className="h-9 w-full rounded-lg border border-zinc-300 bg-transparent pl-9 pr-3 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-zinc-700"
             />
           </div>
-          <Select value={role} onChange={(e) => setRole(e.target.value as "" | FieldUserRole)} aria-label="Role">
+          <Select
+            value={role}
+            onChange={(e) => setRole(e.target.value as "" | FieldUserRole)}
+            aria-label="Role"
+            className="!w-auto min-w-0 flex-1 sm:!w-44 sm:flex-none"
+          >
             <option value="">All roles</option>
             {ROLES.map((r) => (
               <option key={r} value={r}>
@@ -230,24 +237,29 @@ export default function FieldUsersPage() {
               </option>
             ))}
           </Select>
-          <Select value={status} onChange={(e) => setStatus(e.target.value as "live" | "deleted")} aria-label="Status">
+          <Select
+            value={status}
+            onChange={(e) => setStatus(e.target.value as "live" | "deleted")}
+            aria-label="Status"
+            className="!w-auto min-w-0 flex-1 sm:!w-32 sm:flex-none"
+          >
             <option value="live">Active</option>
             <option value="deleted">Deleted</option>
           </Select>
-          <div className="ml-auto flex gap-2">
+          <div className="ml-auto flex shrink-0 gap-2">
             <button
               onClick={() => {
                 reload();
                 loadPickLists();
               }}
-              className="flex items-center gap-2 rounded-lg border border-zinc-300 px-3 py-2 text-sm hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
+              className="flex h-9 items-center gap-2 whitespace-nowrap rounded-lg border border-zinc-300 px-3 text-sm hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
             >
               <RefreshCw size={15} /> Refresh
             </button>
             {mayAdd && (
               <button
                 onClick={() => setDialog("new")}
-                className="flex items-center gap-2 rounded-lg bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600"
+                className="flex h-9 items-center gap-2 whitespace-nowrap rounded-lg bg-brand-500 px-3 text-sm font-medium text-white hover:bg-brand-600"
               >
                 <UserPlus size={15} /> Add user
               </button>
@@ -255,16 +267,20 @@ export default function FieldUsersPage() {
           </div>
         </div>
 
-        <div className="scroll-thin overflow-x-auto">
-          <table className="data-table">
-            <thead>
+        {/* fill-scroll: the table takes the rest of the screen and scrolls
+            inside it (globals.css), headings pinned, pager still in view. */}
+        {/* No sideways scroll: text cells wrap, the buttons go icon-only
+            below xl, and the less important columns drop out on small screens. */}
+        <div className="fill-scroll scroll-thin overflow-y-auto overflow-x-hidden">
+          <table className="data-table compact [&_td]:whitespace-normal [&_td]:break-words">
+            <thead className="sticky top-0 z-10 [&>tr>th]:bg-zinc-50 dark:[&>tr>th]:bg-zinc-900">
               <tr>
                 <th>Name</th>
                 <th>Mobile</th>
-                <th>Role</th>
-                <th>Agronomist / Region</th>
-                <th>Place</th>
-                <th>{status === "deleted" ? "Deleted" : "Added"}</th>
+                <th className="hidden sm:table-cell">Role</th>
+                <th className="hidden md:table-cell">Agronomist / Region</th>
+                <th className="hidden lg:table-cell">Place</th>
+                <th className="hidden lg:table-cell">{status === "deleted" ? "Deleted" : "Added"}</th>
                 <th></th>
               </tr>
             </thead>
@@ -287,14 +303,18 @@ export default function FieldUsersPage() {
                 const info = ROLE_INFO[u.role];
                 return (
                   <tr key={u._id}>
-                    <td className="font-medium">{u.name}</td>
-                    <td className="tabular-nums">{u.mobile}</td>
-                    <td>
+                    <td className="font-medium">
+                      {u.name}
+                      {/* What the hidden columns would say, under the name on small screens. */}
+                      <div className="mt-0.5 text-xs font-normal text-zinc-500 sm:hidden">{info?.label ?? u.role}</div>
+                    </td>
+                    <td className="!whitespace-nowrap tabular-nums">{u.mobile}</td>
+                    <td className="hidden sm:table-cell">
                       <span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ${info?.chip ?? ""}`}>
                         {info?.label ?? u.role}
                       </span>
                     </td>
-                    <td className="text-zinc-600 dark:text-zinc-300">
+                    <td className="hidden text-zinc-600 md:table-cell dark:text-zinc-300">
                       {u.role === "attendance_staff"
                         ? <span className="text-zinc-400">—</span>
                         : u.role === "farmer"
@@ -303,8 +323,8 @@ export default function FieldUsersPage() {
                           ? `${u.region.taluk} (${u.region.code})`
                           : <span className="text-zinc-400">No region</span>}
                     </td>
-                    <td className="text-zinc-500">{place(u)}</td>
-                    <td className="whitespace-nowrap text-zinc-500">
+                    <td className="hidden text-zinc-500 lg:table-cell">{place(u)}</td>
+                    <td className="hidden !whitespace-nowrap text-zinc-500 lg:table-cell">
                       {fmtDate(status === "deleted" ? u.deletedAt : u.createdAt)}
                     </td>
                     <td>
@@ -312,25 +332,31 @@ export default function FieldUsersPage() {
                         {status === "live" && mayEdit && (
                           <button
                             onClick={() => setDialog(u)}
-                            className="flex items-center gap-1.5 rounded-lg border border-zinc-300 px-2.5 py-1.5 text-xs hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
+                            title="Edit"
+                            aria-label={`Edit ${u.name}`}
+                            className="flex items-center gap-1.5 rounded-lg border border-zinc-300 px-2 py-1.5 text-xs hover:bg-zinc-100 xl:px-2.5 dark:border-zinc-700 dark:hover:bg-zinc-900"
                           >
-                            <Pencil size={14} /> Edit
+                            <Pencil size={14} /> <span className="hidden xl:inline">Edit</span>
                           </button>
                         )}
                         {status === "live" && mayDelete && (
                           <button
                             onClick={() => onDelete(u)}
-                            className="flex items-center gap-1.5 rounded-lg border border-red-200 px-2.5 py-1.5 text-xs text-red-600 hover:bg-red-50 dark:border-red-900/60 dark:hover:bg-red-950/40"
+                            title="Delete"
+                            aria-label={`Delete ${u.name}`}
+                            className="flex items-center gap-1.5 rounded-lg border border-red-200 px-2 py-1.5 text-xs text-red-600 hover:bg-red-50 xl:px-2.5 dark:border-red-900/60 dark:hover:bg-red-950/40"
                           >
-                            <Trash2 size={14} /> Delete
+                            <Trash2 size={14} /> <span className="hidden xl:inline">Delete</span>
                           </button>
                         )}
                         {status === "deleted" && mayEdit && (
                           <button
                             onClick={() => onRestore(u)}
+                            title="Restore"
+                            aria-label={`Restore ${u.name}`}
                             className="flex items-center gap-1.5 rounded-lg border border-zinc-300 px-2.5 py-1.5 text-xs hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
                           >
-                            <RotateCcw size={14} /> Restore
+                            <RotateCcw size={14} /> <span className="hidden xl:inline">Restore</span>
                           </button>
                         )}
                       </div>

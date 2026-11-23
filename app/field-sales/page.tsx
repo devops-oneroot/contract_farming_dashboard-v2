@@ -654,9 +654,11 @@ export default function FieldSalesPage() {
                     {/* The same PDF the agronomist hands the farmer, so office
                         and field are never reconciling two different bills. */}
                     <a
-                      href={api.saleInvoicePdfUrl(s._id)}
+                      href={`${api.saleInvoicePdfUrl(s._id)}?view=1`}
                       target="_blank"
                       rel="noreferrer"
+                      // A new tab with the browser's PDF viewer: a preview of
+                      // the bill, with the viewer's download and print buttons.
                       className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-300 px-2.5 py-1.5 text-xs font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
                     >
                       <Download size={13} /> Bill

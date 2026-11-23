@@ -20,8 +20,8 @@ export const KIND_META: Record<
   { label: string; short: string; icon: LucideIcon; tone: string; sign: 1 | -1 }
 > = {
   receive: {
-    label: "Received into central stock",
-    short: "Received",
+    label: "Stock added to central stock",
+    short: "Added",
     icon: ArrowDownToLine,
     tone: "bg-indigo-50 text-indigo-700 ring-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300 dark:ring-indigo-900",
     sign: 1,
@@ -34,8 +34,8 @@ export const KIND_META: Record<
     sign: 1,
   },
   issue: {
-    label: "Issued to salesperson",
-    short: "Issued",
+    label: "Split to salesperson",
+    short: "Split",
     icon: ArrowUpFromLine,
     tone: "bg-blue-50 text-blue-700 ring-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:ring-blue-900",
     sign: 1,
@@ -80,11 +80,11 @@ export function sentence(e: StockHistoryEntry) {
   const who = e.staff?.name ?? "a salesperson";
   switch (e.kind) {
     case "receive":
-      return `Received ${pcs(e.qty)} of ${item(e)} into central stock`;
+      return `Added ${pcs(e.qty)} of ${item(e)} to central stock`;
     case "store_adjust":
       return `Central stock ${e.qty < 0 ? "reduced" : "increased"} by ${pcs(e.qty)} of ${item(e)}`;
     case "issue":
-      return `Issued ${pcs(e.qty)} of ${item(e)} to ${who}`;
+      return `Split ${pcs(e.qty)} of ${item(e)} to ${who}`;
     case "opening":
       return `Opening count of ${pcs(e.qty)} of ${item(e)} for ${who}`;
     case "return":
@@ -289,28 +289,54 @@ export function StockHistoryView({
         </div>
       </div>
 
-      {/* What the filtered history adds up to */}
+      {/* What the filtered history adds up to: one tile per kind, click to filter. */}
       {summary.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {summary.map(({ k, entries, qty: q, amount }) => {
-            const M = KIND_META[k];
-            return (
-              <button
-                key={k}
-                onClick={() => pick(setKind)(kind === k ? "" : k)}
-                className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium ring-1 transition hover:opacity-90 ${M.tone} ${
-                  kind === k ? "ring-2" : ""
-                }`}
-                title={`Show only: ${M.label}`}
-              >
-                <M.icon size={13} />
-                {M.short}: {pcs(q)}
-                {k === "sale" && amount ? ` · ${inr(amount)}` : ""}
-                <span className="opacity-60">({entries})</span>
-              </button>
-            );
-          })}
-        </div>
+        <>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
+            {summary.map(({ k, entries, qty: q, amount }) => {
+              const M = KIND_META[k];
+              const isAdjust = k === "adjust" || k === "store_adjust";
+              return (
+                <button
+                  key={k}
+                  onClick={() => pick(setKind)(kind === k ? "" : k)}
+                  className={`flex min-w-0 flex-col items-start gap-1 rounded-xl px-3 py-2.5 text-left ring-1 transition hover:opacity-90 ${M.tone} ${
+                    kind === k ? "ring-2" : ""
+                  }`}
+                  title={kind === k ? "Show all activity" : `Show only: ${M.label}`}
+                >
+                  <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide">
+                    <M.icon size={13} /> {M.short}
+                  </span>
+                  <span className="text-lg font-semibold tabular-nums leading-tight">
+                    {isAdjust && q > 0 ? "+" : isAdjust && q < 0 ? "−" : ""}
+                    {qty(Math.abs(q))} <span className="text-xs font-normal">pcs</span>
+                  </span>
+                  <span className="text-[11px] opacity-75">
+                    {qty(entries)} entr{entries === 1 ? "y" : "ies"}
+                    {k === "sale" && amount ? ` · ${inr(amount)}` : ""}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          {/* The flow in one line: what came in, went out to staff, came back, got sold. */}
+          <div className="card flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2.5 text-xs text-zinc-600 dark:text-zinc-400">
+            <span className="font-semibold text-zinc-800 dark:text-zinc-200">
+              {data?.total ? `${qty(data.total)} entries` : ""}
+              {filtered ? " (filtered)" : ""}
+            </span>
+            {t.receive ? <span>Added: <b className="tabular-nums">{pcs(t.receive.qty)}</b></span> : null}
+            {t.issue ? <span>Split to staff: <b className="tabular-nums">{pcs(t.issue.qty)}</b></span> : null}
+            {t.return ? <span>Back: <b className="tabular-nums">{pcs(t.return.qty)}</b></span> : null}
+            {t.sale ? (
+              <span>
+                Sold: <b className="tabular-nums">{pcs(t.sale.qty)}</b> for <b className="tabular-nums">{inr(t.sale.amount)}</b>
+                {t.sale.qty ? ` (avg ${inr(t.sale.amount / Math.abs(t.sale.qty))}/pc)` : ""}
+              </span>
+            ) : null}
+          </div>
+        </>
       )}
 
       {error && <p className="text-sm text-red-600">{error}</p>}
@@ -323,12 +349,32 @@ export function StockHistoryView({
         </div>
       ) : (
         <div className={`space-y-4 transition-opacity ${loading ? "opacity-60" : ""}`}>
-          {days.map(([day, entries]) => (
+          {days.map(([day, entries]) => {
+            // The day at a glance (this page's entries for the day).
+            const sum = (ks: StockHistoryKind[]) => entries.filter((e) => ks.includes(e.kind)).reduce((n, e) => n + Math.abs(e.qty), 0);
+            const received = sum(["receive"]);
+            const issued = sum(["issue"]);
+            const returned = sum(["return"]);
+            const sold = sum(["sale"]);
+            const sales = entries.filter((e) => e.kind === "sale").reduce((n, e) => n + (e.amount ?? 0), 0);
+            const people = new Set(entries.filter((e) => e.staff).map((e) => e.staff!._id)).size;
+            return (
             <div key={day} className="card overflow-hidden">
-              <div className="flex items-center justify-between gap-2 border-b border-zinc-100 bg-zinc-50/70 px-4 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-900/50">
+              <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-zinc-100 bg-zinc-50/70 px-4 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-900/50">
                 <span className="font-semibold">{dayTitle(day)}</span>
-                <span className="text-xs text-zinc-500">
-                  {entries.length} entr{entries.length === 1 ? "y" : "ies"}
+                <span className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-zinc-500">
+                  {received ? <span className="text-indigo-700 dark:text-indigo-300">↓ {pcs(received)} added</span> : null}
+                  {issued ? <span className="text-blue-700 dark:text-blue-300">↑ {pcs(issued)} split</span> : null}
+                  {returned ? <span className="text-amber-700 dark:text-amber-300">↩ {pcs(returned)} returned</span> : null}
+                  {sold ? (
+                    <span className="text-green-700 dark:text-green-400">
+                      {pcs(sold)} sold · {inr(sales)}
+                    </span>
+                  ) : null}
+                  {people ? <span>{people} {people === 1 ? "person" : "people"}</span> : null}
+                  <span>
+                    {entries.length} entr{entries.length === 1 ? "y" : "ies"}
+                  </span>
                 </span>
               </div>
               <ul className="divide-y divide-zinc-100 dark:divide-zinc-800">
@@ -347,9 +393,17 @@ export function StockHistoryView({
                             {M.short}
                           </span>
                           <span>{clock(e.at)}</span>
+                          <span className="rounded bg-zinc-100 px-1.5 py-px text-[11px] text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400">
+                            {e.staff ? `${e.staff.name}${e.staff.mobile ? ` · ${e.staff.mobile}` : ""}` : "Central stock"}
+                          </span>
                           {e.by ? <span>· by {e.by.name || e.by.mobile}</span> : e.kind === "sale" ? <span>· recorded in the app</span> : null}
-                          {e.kind === "sale" && e.amount ? <span>· {inr(e.amount)}</span> : null}
-                          {e.invoiceNo ? <span>· {e.invoiceNo}</span> : null}
+                          {e.kind === "sale" && e.amount ? (
+                            <span className="font-medium text-zinc-700 dark:text-zinc-300">
+                              · {inr(e.amount)}
+                              {e.qty ? ` (${inr(e.amount / Math.abs(e.qty))}/pc)` : ""}
+                            </span>
+                          ) : null}
+                          {e.invoiceNo ? <span>· Bill {e.invoiceNo}</span> : null}
                         </div>
                         {e.note ? <div className="mt-1 text-xs italic text-zinc-500">“{e.note}”</div> : null}
                       </div>
@@ -367,7 +421,8 @@ export function StockHistoryView({
                 })}
               </ul>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -397,14 +452,14 @@ export function RecentActivity({ onViewAll }: { onViewAll: () => void }) {
   const [items, setItems] = useState<StockHistoryEntry[] | null>(null);
   useEffect(() => {
     api
-      .stockHistory({ limit: 8, kind: ["receive", "issue", "return", "store_adjust", "opening", "adjust"] })
+      .stockHistory({ limit: 30 })
       .then((d) => setItems(d.items))
       .catch(() => setItems([]));
   }, []);
 
   return (
-    <div className="card flex h-full flex-col overflow-hidden">
-      <div className="flex items-center justify-between gap-2 border-b border-zinc-100 px-4 py-3 dark:border-zinc-800">
+    <div className="card flex min-h-0 flex-col overflow-hidden">
+      <div className="flex shrink-0 items-center justify-between gap-2 border-b border-zinc-100 px-4 py-2.5 dark:border-zinc-800">
         <h3 className="flex items-center gap-2 text-sm font-semibold">
           <History size={16} className="text-brand-600" /> Recent stock movements
         </h3>
@@ -419,7 +474,7 @@ export function RecentActivity({ onViewAll }: { onViewAll: () => void }) {
           <PackagePlus size={16} className="mr-2 text-zinc-400" /> Nothing moved yet.
         </p>
       ) : (
-        <ul className="divide-y divide-zinc-100 dark:divide-zinc-800">
+        <ul className="scroll-thin min-h-0 flex-1 divide-y divide-zinc-100 overflow-auto max-lg:max-h-[26rem] dark:divide-zinc-800">
           {items.map((e) => {
             const M = KIND_META[e.kind];
             return (
@@ -429,9 +484,15 @@ export function RecentActivity({ onViewAll }: { onViewAll: () => void }) {
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm">{sentence(e)}</div>
-                  <div className="text-xs text-zinc-500">
-                    {new Date(e.at).toLocaleDateString(undefined, { day: "numeric", month: "short" })} · {clock(e.at)}
-                    {e.by ? ` · by ${e.by.name || e.by.mobile}` : ""}
+                  <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-zinc-500">
+                    <span className={`rounded-full px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide ring-1 ${M.tone}`}>
+                      {M.short}
+                    </span>
+                    <span>
+                      {new Date(e.at).toLocaleDateString(undefined, { day: "numeric", month: "short" })} · {clock(e.at)}
+                    </span>
+                    {e.by ? <span>· by {e.by.name || e.by.mobile}</span> : e.kind === "sale" ? <span>· in the app</span> : null}
+                    {e.kind === "sale" && e.amount ? <span className="font-medium text-zinc-700 dark:text-zinc-300">· {inr(e.amount)}</span> : null}
                   </div>
                 </div>
               </li>

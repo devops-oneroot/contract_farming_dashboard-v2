@@ -329,9 +329,9 @@ export default function Home() {
   ];
 
   return (
-    <div className="mx-auto max-w-7xl space-y-8">
+    <div className="mx-auto max-w-7xl space-y-7">
       {/* Welcome hero */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-500 via-brand-600 to-brand-700 text-white shadow-lg shadow-brand-500/20 sm:p-6">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-500 via-brand-600 to-brand-700 text-white shadow-lg shadow-brand-500/20 sm:p-4">
         <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/10 blur-2xl" />
         <div className="pointer-events-none absolute -bottom-24 left-1/3 h-64 w-64 rounded-full bg-amber-300/20 blur-3xl" />
         <Image
@@ -379,16 +379,20 @@ export default function Home() {
               href={s.href}
               className="card group relative min-w-0 overflow-hidden p-4 transition-all sm:p-5 hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-lg hover:shadow-brand-500/10"
             >
-              <span className={`absolute -right-6 -top-6 h-20 w-20 rounded-full opacity-60 ${s.color}`} />
-              <span className={`relative flex h-11 w-11 items-center justify-center rounded-xl ${s.color}`}>
-                <Icon size={20} />
-              </span>
-              <div className="relative mt-4 text-3xl font-bold tabular-nums">
-                {loading ? <span className="inline-block h-8 w-12 animate-pulse rounded-md bg-zinc-200 dark:bg-zinc-800" /> : s.value}
-              </div>
-              <div className="relative mt-0.5 flex items-center gap-1 text-sm text-zinc-500">
-                {s.label}
-                <ArrowRight size={13} className="-translate-x-1 opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100" />
+              <span className={`absolute -right-6 -top-6 h-16 w-16 rounded-full opacity-60 ${s.color}`} />
+              <div className="relative flex items-end justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="truncate text-3xl font-bold tabular-nums">
+                    {loading ? <span className="inline-block h-8 w-12 animate-pulse rounded-md bg-zinc-200 dark:bg-zinc-800" /> : s.value}
+                  </div>
+                  <div className="mt-0.5 flex items-center gap-1 text-sm text-zinc-500">
+                    {s.label}
+                    <ArrowRight size={13} className="-translate-x-1 opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100" />
+                  </div>
+                </div>
+                <span className={`flex h-11 w-11 mr-6 shrink-0 items-center justify-center rounded-xl ${s.color}`}>
+                  <Icon size={20} />
+                </span>
               </div>
             </Link>
           );
@@ -416,7 +420,7 @@ export default function Home() {
 
       {/* Every module as a chart, grouped. The figures behind each live on the
           module's own page, linked from the card. */}
-      <Section title="Farmers & land" hrefs={["/farmers", "/land", "/agronomists", "/fpos"]}>
+      <Section title="" hrefs={["/farmers", "/land", "/agronomists", "/fpos"]}>
         <ChartCard icon={Users} color="var(--viz-3)" wide title="Farmers onboarded" subtitle="Last 30 days, per day" href="/farmers" loading={loading}>
           <TrendChart color="var(--viz-3)"
             points={onboardTrend}

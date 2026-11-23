@@ -23,10 +23,10 @@ type AnyEntry = StockEntryType | StoreEntryType;
 
 export const TYPE_LABEL: Record<AnyEntry, string> = {
   opening: "Opening count",
-  issue: "Issued",
+  issue: "Split",
   return: "Returned",
   adjust: "Adjustment",
-  receive: "Stock received",
+  receive: "Stock added",
 };
 export const TYPE_STYLE: Record<AnyEntry, string> = {
   opening: "bg-sky-50 text-sky-700 dark:bg-sky-950 dark:text-sky-300",
@@ -36,7 +36,17 @@ export const TYPE_STYLE: Record<AnyEntry, string> = {
   receive: "bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300",
 };
 
-/** A headline figure: icon chip, label, value - the left border in its colour. */
+/**
+ * One line of a Stat's breakdown: "Central stock … 1,240 pcs". `strong` marks
+ * a result line (a total), `divider` starts a new group above it.
+ */
+export type StatRow = { label: string; value: string; tone?: "good" | "bad" | "muted"; strong?: boolean; divider?: boolean };
+
+/**
+ * A headline figure: icon chip, label, value - the left border in its colour.
+ * Optionally a progress bar (a share of something, 0-1). The breakdown of how
+ * the figure is made up opens as a popup on hover (or on tap / keyboard focus).
+ */
 export function Stat({
   label,
   value,
@@ -44,6 +54,12 @@ export function Stat({
   icon: Icon,
   color,
   warn,
+  bar,
+  rows,
+  about,
+  align = "left",
+  minimal,
+  className = "",
 }: {
   label: string;
   value: string;
@@ -51,9 +67,26 @@ export function Stat({
   icon: LucideIcon;
   color: string;
   warn?: boolean;
+  bar?: { pct: number; label: string };
+  rows?: StatRow[];
+  /** One sentence on what the figure means, at the top of the popup. */
+  about?: string;
+  /** Which card edge the popup lines up with - "right" for cards near the screen's right edge. */
+  align?: "left" | "right";
+  /** Icon, label, value and a hairline bar only; the hint and bar text move into the popup. */
+  minimal?: boolean;
+  className?: string;
 }) {
+  const pct = bar ? Math.max(0, Math.min(1, Number.isFinite(bar.pct) ? bar.pct : 0)) : 0;
+  const hasPopup = !!rows?.length;
   return (
-    <div className="card relative min-w-0 border-l-4 p-3 sm:p-4" style={{ borderLeftColor: color }}>
+    <div
+      tabIndex={hasPopup ? 0 : undefined}
+      className={`card group relative flex min-w-0 flex-col border-l-4 outline-none ${className} ${minimal ? "px-3 py-2.5" : "p-3 sm:p-4"} ${
+        hasPopup ? "cursor-help transition hover:z-30 hover:shadow-md focus-within:z-30 focus:z-30 focus-visible:ring-2 focus-visible:ring-brand-400" : ""
+      }`}
+      style={{ borderLeftColor: color }}
+    >
       <div className="flex items-center gap-2">
         <span
           className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
@@ -63,8 +96,92 @@ export function Stat({
         </span>
         <span className="truncate text-[11px] font-medium uppercase tracking-wide text-zinc-500">{label}</span>
       </div>
-      <div className={`mt-2 break-words text-xl font-semibold tabular-nums ${warn ? "text-red-600" : ""}`}>{value}</div>
-      {hint ? <div className="text-[11px] text-zinc-400">{hint}</div> : null}
+      {minimal ? (
+        <>
+          {/* Value, then a hairline bar with its % - the rest is in the popup. */}
+          <div className="mt-1.5 flex items-baseline justify-between gap-2">
+            <span className={`truncate text-lg font-semibold tabular-nums ${warn ? "text-red-600" : ""}`}>{value}</span>
+            {bar ? <span className="shrink-0 text-[11px] font-medium tabular-nums text-zinc-500">{Math.round(pct * 100)}%</span> : null}
+          </div>
+          {bar ? (
+            <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800" title={bar.label}>
+              <div className="h-full rounded-full" style={{ width: `${pct * 100}%`, backgroundColor: color }} />
+            </div>
+          ) : null}
+        </>
+      ) : (
+        <>
+          <div className={`mt-2 break-words text-xl font-semibold tabular-nums ${warn ? "text-red-600" : ""}`}>{value}</div>
+          {hint ? <div className="text-[11px] text-zinc-400">{hint}</div> : null}
+          {bar ? (
+            <div className="mt-2.5" title={bar.label}>
+              <div className="h-1.5 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
+                <div className="h-full rounded-full" style={{ width: `${pct * 100}%`, backgroundColor: color }} />
+              </div>
+              <div className="mt-1 text-[11px] text-zinc-500">
+                <span className="font-semibold tabular-nums text-zinc-700 dark:text-zinc-300">{Math.round(pct * 100)}%</span> {bar.label}
+              </div>
+            </div>
+          ) : null}
+        </>
+      )}
+      {hasPopup ? (
+        <>
+          {!minimal && <div className="mt-2 text-[10px] font-medium text-zinc-400 group-hover:text-brand-600">Hover for details</div>}
+          {/* The breakdown, as a popup below the card. */}
+          <div
+            role="tooltip"
+            className={`pointer-events-none invisible absolute top-full z-40 mt-2 w-[min(20rem,calc(100vw-2rem))] translate-y-1 rounded-xl border border-zinc-200 bg-white p-3.5 opacity-0 shadow-xl transition duration-150 group-hover:pointer-events-auto group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus:pointer-events-auto group-focus:visible group-focus:translate-y-0 group-focus:opacity-100 dark:border-zinc-800 dark:bg-zinc-950 ${
+              align === "right" ? "right-0" : "left-0"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <span
+                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md"
+                style={{ backgroundColor: `color-mix(in oklab, ${color} 14%, transparent)`, color }}
+              >
+                <Icon size={13} />
+              </span>
+              <span className="text-sm font-semibold">{label}</span>
+              <span className="ml-auto text-sm font-semibold tabular-nums">{value}</span>
+            </div>
+            {about ? <p className="mt-1.5 text-xs leading-relaxed text-zinc-500">{about}</p> : null}
+            {minimal && (hint || bar) ? (
+              <div className="mt-2 space-y-0.5 text-xs text-zinc-600 dark:text-zinc-400">
+                {hint ? <div>{hint}</div> : null}
+                {bar ? (
+                  <div>
+                    <b className="tabular-nums">{Math.round(pct * 100)}%</b> {bar.label}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+            <dl className="mt-2.5 space-y-1.5 border-t border-zinc-100 pt-2.5 text-xs dark:border-zinc-800">
+              {rows!.map((r) => (
+                <div
+                  key={r.label}
+                  className={`flex items-baseline justify-between gap-3 ${r.divider ? "mt-2 border-t border-dashed border-zinc-200 pt-2 dark:border-zinc-800" : ""}`}
+                >
+                  <dt className={`min-w-0 ${r.strong ? "font-semibold text-zinc-800 dark:text-zinc-200" : "text-zinc-500"}`}>{r.label}</dt>
+                  <dd
+                    className={`shrink-0 text-right tabular-nums ${r.strong ? "font-semibold" : "font-medium"} ${
+                      r.tone === "good"
+                        ? "text-green-700 dark:text-green-400"
+                        : r.tone === "bad"
+                          ? "text-red-600"
+                          : r.tone === "muted"
+                            ? "text-zinc-400"
+                            : "text-zinc-800 dark:text-zinc-200"
+                    }`}
+                  >
+                    {r.value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        </>
+      ) : null}
     </div>
   );
 }

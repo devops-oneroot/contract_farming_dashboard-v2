@@ -36,6 +36,7 @@ import {
   Headset,
   MessageSquareHeart,
   Contact,
+  Briefcase,
 } from "lucide-react";
 import { useAuth } from "../lib/auth";
 import { ProfileMenu } from "./profile-menu";
@@ -114,6 +115,7 @@ const NAV_GROUPS: {
     items: [
       { href: "/account", label: "Users", icon: ShieldCheck },
       { href: "/roles", label: "Roles & Access", icon: KeyRound },
+      { href: "/jobs", label: "Jobs", icon: Briefcase },
       { href: "/settings/whatsapp-report", label: "Daily report (WhatsApp)", icon: MessageCircle },
     ],
   },
@@ -138,6 +140,7 @@ const TITLES: Record<string, string> = {
   "/field-users": "Field Users · Farmers & Agronomists",
   "/account": "Users & Dashboard Access",
   "/roles": "Roles & Access",
+  "/jobs": "Jobs · Website open roles",
   "/leads": "Leads",
   "/feedbacks": "Feedbacks",
   "/tele-calls": "Calls",

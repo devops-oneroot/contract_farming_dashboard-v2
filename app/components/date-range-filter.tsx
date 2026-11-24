@@ -129,7 +129,7 @@ export function DateRangeFilter({
               onClick={onClear}
               title="Clear filters"
               aria-label="Clear filters"
-              className="ml-3 inline-flex h-9 w-9 flex-none items-center justify-center rounded-lg bg-red-600 text-white shadow-sm transition hover:bg-red-700 active:scale-95"
+              className="inline-flex h-9 w-9 flex-none items-center justify-center rounded-lg bg-red-600 text-white shadow-sm transition hover:bg-red-700 active:scale-95"
             >
               <X size={16} />
             </button>

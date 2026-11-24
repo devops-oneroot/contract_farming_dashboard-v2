@@ -21,7 +21,7 @@ import {
   Warehouse,
 } from "lucide-react";
 
-import { api, type StockHistory, type StockSummaryRow, type StoreStock } from "../lib/api";
+import { api, type ProductStockRow, type StockHistory, type StockSummaryRow, type StoreStock } from "../lib/api";
 import { Select } from "../components/ui";
 import { LoadingBlock } from "../components/loading";
 import { Pagination, usePaged } from "../components/pagination";
@@ -92,6 +92,10 @@ function StockPortal() {
   const [statusFilter, setStatusFilter] = useState<"all" | "ok" | "low" | "out">("all");
   /** Per-kind totals over the whole history: deliveries, issues, returns, sales. */
   const [kinds, setKinds] = useState<StockHistory["totals"]>({});
+  /** Per product: given to which field person, sold, in hand. */
+  const [byProduct, setByProduct] = useState<ProductStockRow[]>([]);
+  /** The central stock line whose field split is shown beside it; "all" = every product. */
+  const [picked, setPicked] = useState<string>("all");
   const [entry, setEntry] = useState<{ target: EntryTarget; type: "receive" | "adjust" | "issue" | "opening" } | null>(null);
   const [distributing, setDistributing] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -111,6 +115,10 @@ function StockPortal() {
       .stockHistory({ page: 1, limit: 1 })
       .then((h) => setKinds(h.totals ?? {}))
       .catch(() => setKinds({}));
+    api
+      .stockByProduct()
+      .then(setByProduct)
+      .catch(() => setByProduct([]));
   }, []);
   useEffect(load, [load]);
 
@@ -209,6 +217,58 @@ function StockPortal() {
       value: t.value + l.value,
     }),
     { received: 0, issued: 0, returned: 0, adjusted: 0, inStore: 0, value: 0 }
+  );
+
+  const lineKey = (l: { product: string; variant: string | null }) => `${l.product}:${l.variant ?? ""}`;
+  const fieldOf = new Map(byProduct.map((p) => [lineKey(p), p]));
+  // The picked line, else the first one anyone in the field has been given.
+  const pickedKey = picked;
+  const isAll = pickedKey === "all";
+  // "All products": every line added up, and each field person's lines summed.
+  const allField = useMemo<ProductStockRow>(() => {
+    const people = new Map<string, ProductStockRow["holders"][number]>();
+    for (const p of byProduct) {
+      for (const h of p.holders) {
+        const t = people.get(h._id) ?? { ...h, allocated: 0, sold: 0, soldAmount: 0, inHand: 0, value: 0 };
+        t.allocated += h.allocated;
+        t.sold += h.sold;
+        t.soldAmount += h.soldAmount;
+        t.inHand += h.inHand;
+        t.value += h.value;
+        people.set(h._id, t);
+      }
+    }
+    const sum = (f: (p: ProductStockRow) => number) => byProduct.reduce((n, p) => n + f(p), 0);
+    return {
+      product: "all",
+      variant: null,
+      name: "All products",
+      unit: "",
+      price: 0,
+      allocated: sum((p) => p.allocated),
+      sold: sum((p) => p.sold),
+      soldAmount: Math.round(sum((p) => p.soldAmount) * 100) / 100,
+      inHand: sum((p) => p.inHand),
+      value: sum((p) => p.value),
+      holders: [...people.values()].sort((a, b) => b.allocated - a.allocated || a.name.localeCompare(b.name)),
+    };
+  }, [byProduct]);
+  const pickedLine = isAll
+    ? {
+        name: "All products",
+        unit: "",
+        received: storeLines.reduce((n, l) => n + l.received, 0),
+        adjusted: storeLines.reduce((n, l) => n + l.adjusted, 0),
+        inStore: storeLines.reduce((n, l) => n + Math.max(l.inStore, 0), 0),
+      }
+    : storeLines.find((l) => lineKey(l) === pickedKey) ?? null;
+  const pickedField = isAll ? allField : fieldOf.get(pickedKey) ?? null;
+  const fieldTotals = shownLines.reduce(
+    (t, l) => {
+      const f = fieldOf.get(lineKey(l));
+      return { sold: t.sold + (f?.sold ?? 0), inHand: t.inHand + (f?.inHand ?? 0) };
+    },
+    { sold: 0, inHand: 0 }
   );
 
   // Headline figures.
@@ -420,10 +480,10 @@ function StockPortal() {
 
       {/* ---- Overview: central stock + recent movements ---- */}
       {tab === "overview" && store && (
-        // fill-scroll: the three columns take the rest of the window and each
-        // scrolls on its own (globals.css), so the Overview fits on one screen.
-        // Below lg they stack and the page scrolls instead.
-        <div className="fill-scroll grid gap-4 max-lg:!flex-none lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)]">
+        // A 2 x 2 grid of full-height cards; the page scrolls, and each card
+        // scrolls its own list inside.
+        // Below lg they stack, one card per screen.
+        <div className="grid gap-4 lg:grid-cols-2 [&>*]:h-[calc(100dvh-7rem)] [&>*]:min-h-[26rem]">
           <div className="card flex min-h-0 flex-col overflow-hidden">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-100 px-4 py-2.5 dark:border-zinc-800">
               <h3 className="flex items-center gap-2 text-sm font-semibold">
@@ -469,15 +529,16 @@ function StockPortal() {
                 No central stock yet. Use <b>Add Stock</b> to record what you hold.
               </div>
             ) : (
-              <div className="scroll-thin min-h-0 flex-1 overflow-auto max-lg:max-h-[26rem]">
-                {/* Trimmed to fit a third of the screen: returns and
-                    adjustments are in the history, the price in the tooltip. */}
+              <div className="scroll-thin min-h-0 flex-1 overflow-auto">
+                {/* Click a row to see which field persons have it, beside. */}
                 <table className="data-table compact">
                   <thead className="sticky top-0 z-10 [&>tr>th]:bg-zinc-50 dark:[&>tr>th]:bg-zinc-900">
                     <tr>
                       <th>Product</th>
                       <th className="num">Added</th>
                       <th className="num">Split</th>
+                      <th className="num">Sold</th>
+                      <th className="num">With staff</th>
                       <th className="num">In stock</th>
                       <th className="num">Value</th>
                     </tr>
@@ -487,10 +548,15 @@ function StockPortal() {
                       const inflow = l.received + l.adjusted;
                       const used = inflow > 0 ? Math.max(0, Math.min(1, (l.issued - l.returned) / inflow)) : 0;
                       const st = lineStatus(l);
+                      const f = fieldOf.get(lineKey(l));
+                      const on = lineKey(l) === pickedKey;
                       return (
                         <tr
-                          key={`${l.product}:${l.variant}`}
-                          title={`${l.name}${l.unit ? ` (${l.unit})` : ""}\nPrice ${l.price ? inr(l.price) : "—"} · returned ${qty(l.returned)} · adjusted ${signed(l.adjusted)} · ${Math.round(used * 100)}% distributed`}
+                          key={lineKey(l)}
+                          // Clicking the picked row again goes back to all products.
+                          onClick={() => setPicked(on ? "all" : lineKey(l))}
+                          className={`cursor-pointer ${on ? "bg-brand-50/70 dark:bg-brand-950/40" : ""}`}
+                          title={`${l.name}${l.unit ? ` (${l.unit})` : ""}\nPrice ${l.price ? inr(l.price) : "—"} · returned ${qty(l.returned)} · adjusted ${signed(l.adjusted)} · ${Math.round(used * 100)}% distributed${f ? `\nWith ${f.holders.length} field person${f.holders.length === 1 ? "" : "s"} · sold ${inr(f.soldAmount)}` : ""}`}
                         >
                           <td>
                             <div className="font-medium leading-tight">{l.name}</div>
@@ -505,6 +571,15 @@ function StockPortal() {
                           </td>
                           <td className="num">{l.received ? qty(l.received) : "—"}</td>
                           <td className="num">{l.issued - l.returned ? qty(l.issued - l.returned) : "—"}</td>
+                          <td className="num text-green-700 dark:text-green-400">{f?.sold ? qty(f.sold) : "—"}</td>
+                          <td className="num">
+                            {f?.inHand ? qty(f.inHand) : "—"}
+                            {f && f.holders.length > 0 && (
+                              <div className="text-[10px] text-zinc-500">
+                                {f.holders.length} person{f.holders.length === 1 ? "" : "s"}
+                              </div>
+                            )}
+                          </td>
                           <td className={`num font-semibold ${st === "out" ? "text-red-600" : st === "low" ? "text-amber-600" : ""}`}>
                             {qty(l.inStore)}
                           </td>
@@ -514,7 +589,7 @@ function StockPortal() {
                     })}
                     {shownLines.length === 0 && (
                       <tr>
-                        <td colSpan={5} className="py-6 text-center text-zinc-500">
+                        <td colSpan={7} className="py-6 text-center text-zinc-500">
                           No products match.
                         </td>
                       </tr>
@@ -526,8 +601,121 @@ function StockPortal() {
                         <td>Total · {shownLines.length}</td>
                         <td className="num">{qty(lineTotals.received)}</td>
                         <td className="num">{qty(lineTotals.issued - lineTotals.returned)}</td>
+                        <td className="num">{qty(fieldTotals.sold)}</td>
+                        <td className="num">{qty(fieldTotals.inHand)}</td>
                         <td className="num">{qty(lineTotals.inStore)}</td>
                         <td className="num">{inr(lineTotals.value)}</td>
+                      </tr>
+                    </tfoot>
+                  )}
+                </table>
+              </div>
+            )}
+          </div>
+          {/* The picked product: given to whom, how much sold, how much in hand. */}
+          <div className="card flex min-h-0 flex-col overflow-hidden">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-100 px-4 py-2.5 dark:border-zinc-800">
+              <h3 className="flex min-w-0 items-center gap-2 text-sm font-semibold">
+                <Users size={16} className="shrink-0 text-brand-600" />
+                <span className="truncate">
+                  Assigned to staff
+                  {pickedLine && (
+                    <span className="font-normal text-zinc-500">
+                      {" "}· {pickedLine.name}
+                      {pickedLine.unit ? ` (${pickedLine.unit})` : ""}
+                    </span>
+                  )}
+                </span>
+              </h3>
+              {storeLines.length > 0 && (
+                <Select
+                  value={pickedKey}
+                  onChange={(e) => setPicked(e.target.value)}
+                  aria-label="Product"
+                  className="!w-full sm:!w-52"
+                >
+                  <option value="all">All products</option>
+                  {storeLines.map((l) => (
+                    <option key={lineKey(l)} value={lineKey(l)}>
+                      {l.name}
+                      {l.unit ? ` (${l.unit})` : ""}
+                    </option>
+                  ))}
+                </Select>
+              )}
+            </div>
+            {pickedLine && (
+              <div className="grid shrink-0 grid-cols-2 gap-px border-b border-zinc-100 bg-zinc-100 text-xs sm:grid-cols-5 dark:border-zinc-800 dark:bg-zinc-800">
+                {[
+                  ["Total added", pcs(pickedLine.received + pickedLine.adjusted)],
+                  ["Given to staff", pcs(pickedField?.allocated ?? 0)],
+                  ["Sold", `${pcs(pickedField?.sold ?? 0)} · ${Math.round(pctOf(pickedField?.sold ?? 0, pickedField?.allocated ?? 0) * 100)}%`],
+                  ["In hand (staff)", pcs(pickedField?.inHand ?? 0)],
+                  ["In central stock", pcs(pickedLine.inStore)],
+                ].map(([label, value], i) => (
+                  <div key={label} className={`bg-white px-3 py-2 dark:bg-zinc-950 ${i === 4 ? "col-span-2 sm:col-span-1" : ""}`}>
+                    <div className="text-zinc-500">{label}</div>
+                    <div className="font-semibold tabular-nums">{value}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {!pickedField || pickedField.holders.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 px-4 py-10 text-center text-sm text-zinc-500">
+                <Users size={26} className="text-zinc-400" />
+                {pickedLine ? "Not split to any field person yet." : "Pick a product to see who has it."}
+              </div>
+            ) : (
+              <div className="scroll-thin min-h-0 flex-1 overflow-auto">
+                <table className="data-table compact">
+                  <thead className="sticky top-0 z-10 [&>tr>th]:bg-zinc-50 dark:[&>tr>th]:bg-zinc-900">
+                    <tr>
+                      <th>Field person</th>
+                      <th className="num">Given</th>
+                      <th className="num">Sold</th>
+                      <th className="num">Sales</th>
+                      <th className="num">In hand</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pickedField.holders.map((h) => {
+                      const through = pctOf(h.sold, h.allocated);
+                      return (
+                        <tr key={h._id}>
+                          <td>
+                            <Link href={`/stock/${h._id}`} className="flex items-center gap-2 hover:underline">
+                              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-100 text-[10px] font-semibold text-brand-700 dark:bg-brand-950 dark:text-brand-400">
+                                {initials(h.name)}
+                              </span>
+                              <span className="min-w-0">
+                                <span className="block truncate font-medium leading-tight">{h.name}</span>
+                                <span className="mt-0.5 flex items-center gap-1.5 text-[10px] text-zinc-500">
+                                  <span className="h-1 w-10 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
+                                    <span className="block h-full rounded-full bg-green-500" style={{ width: `${Math.min(through, 1) * 100}%` }} />
+                                  </span>
+                                  {Math.round(through * 100)}% sold
+                                </span>
+                              </span>
+                            </Link>
+                          </td>
+                          <td className="num">{qty(h.allocated)}</td>
+                          <td className="num text-green-700 dark:text-green-400">{h.sold ? qty(h.sold) : "—"}</td>
+                          <td className="num">{h.soldAmount ? inr(h.soldAmount) : "—"}</td>
+                          <td className={`num font-semibold ${h.inHand < 0 ? "text-red-600" : ""}`} title={h.inHand < 0 ? "Sold more than given" : undefined}>
+                            {qty(h.inHand)}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                  {pickedField.holders.length > 1 && (
+                    <tfoot className="sticky bottom-0 [&>tr>td]:bg-zinc-50 dark:[&>tr>td]:bg-zinc-900">
+                      <tr className="font-semibold">
+                        <td>Total · {pickedField.holders.length}</td>
+                        <td className="num">{qty(pickedField.allocated)}</td>
+                        <td className="num">{qty(pickedField.sold)}</td>
+                        <td className="num">{inr(pickedField.soldAmount)}</td>
+                        <td className="num">{qty(pickedField.inHand)}</td>
                       </tr>
                     </tfoot>
                   )}
@@ -549,7 +737,7 @@ function StockPortal() {
               {field.top.length === 0 ? (
                 <p className="px-4 py-6 text-center text-sm text-zinc-500">No field sales yet.</p>
               ) : (
-                <ul className="scroll-thin min-h-0 flex-1 divide-y divide-zinc-100 overflow-auto max-lg:max-h-[26rem] dark:divide-zinc-800">
+                <ul className="scroll-thin min-h-0 flex-1 divide-y divide-zinc-100 overflow-auto dark:divide-zinc-800">
                   {field.top.map((r, i) => {
                     const through = pctOf(r.sold, r.allocated);
                     return (

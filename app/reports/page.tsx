@@ -138,7 +138,8 @@ export default function ReportsPage() {
         <h2 className="text-lg font-semibold">Daily Reports</h2>
       </div>
 
-      <div className="card filter-bar p-3">
+      {/* Filters and downloads on one line; wraps only when the screen is narrow. */}
+      <div className="card flex flex-wrap items-end gap-3 p-3 text-sm [&>.filter-field:not(.wide)]:w-full sm:[&>.filter-field:not(.wide)]:w-40 lg:[&>.filter-field:first-child]:w-52">
         <div className="filter-field">
           <span className="filter-label">Salesperson</span>
           <Select aria-label="Salesperson" value={who} onChange={(e) => applyFilters({ who: e.target.value })} className="w-full">
@@ -157,31 +158,20 @@ export default function ReportsPage() {
           onChange={(f, t) => applyFilters({ from: f, to: t })}
         />
 
-        {/* Downloads on their own row under the filters: what will be downloaded
-            on the left, the two buttons on the right. On a phone the buttons
+        {/* Downloads at the end of the same line. On a phone the two buttons
             share the full width. */}
-        <div className="col-span-full flex flex-col gap-3 border-t border-zinc-100 pt-3 sm:flex-row sm:items-center sm:justify-between dark:border-zinc-800">
-          <p
-            className={`flex min-w-0 items-start gap-1.5 text-xs leading-5 ${
-              downloadError ? "text-red-600" : pdfBlocked ? "text-amber-700 dark:text-amber-400" : "text-zinc-500"
-            }`}
-          >
-            <Info size={14} className="mt-0.5 shrink-0" />
-            <span>
-              {downloadError
-                ? downloadError
-                : pdfBlocked
-                  ? `PDF: ${pdfBlocked} Excel downloads the rows below.`
-                  : `Download ${who ? agents.find((x) => x._id === who)?.name || "this salesperson" : "the whole team"}, ${rangeText}.`}
-            </span>
-          </p>
-          <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:shrink-0">
+        <div className="filter-field wide w-full sm:ml-auto sm:w-auto">
+          <span className="filter-label">Download</span>
+          <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
             <button
               type="button"
               onClick={downloadPdf}
               disabled={!!pdfBlocked || downloading}
-              title={pdfBlocked || "Download the report PDF for these dates and salesperson"}
-              className="inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-brand-600 px-4 text-sm font-semibold text-white shadow-sm shadow-brand-600/25 transition hover:bg-brand-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:text-zinc-400 disabled:shadow-none dark:disabled:bg-zinc-800 dark:disabled:text-zinc-500"
+              title={
+                pdfBlocked ||
+                `Download ${who ? agents.find((x) => x._id === who)?.name || "this salesperson" : "the whole team"}, ${rangeText}.`
+              }
+              className="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-brand-600 px-4 text-sm font-semibold text-white shadow-sm shadow-brand-600/25 transition hover:bg-brand-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:text-zinc-400 disabled:shadow-none dark:disabled:bg-zinc-800 dark:disabled:text-zinc-500"
             >
               {downloading ? <Loader2 size={16} className="animate-spin" /> : <FileDown size={16} />}
               {downloading ? "Preparing…" : "Download PDF"}
@@ -192,10 +182,22 @@ export default function ReportsPage() {
               columns={REPORT_COLUMNS}
               rows={() => reports}
               label="Download Excel"
-              className="inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-emerald-600/30 bg-emerald-50 px-4 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-100 active:scale-[0.98] dark:border-emerald-500/30 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-950/70"
+              className="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-emerald-600/30 bg-emerald-50 px-4 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-100 active:scale-[0.98] dark:border-emerald-500/30 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-950/70"
             />
           </div>
         </div>
+
+        {/* Only when there is something to say: a failed download, or why the PDF is off. */}
+        {(downloadError || pdfBlocked) && (
+          <p
+            className={`flex w-full min-w-0 items-start gap-1.5 text-xs leading-5 ${
+              downloadError ? "text-red-600" : "text-amber-700 dark:text-amber-400"
+            }`}
+          >
+            <Info size={14} className="mt-0.5 shrink-0" />
+            <span>{downloadError || `PDF: ${pdfBlocked} Excel downloads the rows below.`}</span>
+          </p>
+        )}
       </div>
 
       {!loading && !error && reports.length > 0 && (

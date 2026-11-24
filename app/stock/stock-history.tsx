@@ -474,7 +474,7 @@ export function RecentActivity({ onViewAll }: { onViewAll: () => void }) {
           <PackagePlus size={16} className="mr-2 text-zinc-400" /> Nothing moved yet.
         </p>
       ) : (
-        <ul className="scroll-thin min-h-0 flex-1 divide-y divide-zinc-100 overflow-auto max-lg:max-h-[26rem] dark:divide-zinc-800">
+        <ul className="scroll-thin min-h-0 flex-1 divide-y divide-zinc-100 overflow-auto dark:divide-zinc-800">
           {items.map((e) => {
             const M = KIND_META[e.kind];
             return (

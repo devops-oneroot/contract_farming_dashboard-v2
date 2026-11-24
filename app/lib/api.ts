@@ -1149,6 +1149,58 @@ export type StockSummaryRow = {
   soldAmount: number;
 };
 
+/** What the job form sends. `location` is comma-separated: "Chamarajanagar, Gokak". */
+export type WebsiteJobInput = {
+  title: string;
+  department: string;
+  location: string;
+  experience: string;
+  employmentType: string;
+  openings: number;
+  salary: string;
+  description: string;
+  responsibilities: string;
+  requirements: string;
+  applyLink: string;
+  isActive: boolean;
+  sortOrder: number;
+};
+
+/** An open role on the website's careers page. */
+export type WebsiteJob = Omit<WebsiteJobInput, "location"> & {
+  _id: string;
+  locations: string[];
+  /** The same list, comma-separated. */
+  location: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/** One product line across field staff: given, sold, in hand, and who has it. */
+export type ProductStockRow = {
+  product: string;
+  variant: string | null;
+  name: string;
+  unit: string;
+  price: number;
+  allocated: number;
+  sold: number;
+  soldAmount: number;
+  inHand: number;
+  value: number;
+  holders: {
+    _id: string;
+    name: string;
+    mobile: string;
+    allocated: number;
+    sold: number;
+    soldAmount: number;
+    /** Below zero = sold more than they were given. */
+    inHand: number;
+    value: number;
+  }[];
+};
+
 export type StockEntryType = "opening" | "issue" | "return" | "adjust";
 
 /** One product and size a staff member holds, and how the figure is made up. */
@@ -1658,6 +1710,19 @@ export const api = {
   deleteFieldUser: (id: string) => json<FieldUser>(`/api/field-users/${id}`, { method: "DELETE" }),
   restoreFieldUser: (id: string) => json<FieldUser>(`/api/field-users/${id}/restore`, { method: "POST" }),
 
+  // ---- Website: open roles on the careers page (Management > Jobs)
+  listJobs: (params: { search?: string; department?: string; active?: "true" | "false" } = {}) => {
+    const q = new URLSearchParams(Object.entries(params).filter(([, v]) => v) as [string, string][]).toString();
+    return json<{ items: WebsiteJob[]; departments: string[]; employmentTypes: string[] }>(
+      `/api/website/admin/jobs${q ? `?${q}` : ""}`
+    );
+  },
+  createJob: (body: WebsiteJobInput) =>
+    json<WebsiteJob>("/api/website/admin/jobs", { method: "POST", body: JSON.stringify(body) }),
+  updateJob: (id: string, body: Partial<WebsiteJobInput>) =>
+    json<WebsiteJob>(`/api/website/admin/jobs/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  deleteJob: (id: string) => json<{ message: string }>(`/api/website/admin/jobs/${id}`, { method: "DELETE" }),
+
   // ---- Regions: which taluk an agronomist works out of, and so which series
   // numbers their bills.
   listRegions: () => json<Region[]>("/api/regions"),
@@ -1947,6 +2012,7 @@ export const api = {
     json<{ message: string }>(`/api/crop-catalog/${id}`, { method: "DELETE" }),
 
   stockSummary: () => json<StockSummaryRow[]>("/api/stock"),
+  stockByProduct: () => json<ProductStockRow[]>("/api/stock/products"),
   staffStock: (id: string) => json<StaffStock>(`/api/stock/staff/${id}`),
   /** Split central stock across several salespeople in one go. */
   distributeStock: (body: {

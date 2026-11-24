@@ -1149,6 +1149,32 @@ export type StockSummaryRow = {
   soldAmount: number;
 };
 
+/** A voice recording made in the app (Quick actions > Recording). */
+export type FieldRecording = {
+  _id: string;
+  /** Who recorded it. */
+  user: { _id: string; name: string; mobile: string; role?: string } | null;
+  farmer: { _id: string; name: string; mobile: string } | null;
+  reason: string;
+  note: string;
+  audioUrl: string;
+  /** When recording started. */
+  audioAt: string;
+  audioSeconds: number;
+  createdAt: string;
+};
+
+export type FieldRecordingPage = {
+  items: FieldRecording[];
+  total: number;
+  page: number;
+  limit: number;
+  hasMore: boolean;
+  /** Per reason, over the same filters except the reason. */
+  counts: Record<string, number>;
+  reasons: { key: string; label: string }[];
+};
+
 /** What the job form sends. `location` is comma-separated: "Chamarajanagar, Gokak". */
 export type WebsiteJobInput = {
   title: string;
@@ -1711,6 +1737,16 @@ export const api = {
   restoreFieldUser: (id: string) => json<FieldUser>(`/api/field-users/${id}/restore`, { method: "POST" }),
 
   // ---- Website: open roles on the careers page (Management > Jobs)
+  // ---- Field Operations > Recordings (made in the app)
+  listRecordings: (params: { reason?: string; user?: string; from?: string; to?: string; page?: number; limit?: number }) => {
+    const q = new URLSearchParams(
+      Object.entries({ ...params, page: String(params.page ?? 1), limit: String(params.limit ?? 20) }).filter(
+        ([, v]) => v != null && v !== ""
+      ) as [string, string][]
+    ).toString();
+    return json<FieldRecordingPage>(`/api/recordings?${q}`);
+  },
+
   listJobs: (params: { search?: string; department?: string; active?: "true" | "false" } = {}) => {
     const q = new URLSearchParams(Object.entries(params).filter(([, v]) => v) as [string, string][]).toString();
     return json<{ items: WebsiteJob[]; departments: string[]; employmentTypes: string[] }>(

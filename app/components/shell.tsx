@@ -37,6 +37,7 @@ import {
   MessageSquareHeart,
   Contact,
   Briefcase,
+  AudioLines,
 } from "lucide-react";
 import { useAuth } from "../lib/auth";
 import { ProfileMenu } from "./profile-menu";
@@ -106,6 +107,7 @@ const NAV_GROUPS: {
       { href: "/tracking", label: "Tracking", icon: Navigation },
       { href: "/disease-reports", label: "Disease Reports", icon: Bug },
       { href: "/reports", label: "Daily Reports", icon: ClipboardList },
+      { href: "/recordings", label: "Recordings", icon: AudioLines },
       { href: "/field-users", label: "Users", icon: Contact },
     ],
   },
@@ -124,6 +126,7 @@ const NAV_GROUPS: {
 const TITLES: Record<string, string> = {
   "/": "Dashboard",
   "/farmers": "Farmers",
+  "/recording": "Recordings",
   "/fpos": "Farmer Producer Organisations",
   "/agronomists": "Agronomists",
   "/crops": "Crops & Package of Practices",
@@ -141,6 +144,7 @@ const TITLES: Record<string, string> = {
   "/account": "Users & Dashboard Access",
   "/roles": "Roles & Access",
   "/jobs": "Jobs · Website open roles",
+  "/recordings": "Recordings · Voice notes from the field",
   "/leads": "Leads",
   "/feedbacks": "Feedbacks",
   "/tele-calls": "Calls",

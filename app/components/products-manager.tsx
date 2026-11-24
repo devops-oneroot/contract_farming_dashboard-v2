@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Plus, Trash2, Pencil, X, Search } from "lucide-react";
+import { Plus, Trash2, Pencil, X, Search, Package, Sprout } from "lucide-react";
 import { api, Product } from "../lib/api";
 import { LoadingBlock } from "./loading";
 import { Pagination } from "./pagination";
@@ -240,86 +240,119 @@ export function ProductsManager() {
           {query ? `No product matches “${query}”.` : "No products yet. Click “Add product”."}
         </p>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-          {products.map((p) => (
-            <div
-              key={p._id}
-              className="flex min-w-0 flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={p.imageUrl || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E"}
-                alt={p.name}
-                className="h-40 w-full bg-zinc-100 object-cover dark:bg-zinc-900"
-              />
-              <div className="flex flex-1 flex-col p-4">
-                <div className="break-words font-semibold">{p.name}</div>
-                {p.description && <p className="mt-1 break-words text-sm text-zinc-500">{p.description}</p>}
-                {/* Every size and its price, or the single price when there
-                    are none. The sizes are what the agronomist picks from in
-                    the field, so they are what the card should show. */}
-                {p.variants && p.variants.length > 0 ? (
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {p.variants.map((v) => (
-                      <span
-                        key={v._id}
-                        className="inline-flex items-baseline gap-1 rounded-md border border-zinc-200 px-2 py-0.5 text-xs dark:border-zinc-700"
-                      >
-                        <span className="text-zinc-600 dark:text-zinc-300">{v.label}</span>
-                        <span className="font-semibold text-brand-600">₹{v.price}</span>
-                      </span>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="mt-2 flex items-baseline gap-2">
-                    <span className="font-semibold text-brand-600">₹{p.price}</span>
-                    {p.unit && <span className="text-xs text-zinc-500">{p.unit}</span>}
-                  </div>
-                )}
-                <div className="mt-2 flex flex-wrap gap-1">
-                  {p.gstEnabled && (
-                    <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
-                      GST 5%
-                    </span>
-                  )}
-                  {p.crops && p.crops.length > 0 ? (
-                    p.crops.map((c) => (
-                      <span
-                        key={c}
-                        className="rounded-full bg-brand-50 px-2 py-0.5 text-xs text-brand-700 dark:bg-brand-950/40 dark:text-brand-300"
-                      >
-                        {c}
-                      </span>
-                    ))
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+          {products.map((p) => {
+            const sizes = p.variants ?? [];
+            const prices = sizes.length ? sizes.map((v) => Number(v.price) || 0) : [Number(p.price) || 0];
+            const lo = Math.min(...prices);
+            const hi = Math.max(...prices);
+            const priceTag = lo === hi ? `₹${lo.toLocaleString("en-IN")}` : `₹${lo.toLocaleString("en-IN")} – ₹${hi.toLocaleString("en-IN")}`;
+            const crops = p.crops ?? [];
+            return (
+              <article
+                key={p._id}
+                className="group flex min-w-0 flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-lg dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-brand-700"
+              >
+                {/* Image with the price and badges over it. */}
+                <div className="relative h-44 overflow-hidden bg-zinc-50 dark:bg-zinc-900">
+                  {p.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={p.imageUrl}
+                      alt={p.name}
+                      className="h-full w-full object-contain p-3 transition duration-500 group-hover:scale-105"
+                    />
                   ) : (
-                    <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-500 dark:bg-zinc-900">
-                      All crops
-                    </span>
+                    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-brand-100 via-brand-50 to-amber-50 dark:from-brand-950/60 dark:via-zinc-900 dark:to-amber-950/30">
+                      <Package size={44} className="text-brand-500/70" />
+                    </div>
+                  )}
+                  <div className="absolute left-3 top-3 flex flex-wrap gap-1.5">
+                    {p.gstEnabled && (
+                      <span className="rounded-full bg-amber-400/95 px-2 py-0.5 text-[11px] font-semibold text-amber-950 shadow-sm">GST 5%</span>
+                    )}
+                    {sizes.length > 0 && (
+                      <span className="rounded-full bg-white/95 px-2 py-0.5 text-[11px] font-semibold text-zinc-700 shadow-sm dark:bg-zinc-900/90 dark:text-zinc-200">
+                        {sizes.length} size{sizes.length === 1 ? "" : "s"}
+                      </span>
+                    )}
+                  </div>
+                  <span className="absolute bottom-3 right-3 rounded-lg bg-brand-500 px-2.5 py-1 text-sm font-bold text-white shadow-md shadow-brand-500/30">
+                    {priceTag}
+                    {!sizes.length && p.unit ? <span className="ml-1 text-xs font-medium text-white/85">/ {p.unit}</span> : null}
+                  </span>
+                </div>
+
+                <div className="flex flex-1 flex-col gap-3 p-4">
+                  <div className="min-w-0">
+                    <h3 className="line-clamp-2 break-words font-semibold leading-snug">{p.name}</h3>
+                    {p.description && <p className="mt-1 line-clamp-2 break-words text-sm text-zinc-500">{p.description}</p>}
+                  </div>
+
+                  {/* Every size and its price: what the agronomist picks from in the field. */}
+                  {sizes.length > 0 && (
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {sizes.map((v) => (
+                        <div
+                          key={v._id}
+                          className="flex items-center justify-between gap-2 rounded-lg border border-zinc-200 bg-zinc-50 px-2.5 py-1.5 text-xs dark:border-zinc-800 dark:bg-zinc-900"
+                        >
+                          <span className="truncate text-zinc-600 dark:text-zinc-300">{v.label}</span>
+                          <span className="shrink-0 font-semibold text-brand-600">₹{Number(v.price).toLocaleString("en-IN")}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <Sprout size={13} className="text-emerald-600" />
+                    {crops.length > 0 ? (
+                      <>
+                        {crops.slice(0, 4).map((c) => (
+                          <span
+                            key={c}
+                            className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
+                          >
+                            {c}
+                          </span>
+                        ))}
+                        {crops.length > 4 && (
+                          <span title={crops.slice(4).join(", ")} className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-600 dark:bg-zinc-900 dark:text-zinc-300">
+                            +{crops.length - 4}
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      <span className="text-xs text-zinc-500">For all crops</span>
+                    )}
+                  </div>
+
+                  {(perm.edit || perm.delete) && (
+                    <div className="mt-auto flex gap-2 border-t border-zinc-100 pt-3 dark:border-zinc-800">
+                      {perm.edit && (
+                        <button
+                          onClick={() => openEdit(p)}
+                          className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-brand-50 px-3 py-2 text-sm font-medium text-brand-700 hover:bg-brand-100 dark:bg-brand-950/40 dark:text-brand-300"
+                        >
+                          <Pencil size={14} /> Edit
+                        </button>
+                      )}
+                      {perm.delete && (
+                        <button
+                          onClick={() => remove(p)}
+                          title="Delete product"
+                          aria-label={`Delete ${p.name}`}
+                          className="rounded-lg border border-red-100 p-2 text-red-500 hover:bg-red-50 dark:border-red-900/50 dark:hover:bg-red-950/40"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
-                {(perm.edit || perm.delete) && (
-                  <div className="mt-3 flex gap-2 border-t border-zinc-100 pt-3 dark:border-zinc-800">
-                    {perm.edit && (
-                      <button
-                        onClick={() => openEdit(p)}
-                        className="flex items-center gap-1 rounded-lg px-2 py-1 text-sm text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-900"
-                      >
-                        <Pencil size={14} /> Edit
-                      </button>
-                    )}
-                    {perm.delete && (
-                      <button
-                        onClick={() => remove(p)}
-                        className="flex items-center gap-1 rounded-lg px-2 py-1 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40"
-                      >
-                        <Trash2 size={14} /> Delete
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
+              </article>
+            );
+          })}
         </div>
       )}
 

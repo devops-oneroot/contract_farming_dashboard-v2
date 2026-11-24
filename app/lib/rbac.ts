@@ -30,6 +30,7 @@ export const MODULE_INFO: Record<string, { label: string; hrefs: string[] }> = {
   telecalls: { label: "Telecalling Calls", hrefs: ["/tele-calls"] },
   field_users: { label: "Field Users", hrefs: ["/field-users"] },
   jobs: { label: "Jobs (website)", hrefs: ["/jobs"] },
+  recordings: { label: "Recordings", hrefs: ["/recordings"] },
 };
 
 /** The built-in roles' names - used only until the role list (with any renames) has loaded. */

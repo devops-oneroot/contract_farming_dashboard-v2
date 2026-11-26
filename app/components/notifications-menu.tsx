@@ -6,6 +6,8 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Bell, BellOff, BellRing, FileQuestion, UserCog } from "lucide-react";
 import { api, Person, type MyNotifications } from "../lib/api";
 import { useWebPush } from "../lib/web-push";
+import { useAuth } from "../lib/auth";
+import { can } from "../lib/rbac";
 import { Spinner } from "./loading";
 
 /** The farmers page, filtered to the unassigned, with `ids` highlighted. */
@@ -32,6 +34,8 @@ export function NotificationsMenu() {
   const router = useRouter();
   const ref = useRef<HTMLDivElement>(null);
   const push = useWebPush();
+  const { admin } = useAuth();
+  const canFarmers = can(admin, "farmers");
 
   /** Own notifications; a failure (older backend) just leaves them out. */
   const fetchNotes = () =>
@@ -53,10 +57,13 @@ export function NotificationsMenu() {
   };
 
   /** Unassigned farmers, newest first: the latest is the likeliest to have just been missed. */
-  const fetchUnassigned = () =>
-    api
-      .listFarmers({ agronomist: "none" })
-      .then((list) => [...list].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+  const fetchUnassigned = (): Promise<Person[]> =>
+    // Only accounts that can open Farmers see this group; the rest get enquiries alone.
+    !canFarmers
+      ? Promise.resolve([])
+      : api
+          .listFarmers({ agronomist: "none" })
+          .then((list) => [...list].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
 
   /** Refresh with the spinner showing (opening the popup). */
   const load = () => {
@@ -78,7 +85,9 @@ export function NotificationsMenu() {
     return () => {
       cancelled = true;
     };
-  }, [pathname]);
+    // fetchUnassigned only changes with canFarmers, listed here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname, canFarmers]);
 
   useEffect(() => {
     if (!open) return;

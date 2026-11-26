@@ -43,7 +43,7 @@ import {
 import { useAuth } from "../lib/auth";
 import { ProfileMenu } from "./profile-menu";
 import { NotificationsMenu } from "./notifications-menu";
-import { can, canPath, homeFor, roleLabel } from "../lib/rbac";
+import { canPath, homeFor, roleLabel } from "../lib/rbac";
 import { ThemeToggle } from "./theme-toggle";
 
 /**
@@ -505,7 +505,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
               <CalendarDays size={13} className="text-brand-600 dark:text-brand-400" />
               {today}
             </span>
-            {can(admin, "farmers") ? <NotificationsMenu /> : null}
+            {/* Every account: enquiry notifications are for anyone handling a department. */}
+            <NotificationsMenu />
             <ThemeToggle />
             <span className="mx-1 hidden h-6 w-px bg-zinc-200 sm:block dark:bg-zinc-800" aria-hidden />
             <ProfileMenu />

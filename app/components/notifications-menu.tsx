@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight, Bell, BellOff, UserCog } from "lucide-react";
-import { api, Person } from "../lib/api";
+import { ArrowRight, Bell, BellOff, FileQuestion, UserCog } from "lucide-react";
+import { api, Person, type MyNotifications } from "../lib/api";
 import { Spinner } from "./loading";
 
 /** The farmers page, filtered to the unassigned, with `ids` highlighted. */
@@ -26,7 +26,29 @@ export function NotificationsMenu() {
   const [open, setOpen] = useState(false);
   const [farmers, setFarmers] = useState<Person[] | null>(null);
   const [loading, setLoading] = useState(false);
+  /** This account's own notifications: new enquiries in departments it handles. */
+  const [notes, setNotes] = useState<MyNotifications | null>(null);
+  const router = useRouter();
   const ref = useRef<HTMLDivElement>(null);
+
+  /** Own notifications; a failure (older backend) just leaves them out. */
+  const fetchNotes = () =>
+    api
+      .getMyNotifications()
+      .then(setNotes)
+      .catch(() => setNotes((n) => n ?? { unread: 0, items: [] }));
+
+  /** Open one: mark it read, then go where it points. */
+  const openNote = (id: string, link: string, farmerId: string | null) => {
+    setOpen(false);
+    api.markNotificationsRead([id]).then(setNotes).catch(() => {});
+    // Already on Enquiries: the page does not reload, so tell it which farmer to open.
+    if (pathname === "/enquiries" && farmerId) {
+      window.dispatchEvent(new CustomEvent("enquiry:open-history", { detail: farmerId }));
+      return;
+    }
+    if (link) router.push(link);
+  };
 
   /** Unassigned farmers, newest first: the latest is the likeliest to have just been missed. */
   const fetchUnassigned = () =>
@@ -37,6 +59,7 @@ export function NotificationsMenu() {
   /** Refresh with the spinner showing (opening the popup). */
   const load = () => {
     setLoading(true);
+    fetchNotes();
     fetchUnassigned()
       .then(setFarmers)
       .catch(() => setFarmers((f) => f ?? []))
@@ -46,6 +69,7 @@ export function NotificationsMenu() {
   // Quietly refresh the badge on every page change.
   useEffect(() => {
     let cancelled = false;
+    fetchNotes();
     fetchUnassigned()
       .then((list) => !cancelled && setFarmers(list))
       .catch(() => !cancelled && setFarmers((f) => f ?? []));
@@ -68,7 +92,10 @@ export function NotificationsMenu() {
     };
   }, [open]);
 
-  const count = farmers?.length ?? 0;
+  const farmerCount = farmers?.length ?? 0;
+  const noteItems = notes?.items ?? [];
+  /** The badge: unassigned farmers plus unread enquiry notifications. */
+  const count = farmerCount + (notes?.unread ?? 0);
 
   return (
     <div ref={ref} className="relative">
@@ -111,17 +138,65 @@ export function NotificationsMenu() {
             ) : null}
           </div>
 
-          {farmers === null ? (
+          {farmers === null && notes === null ? (
             <div className="flex justify-center py-8">
               <Spinner />
             </div>
-          ) : count === 0 ? (
+          ) : farmerCount === 0 && noteItems.length === 0 ? (
             <div className="flex flex-col items-center gap-2 px-4 py-8 text-center text-sm text-zinc-500">
               <BellOff size={22} className="text-zinc-400" />
               You&apos;re all caught up.
             </div>
           ) : (
             <div className="scroll-thin max-h-[min(28rem,70dvh)] overflow-y-auto">
+              {/* New enquiries in departments this account handles. */}
+              {noteItems.length > 0 && (
+                <div className="border-b border-zinc-100 dark:border-zinc-800">
+                  <div className="flex items-center justify-between bg-violet-50/70 px-4 py-2 dark:bg-violet-950/30">
+                    <span className="text-xs font-semibold uppercase tracking-wide text-violet-800 dark:text-violet-300">
+                      Enquiries{notes?.unread ? ` · ${notes.unread} new` : ""}
+                    </span>
+                    {notes?.unread ? (
+                      <button
+                        type="button"
+                        onClick={() => api.markNotificationsRead().then(setNotes).catch(() => {})}
+                        className="text-xs font-medium text-violet-700 hover:underline dark:text-violet-300"
+                      >
+                        Mark all read
+                      </button>
+                    ) : null}
+                  </div>
+                  <ul className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                    {noteItems.map((n) => (
+                      <li key={n._id}>
+                        <button
+                          type="button"
+                          onClick={() => openNote(n._id, n.link, n.farmerId)}
+                          className={`flex w-full items-start gap-3 px-4 py-2.5 text-left text-sm hover:bg-zinc-50 dark:hover:bg-zinc-900 ${
+                            n.read ? "" : "bg-violet-50/40 dark:bg-violet-950/20"
+                          }`}
+                        >
+                          <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-violet-600 text-white">
+                            <FileQuestion size={14} />
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <div className={`truncate ${n.read ? "font-normal" : "font-semibold"}`}>{n.title}</div>
+                            <div className="truncate text-xs text-zinc-500">
+                              {n.body}
+                              {" · "}
+                              {fmtDay(n.createdAt)}
+                            </div>
+                          </div>
+                          {!n.read && <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-violet-600" aria-label="Unread" />}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {farmers && farmerCount > 0 && (
+              <>
               {/* The group heading opens all of them in Farmers. */}
               <Link
                 href={unassignedHref(farmers.map((f) => f._id))}
@@ -133,7 +208,7 @@ export function NotificationsMenu() {
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="text-sm font-semibold text-blue-800 dark:text-blue-300">
-                    {count} farmer{count > 1 ? "s" : ""} without an agronomist
+                    {farmerCount} farmer{farmerCount > 1 ? "s" : ""} without an agronomist
                   </div>
                   <div className="text-xs text-blue-700/80 dark:text-blue-400/80">
                     Tap a farmer to find them in Farmers and assign one
@@ -172,6 +247,8 @@ export function NotificationsMenu() {
                   </li>
                 ))}
               </ul>
+              </>
+              )}
             </div>
           )}
         </div>

@@ -223,6 +223,8 @@ export type Lead = {
   /** Who to call (from cf_lead_contacts); blank until a contact is matched. */
   name?: string;
   phone?: string;
+  /** True when the server sent the number masked (every role but Super admin / Admin). */
+  phoneMasked?: boolean;
   /** False for a lead without a number, or with mock (test) data. */
   callable?: boolean;
   lastCall?: { at: string; status: TeleCallStatus; outcome: TeleOutcome | null } | null;
@@ -1345,6 +1347,54 @@ export type StaffStock = {
   history: StockMovement[];
 };
 
+/** A farmer's enquiry answers. `null` = not asked. */
+export type EnquiryAnswers = {
+  tractorImplements: boolean | null;
+  implements: string[];
+  dripIrrigation: boolean | null;
+  dripParts: string[];
+  insurance: boolean | null;
+  kccLowCost: boolean | null;
+};
+
+/** The four enquiry departments. */
+export type EnquiryCategory = "tractor" | "drip" | "insurance" | "kcc";
+
+/** A user (or, from earlier setups, a role) who handles an enquiry department. */
+export type EnquiryAssignee = { type: "role" | "user"; id: string; label: string };
+
+/** A dashboard notification for this account, e.g. a new enquiry in a department it handles. */
+export type AdminNotification = {
+  _id: string;
+  kind: string;
+  title: string;
+  body: string;
+  /** Where clicking it goes, e.g. /enquiries?farmer=<id>. */
+  link: string;
+  farmerId: string | null;
+  read: boolean;
+  createdAt: string;
+};
+export type MyNotifications = { unread: number; items: AdminNotification[] };
+
+/** One farmer on the Enquiries page. */
+export type EnquiryRow = {
+  _id: string;
+  name: string;
+  mobile: string;
+  village: string;
+  taluk: string;
+  district: string;
+  onboardedByName: string;
+  createdAt: string;
+  enquiry: EnquiryAnswers;
+  /** The app user who last recorded this farmer's enquiry, and when. Empty before history was kept. */
+  enquiryByName: string;
+  enquiryAt: string | null;
+  /** Who handles this farmer's enquiry: the users assigned to each department they said yes to. */
+  assignedTo: { type: "role" | "user"; id: string; label: string; categories: EnquiryCategory[] }[];
+};
+
 export const api = {
   // Admin auth. There is no register/sign-up: admins are created from the Account tab.
   login: (mobile: string, password: string) =>
@@ -1373,6 +1423,38 @@ export const api = {
   setAdminRole: (id: string, role: AdminRole) =>
     json<{ admin: Admin }>(`/api/admin/${id}/role`, { method: "PATCH", body: JSON.stringify({ role }) }),
   getRoles: () => json<RolesConfig>("/api/admin/roles"),
+  /** Farmers who said yes to a department this account handles; `categories` = those departments. */
+  listEnquiries: (params: { search?: string } = {}) => {
+    const q = new URLSearchParams();
+    for (const [k, v] of Object.entries(params)) if (v) q.set(k, String(v));
+    return json<{ items: EnquiryRow[]; total: number; categories: EnquiryCategory[] }>(`/api/enquiries?${q.toString()}`);
+  },
+  /** Who handles each department, leads per department, and the users that can be picked. */
+  getEnquiryRoutes: () =>
+    json<{
+      /** Leads per department: farmers who said yes to it. */
+      counts: Record<EnquiryCategory, number>;
+      routes: Record<EnquiryCategory, EnquiryAssignee[]>;
+      users: { id: string; label: string; role: string }[];
+    }>("/api/enquiries/routes"),
+  /** Every enquiry saved for one farmer in the app, newest first, and their answers now. */
+  getEnquiryHistory: (farmerId: string) =>
+    json<{
+      farmer: { _id: string; name: string; mobile: string; enquiry: EnquiryAnswers };
+      categories: EnquiryCategory[];
+      history: { _id: string; enquiry: EnquiryAnswers; recordedByName: string; createdAt: string }[];
+    }>(`/api/enquiries/${farmerId}/history`),
+  /** This account's dashboard notifications (new enquiries in departments it handles). */
+  getMyNotifications: () => json<MyNotifications>("/api/enquiries/notifications"),
+  /** Mark notifications read: the given ids, or all of them. */
+  markNotificationsRead: (ids?: string[]) =>
+    json<MyNotifications>("/api/enquiries/notifications/read", { method: "POST", body: JSON.stringify({ ids }) }),
+  /** Replace one department's assignees. */
+  saveEnquiryRoute: (category: EnquiryCategory, assignees: { type: "role" | "user"; id: string }[]) =>
+    json<{ routes: Record<EnquiryCategory, EnquiryAssignee[]> }>("/api/enquiries/routes", {
+      method: "PUT",
+      body: JSON.stringify({ category, assignees }),
+    }),
   saveRoles: (roleModules: Partial<Record<AdminRole, string[]>>) =>
     json<RolesConfig>("/api/admin/roles", { method: "PUT", body: JSON.stringify({ roleModules }) }),
   /** The team's daily report on WhatsApp: settings, where sends go from this server, recent sends. */

@@ -38,6 +38,7 @@ import {
   Contact,
   Briefcase,
   AudioLines,
+  FileQuestion,
 } from "lucide-react";
 import { useAuth } from "../lib/auth";
 import { ProfileMenu } from "./profile-menu";
@@ -76,6 +77,7 @@ const NAV_GROUPS: {
     icon: Users,
     items: [
       { href: "/farmers", label: "Farmers", icon: Users },
+      { href: "/enquiries", label: "Enquiries", icon: FileQuestion },
       { href: "/fpos", label: "FPOs", icon: Building2 },
       { href: "/agronomists", label: "Agronomists", icon: UserCog },
       { href: "/land", label: "Land Under Cultivation", icon: Wheat },

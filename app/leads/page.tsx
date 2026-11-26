@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { MapPin, Phone, RefreshCw, Search } from "lucide-react";
+import { Eye, EyeOff, MapPin, Phone, RefreshCw, Search } from "lucide-react";
 
 import { api, type Lead, type LeadsPage, type TeleCall } from "../lib/api";
+import { useAuth } from "../lib/auth";
 import { Select } from "../components/ui";
 import { DateRangeFilter } from "../components/date-range-filter";
 import { Loader } from "../components/loading";
@@ -16,6 +17,12 @@ const num = (n: number) => n.toLocaleString("en-IN");
 
 /** Google Maps at the lead's pin. */
 const mapUrl = (l: Lead) => `https://www.google.com/maps?q=${l.latitude},${l.longitude}`;
+
+/** "9876543210" -> "98******10" (the server already masks it for other roles). */
+const maskPhone = (p: string) => (p.length <= 4 ? "*".repeat(p.length) : p.slice(0, 2) + "*".repeat(p.length - 4) + p.slice(-2));
+
+/** Roles that may reveal a lead's number with the eye button. */
+const PHONE_ROLES = new Set(["super_admin", "admin"]);
 
 /**
  * Leads - the people imported from the Markhet app, for the telecallers to
@@ -38,6 +45,17 @@ export default function LeadsPage() {
   const [reloadKey, setReloadKey] = useState(0);
   const [calling, setCalling] = useState<string | null>(null);
   const [active, setActive] = useState<TeleCall | null>(null);
+  const { admin } = useAuth();
+  const canReveal = PHONE_ROLES.has(admin?.role ?? "");
+  // Leads whose number is shown; everyone starts masked.
+  const [revealed, setRevealed] = useState<Set<string>>(new Set());
+  const toggleReveal = (id: string) =>
+    setRevealed((s) => {
+      const n = new Set(s);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
+      return n;
+    });
 
   // Debounced: searching happens on the server, so not one request per keystroke.
   useEffect(() => {
@@ -252,7 +270,28 @@ export default function LeadsPage() {
                   <td className="tabular-nums text-zinc-400">{(current - 1) * PAGE_SIZE + i + 1}</td>
                   <td>
                     <div className="font-medium">{l.name || <span className="text-zinc-400">No name yet</span>}</div>
-                    <div className="text-xs text-zinc-500">{l.phone || "No phone"}</div>
+                    <div className="flex items-center gap-1 text-xs text-zinc-500">
+                      {!l.phone ? (
+                        "No phone"
+                      ) : (
+                        <>
+                          <span className="tabular-nums">
+                            {canReveal && !l.phoneMasked && revealed.has(l._id) ? l.phone : l.phoneMasked ? l.phone : maskPhone(l.phone)}
+                          </span>
+                          {canReveal && !l.phoneMasked && (
+                            <button
+                              type="button"
+                              onClick={() => toggleReveal(l._id)}
+                              title={revealed.has(l._id) ? "Hide number" : "Show number"}
+                              aria-label={revealed.has(l._id) ? "Hide number" : "Show number"}
+                              className="rounded p-0.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+                            >
+                              {revealed.has(l._id) ? <EyeOff size={13} /> : <Eye size={13} />}
+                            </button>
+                          )}
+                        </>
+                      )}
+                    </div>
                     {l.lastCall && (
                       <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-zinc-400">
                         Last call {fmtWhen(l.lastCall.at)}
@@ -276,7 +315,7 @@ export default function LeadsPage() {
                     <button
                       onClick={() => call(l)}
                       disabled={!l.callable || calling === l._id}
-                      title={l.callable ? `Call ${l.name || l.phone}` : l.phone ? "Test data - cannot be called" : "No phone number yet"}
+                      title={l.callable ? `Call ${l.name || "this lead"}` : l.phone ? "Test data - cannot be called" : "No phone number yet"}
                       className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       {calling === l._id ? <Loader label="" size={14} /> : <Phone size={14} />} Call

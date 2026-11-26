@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight, Bell, BellOff, FileQuestion, UserCog } from "lucide-react";
+import { ArrowRight, Bell, BellOff, BellRing, FileQuestion, UserCog } from "lucide-react";
 import { api, Person, type MyNotifications } from "../lib/api";
+import { useWebPush } from "../lib/web-push";
 import { Spinner } from "./loading";
 
 /** The farmers page, filtered to the unassigned, with `ids` highlighted. */
@@ -30,6 +31,7 @@ export function NotificationsMenu() {
   const [notes, setNotes] = useState<MyNotifications | null>(null);
   const router = useRouter();
   const ref = useRef<HTMLDivElement>(null);
+  const push = useWebPush();
 
   /** Own notifications; a failure (older backend) just leaves them out. */
   const fetchNotes = () =>
@@ -137,6 +139,29 @@ export function NotificationsMenu() {
               </span>
             ) : null}
           </div>
+
+          {/* Web push: enquiry alerts on this device even with the dashboard closed. */}
+          {(push.state === "off" || push.state === "blocked") && (
+            <div className="flex items-start gap-3 border-b border-zinc-100 bg-amber-50/70 px-4 py-3 dark:border-zinc-800 dark:bg-amber-950/30">
+              <BellRing size={16} className="mt-0.5 shrink-0 text-amber-700 dark:text-amber-400" />
+              <div className="min-w-0 flex-1 text-xs text-amber-900 dark:text-amber-200">
+                {push.state === "off" ? (
+                  <>
+                    Get new enquiries on this device, even when the dashboard is closed.
+                    <button
+                      type="button"
+                      onClick={push.enable}
+                      className="mt-1.5 block rounded-full bg-amber-600 px-3 py-1 font-semibold text-white hover:bg-amber-700"
+                    >
+                      Turn on notifications
+                    </button>
+                  </>
+                ) : (
+                  <>Notifications are blocked for this site. Allow them from the lock icon in the address bar to get enquiry alerts.</>
+                )}
+              </div>
+            </div>
+          )}
 
           {farmers === null && notes === null ? (
             <div className="flex justify-center py-8">

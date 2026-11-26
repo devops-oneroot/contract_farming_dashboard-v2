@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { AuthProvider, useAuth } from "../lib/auth";
 import { SharedUIProvider } from "../lib/shared-ui";
+import { syncWebPushUser } from "../lib/web-push";
 import { LightboxProvider } from "./lightbox";
 import { GlobalLoader, Loader } from "./loading";
 import { Shell } from "./shell";
@@ -27,6 +28,12 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   // Login is the only public page — there is no sign-up. Admins are created from /account.
   const isPublic = pathname === "/login";
+
+  // Web push (new enquiries) goes to the signed-in account on this browser.
+  useEffect(() => {
+    if (loading) return;
+    syncWebPushUser(admin?._id ?? null);
+  }, [admin?._id, loading]);
 
   useEffect(() => {
     if (loading) return;

@@ -12,7 +12,7 @@ import {
 } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { canDo } from "../lib/rbac";
-import { Loader } from "../components/loading";
+import { LoadingOverlay } from "../components/loading";
 import { Pagination } from "../components/pagination";
 import { Select } from "../components/ui";
 
@@ -271,7 +271,9 @@ export default function FieldUsersPage() {
             inside it (globals.css), headings pinned, pager still in view. */}
         {/* No sideways scroll: text cells wrap, the buttons go icon-only
             below xl, and the less important columns drop out on small screens. */}
-        <div className="fill-scroll scroll-thin overflow-y-auto overflow-x-hidden">
+        <div className="relative fill-scroll scroll-thin overflow-y-auto overflow-x-hidden">
+          {/* Loading: a spinner centred over the table. */}
+          <LoadingOverlay show={loading} />
           <table className="data-table compact [&_td]:whitespace-normal [&_td]:break-words">
             <thead className="sticky top-0 z-10 [&>tr>th]:bg-zinc-50 dark:[&>tr>th]:bg-zinc-900">
               <tr>
@@ -285,13 +287,6 @@ export default function FieldUsersPage() {
               </tr>
             </thead>
             <tbody>
-              {loading && users.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="py-6 text-center">
-                    <Loader />
-                  </td>
-                </tr>
-              )}
               {!loading && users.length === 0 && (
                 <tr>
                   <td colSpan={7} className="py-6 text-center text-zinc-500">

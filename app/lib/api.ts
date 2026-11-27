@@ -236,9 +236,41 @@ export type TeleOutcome = "no_issues" | "follow_up" | "feedback";
 export type Satisfaction = "satisfied" | "not_satisfied";
 
 /** One telecaller call to a lead, with what the telecaller noted. */
+/** A farmer registered at a meetup from the app, as Telecalling lists them. */
+export type TeleMeetupFarmer = {
+  _id: string;
+  name: string;
+  /** Masked ("98******10") unless this role may see numbers. */
+  mobile: string;
+  phoneMasked: boolean;
+  village: string;
+  taluk: string;
+  district: string;
+  acres: number | null;
+  /** Who from the team has been in touch with them, from the records. */
+  touchPoints: TouchPoint[];
+  meetup: { _id: string; name: string; meetupDate: string | null };
+  /** The field executive who registered them in the app. */
+  recordedBy: { _id: string; name: string } | null;
+  createdAt: string;
+  lastCall: { _id: string; at: string; status: TeleCallStatus; outcome: TeleOutcome | null; followUpAt: string | null } | null;
+};
+
+export type TeleMeetupFarmersPage = {
+  items: TeleMeetupFarmer[];
+  total: number;
+  page: number;
+  limit: number;
+  /** Meetups that have farmers, for the filter. */
+  meetups: { _id: string; name: string; meetupDate: string | null; farmers: number }[];
+  calling: { configured: boolean; missing: string[] };
+};
+
 export type TeleCall = {
   _id: string;
   leadId: string | null;
+  /** Set instead of leadId for a call to a farmer registered at a meetup. */
+  meetupFarmerId?: string | null;
   leadName: string;
   toPhone: string;
   telecallerId: string | null;
@@ -590,6 +622,8 @@ export type DayReport = {
     dailyReport: string;
     dailyExpenses: string;
     foodExpense?: number;
+    /** ₹ in hand at the end of the day; null before it was asked. */
+    cashInHand?: number | null;
     meterStart?: number;
     meterEnd?: number;
     totalKm?: number;
@@ -629,6 +663,8 @@ export type DailyReport = {
   dailyReport: string;
   dailyExpenses: string;
   foodExpense?: number;
+  /** ₹ in hand at the end of the day (required in the app); null on older reports. */
+  cashInHand?: number | null;
   meterStart?: number;
   meterEnd?: number;
   totalKm?: number;
@@ -1377,6 +1413,81 @@ export type AdminNotification = {
 };
 export type MyNotifications = { unread: number; items: AdminNotification[] };
 
+/** Others > Farmer Meetup. `createdBy` is the dashboard account that added it. */
+export type FarmerMeetup = {
+  _id: string;
+  name: string;
+  description: string;
+  /** The day it happens, 'YYYY-MM-DD'; null on a meetup saved before dates. */
+  meetupDate: string | null;
+  /** Where it is held, picked from the meetup areas' place list. */
+  village: string;
+  taluk: string;
+  district: string;
+  expectedFarmers: number | null;
+  /** The products to show: "• " points, one per line, or a paragraph. */
+  products: string;
+  /** The app user organising it. */
+  organizer: { _id: string; name: string; mobile: string } | null;
+  /** How many farmers actually came; filled in afterwards, optional. */
+  visitedFarmers: number | null;
+  createdBy: { _id: string; name: string } | null;
+  /** Farmers registered for it from the app. */
+  farmerCount: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/** What the Add / Edit meetup form sends. */
+export type FarmerMeetupInput = {
+  name: string;
+  description: string;
+  meetupDate: string;
+  village: string;
+  taluk: string;
+  district: string;
+  expectedFarmers: number;
+  products: string;
+  organizerId: string;
+  /** Optional: left empty until the meetup has happened. */
+  visitedFarmers: number | null;
+};
+
+/**
+ * A touch point: someone from OneRoot who has been in contact with a farmer,
+ * worked out by the server from the records (never typed in) - one per kind
+ * and person, with how many times and when last.
+ */
+export type TouchPoint = {
+  type: "field_visit" | "field_call" | "telecall" | "sale" | "onboarded" | "meetup";
+  by: string;
+  count: number;
+  lastAt: string | null;
+};
+export const TOUCH_LABEL: Record<TouchPoint["type"], string> = {
+  field_visit: "Farm visit",
+  field_call: "Field call",
+  telecall: "Telecaller call",
+  sale: "Sale",
+  onboarded: "Onboarded",
+  meetup: "Meetup registration",
+};
+
+/** A farmer registered for a meetup from the app. */
+export type MeetupFarmer = {
+  _id: string;
+  name: string;
+  mobile: string;
+  village: string;
+  taluk: string;
+  district: string;
+  /** Land in acres; null before it was asked. */
+  acres: number | null;
+  touchPoints: TouchPoint[];
+  recordedBy: { _id: string; name: string } | null;
+  createdAt: string;
+};
+
 /** One farmer on the Enquiries page. */
 export type EnquiryRow = {
   _id: string;
@@ -1446,6 +1557,23 @@ export const api = {
     }>(`/api/enquiries/${farmerId}/history`),
   /** This account's dashboard notifications (new enquiries in departments it handles). */
   getMyNotifications: () => json<MyNotifications>("/api/enquiries/notifications"),
+  /** Others > Farmer Meetup: every meetup, newest first. */
+  listFarmerMeetups: (search?: string) =>
+    json<{ items: FarmerMeetup[] }>(`/api/farmer-meetups${search ? `?search=${encodeURIComponent(search)}` : ""}`),
+  /** Add a meetup; the server records the signed-in account as its creator. */
+  createFarmerMeetup: (body: FarmerMeetupInput) =>
+    json<{ meetup: FarmerMeetup }>("/api/farmer-meetups", { method: "POST", body: JSON.stringify(body) }),
+  /** Change a meetup (the same fields as adding one). */
+  updateFarmerMeetup: (id: string, body: FarmerMeetupInput) =>
+    json<{ meetup: FarmerMeetup }>(`/api/farmer-meetups/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  /** Villages in the meetup areas matching what was typed - the same list the app suggests. */
+  searchMeetupPlaces: (q: string) =>
+    json<{ places: { village: string; taluk: string; district: string }[] }>(`/api/farmer-meetups/places?q=${encodeURIComponent(q)}`),
+  /** Every app user who can organise a meetup (agronomists, senior agronomists, attendance staff). */
+  listMeetupOrganizers: () =>
+    json<{ items: { _id: string; name: string; mobile: string; role: string }[] }>("/api/farmer-meetups/organizers"),
+  /** Farmers registered for one meetup from the app, newest first. */
+  listMeetupFarmers: (meetupId: string) => json<{ items: MeetupFarmer[] }>(`/api/farmer-meetups/${meetupId}/farmers`),
   /** Mark notifications read: the given ids, or all of them. */
   markNotificationsRead: (ids?: string[]) =>
     json<MyNotifications>("/api/enquiries/notifications/read", { method: "POST", body: JSON.stringify({ ids }) }),
@@ -1495,6 +1623,17 @@ export const api = {
     return json<TeleCallsPage>(`/api/tele-calls?${q.toString()}`);
   },
   leadCallHistory: (leadId: string) => json<{ items: TeleCall[] }>(`/api/tele-calls/lead/${leadId}`),
+  /** Telecalling > Meetup Farmers: farmers the field team registered at meetups, one page at a time. */
+  listTeleMeetupFarmers: (params: { meetupId?: string; search?: string; page?: number; limit?: number }) => {
+    const q = new URLSearchParams();
+    for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== "") q.set(k, String(v));
+    return json<TeleMeetupFarmersPage>(`/api/tele-calls/meetup-farmers?${q.toString()}`);
+  },
+  /** Ring the telecaller's mobile, then the meetup farmer - the same call flow as a lead. */
+  placeMeetupFarmerCall: (meetupFarmerId: string) =>
+    json<{ call: TeleCall }>("/api/tele-calls", { method: "POST", body: JSON.stringify({ meetupFarmerId }) }),
+  /** A meetup farmer's earlier calls, newest first. */
+  meetupFarmerCallHistory: (id: string) => json<{ items: TeleCall[] }>(`/api/tele-calls/meetup-farmer/${id}`),
   listFeedbacks: (params: { satisfaction?: Satisfaction; rating?: number; outcome?: TeleOutcome; search?: string; from?: string; to?: string; page?: number; limit?: number } & PlaceFilter) => {
     const q = new URLSearchParams();
     for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== "") q.set(k, String(v));

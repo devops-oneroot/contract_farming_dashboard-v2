@@ -5,7 +5,7 @@ import { AudioLines, RefreshCw } from "lucide-react";
 import { api, type FieldRecording, type Person } from "../lib/api";
 import { AudioPlayer } from "../components/audio-player";
 import { DateRangeFilter } from "../components/date-range-filter";
-import { Loader } from "../components/loading";
+import { LoadingOverlay } from "../components/loading";
 import { Pagination } from "../components/pagination";
 import { Select } from "../components/ui";
 
@@ -189,7 +189,9 @@ export default function RecordingsPage() {
         </div>
 
         {/* fill-scroll: the table takes the rest of the screen and scrolls inside. */}
-        <div className="fill-scroll scroll-thin overflow-y-auto overflow-x-hidden">
+        <div className="relative fill-scroll scroll-thin overflow-y-auto overflow-x-hidden">
+          {/* Loading: a spinner centred over the table. */}
+          <LoadingOverlay show={loading} />
           <table className="data-table compact [&_td]:whitespace-normal [&_td]:break-words">
             <thead className="sticky top-0 z-10 [&>tr>th]:bg-zinc-50 dark:[&>tr>th]:bg-zinc-900">
               <tr>
@@ -202,13 +204,6 @@ export default function RecordingsPage() {
               </tr>
             </thead>
             <tbody>
-              {loading && items.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="py-6 text-center">
-                    <Loader />
-                  </td>
-                </tr>
-              )}
               {!loading && items.length === 0 && (
                 <tr>
                   <td colSpan={6} className="py-6 text-center text-zinc-500">

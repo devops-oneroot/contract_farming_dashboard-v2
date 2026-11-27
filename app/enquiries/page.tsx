@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Clock, Droplets, History, Landmark, Search, ShieldCheck, Tractor, UserCog, UserPlus, X } from "lucide-react";
+import { Clock, Droplets, MessageSquareText, History, Landmark, Search, ShieldCheck, Tractor, UserCog, UserPlus, X } from "lucide-react";
 
 import { api, type EnquiryAnswers, type EnquiryAssignee, type EnquiryCategory, type EnquiryRow } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { canDo } from "../lib/rbac";
-import { Loader } from "../components/loading";
+import { Loader, LoadingOverlay } from "../components/loading";
 import { Pagination, usePaged } from "../components/pagination";
 
 const PAGE_SIZE = 20;
@@ -473,7 +473,9 @@ export default function EnquiriesPage() {
         })
         .catch((e) => live && setError(e instanceof Error ? e.message : "Could not load enquiries"))
         .finally(() => live && setLoading(false));
-    }, 300);
+      // Wait for a pause only while typing a search; the first load (and a
+      // cleared search or a reload after assigning) fetches at once.
+    }, search.trim() ? 300 : 0);
     return () => {
       live = false;
       clearTimeout(t);
@@ -500,7 +502,9 @@ export default function EnquiriesPage() {
     <div className="space-y-5">
       <div className="flex flex-wrap items-start gap-3">
         <div className="min-w-0 flex-1">
-          <h1 className="text-xl font-semibold">Enquiries</h1>
+          <h1 className="flex items-center gap-2 text-xl font-semibold">
+            <MessageSquareText size={20} className="text-brand-600" /> Enquiries
+          </h1>
           <p className="text-sm text-zinc-500">Farmers who said Yes to a department you handle. Click a farmer to see their enquiry history.</p>
         </div>
         {canAssign && (
@@ -534,7 +538,9 @@ export default function EnquiriesPage() {
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
-      <div className="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-800">
+      <div className="relative min-h-64 overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-800">
+        {/* Loading: a spinner centred over the table. */}
+        <LoadingOverlay show={loading} />
         <table className="w-full text-sm">
           <thead className="bg-zinc-50 text-left text-xs text-zinc-500 dark:bg-zinc-900/50">
             <tr>
@@ -552,13 +558,7 @@ export default function EnquiriesPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-100 dark:divide-zinc-900">
-            {loading ? (
-              <tr>
-                <td colSpan={6 + categories.length} className="py-10">
-                  <Loader />
-                </td>
-              </tr>
-            ) : pageItems.length === 0 ? (
+            {loading ? null : pageItems.length === 0 ? (
               <tr>
                 <td colSpan={6 + categories.length} className="py-10 text-center text-zinc-500">
                   {categories.length === 0

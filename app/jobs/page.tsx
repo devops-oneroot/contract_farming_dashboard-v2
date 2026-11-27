@@ -5,7 +5,7 @@ import { Briefcase, Eye, EyeOff, MapPin, Pencil, Plus, RefreshCw, Search, Trash2
 import { api, type WebsiteJob, type WebsiteJobInput } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { canDo } from "../lib/rbac";
-import { Loader } from "../components/loading";
+import { LoadingOverlay } from "../components/loading";
 import { Select } from "../components/ui";
 
 const FALLBACK_DEPARTMENTS = ["Agronomy", "Store", "Trade", "Sales", "Marketing", "Operations", "Technology", "Finance", "Other"];
@@ -183,7 +183,9 @@ export default function JobsPage() {
           </div>
         </div>
 
-        <div className="fill-scroll scroll-thin overflow-y-auto overflow-x-hidden">
+        <div className="relative fill-scroll scroll-thin overflow-y-auto overflow-x-hidden">
+          {/* Loading: a spinner centred over the table. */}
+          <LoadingOverlay show={!jobs && !error} />
           <table className="data-table compact [&_td]:whitespace-normal [&_td]:break-words">
             <thead className="sticky top-0 z-10 [&>tr>th]:bg-zinc-50 dark:[&>tr>th]:bg-zinc-900">
               <tr>
@@ -198,13 +200,6 @@ export default function JobsPage() {
               </tr>
             </thead>
             <tbody>
-              {!jobs && !error && (
-                <tr>
-                  <td colSpan={8} className="py-6 text-center">
-                    <Loader />
-                  </td>
-                </tr>
-              )}
               {jobs && shown.length === 0 && (
                 <tr>
                   <td colSpan={8} className="py-6 text-center text-zinc-500">

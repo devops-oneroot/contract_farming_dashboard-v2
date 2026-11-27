@@ -6,7 +6,7 @@ import { api, Fpo, Person } from "../lib/api";
 import { PhotoThumb } from "../components/lightbox";
 import { Select } from "../components/ui";
 import { DateRangeFilter } from "../components/date-range-filter";
-import { Loader } from "../components/loading";
+import { LoadingOverlay } from "../components/loading";
 import { Pagination } from "../components/pagination";
 
 const PAGE_SIZE = 20;
@@ -160,6 +160,8 @@ export default function FposPage() {
 
   return (
     <div className="card overflow-hidden">
+      {/* Search and filters on one line (.filter-row): they wrap only when they do not fit. */}
+      <div className="filter-row">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-3 border-b border-zinc-100 p-3 dark:border-zinc-800">
         <button
@@ -309,6 +311,7 @@ export default function FposPage() {
           }}
         />
       </div>
+      </div>
 
       {/* Table */}
       {/* Fixed height with the header pinned: twenty rows plus filters and a
@@ -318,7 +321,9 @@ export default function FposPage() {
           and a large monitor both fill what they have. The 19rem reserved is
           the chrome above and below — header, toolbar, filters and pager — and
           little enough beyond that to keep the pager on screen. */}
-      <div className="fill-scroll scroll-thin overflow-auto">
+      <div className="relative fill-scroll scroll-thin overflow-auto">
+        {/* Loading: a spinner centred over the table. */}
+        <LoadingOverlay show={loading} />
         <table className="data-table">
           <thead className="sticky top-0 z-10 [&>tr>th]:bg-zinc-50 dark:[&>tr>th]:bg-zinc-900">
             <tr>
@@ -336,13 +341,7 @@ export default function FposPage() {
             </tr>
           </thead>
           <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan={11} className="whitespace-normal py-10 text-center text-zinc-500">
-                  <Loader />
-                </td>
-              </tr>
-            ) : error ? (
+            {loading ? null : error ? (
               <tr>
                 <td colSpan={11} className="whitespace-normal py-10 text-center text-red-600">
                   {error}

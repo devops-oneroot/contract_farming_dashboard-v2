@@ -27,11 +27,13 @@ export const MODULE_INFO: Record<string, { label: string; hrefs: string[] }> = {
   roles: { label: "Roles & Access", hrefs: ["/roles"] },
   leads: { label: "Leads", hrefs: ["/leads"] },
   feedbacks: { label: "Feedbacks", hrefs: ["/feedbacks"] },
-  telecalls: { label: "Telecalling Calls", hrefs: ["/tele-calls"] },
-  field_users: { label: "Field Users", hrefs: ["/field-users"] },
+  // Meetup Farmers places the same calls, so it goes with Telecalling Calls.
+  telecalls: { label: "Telecalling Calls", hrefs: ["/tele-calls", "/meetup-farmers"] },
+  field_users: { label: "App Users", hrefs: ["/field-users"] },
   jobs: { label: "Jobs (website)", hrefs: ["/jobs"] },
   recordings: { label: "Recordings", hrefs: ["/recordings"] },
   enquiries: { label: "Enquiries", hrefs: ["/enquiries"] },
+  farmer_meetups: { label: "Farmer Meetup", hrefs: ["/farmer-meetups"] },
 };
 
 /** The built-in roles' names - used only until the role list (with any renames) has loaded. */

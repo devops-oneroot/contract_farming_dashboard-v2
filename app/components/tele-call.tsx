@@ -14,6 +14,7 @@ import {
   type TeleOutcome,
 } from "../lib/api";
 import { Loader } from "./loading";
+import { AudioPlayer } from "./audio-player";
 import { DateInput, Select } from "./ui";
 
 // ------------------------------------------------------------------ labels
@@ -206,13 +207,16 @@ export function TeleCallDialog({
     };
   }, [initial._id, initial.status]);
 
+  // Earlier calls to the same lead, or to the same meetup farmer.
   useEffect(() => {
-    if (!initial.leadId) return;
-    api
-      .leadCallHistory(initial.leadId)
-      .then((r) => setHistory(r.items.filter((c) => c._id !== initial._id)))
-      .catch(() => setHistory([]));
-  }, [initial.leadId, initial._id]);
+    const load = initial.meetupFarmerId
+      ? api.meetupFarmerCallHistory(initial.meetupFarmerId)
+      : initial.leadId
+        ? api.leadCallHistory(initial.leadId)
+        : null;
+    if (!load) return;
+    load.then((r) => setHistory(r.items.filter((c) => c._id !== initial._id))).catch(() => setHistory([]));
+  }, [initial.leadId, initial.meetupFarmerId, initial._id]);
 
   useEffect(() => {
     api.listAgronomists().then(setExecutives).catch(() => setExecutives([]));
@@ -338,7 +342,7 @@ export function TeleCallDialog({
           {call.hasRecording && (
             <div>
               <div className="mb-1 text-xs font-medium text-zinc-500">Recording</div>
-              <audio controls preload="none" src={api.teleCallRecordingUrl(call._id)} className="h-9 w-full" />
+              <AudioPlayer src={api.teleCallRecordingUrl(call._id)} fallbackSeconds={call.durationSec} title={call.leadName || "Call recording"} subtitle={`Call on ${fmtWhen(call.startedAt)}`} />
             </div>
           )}
 

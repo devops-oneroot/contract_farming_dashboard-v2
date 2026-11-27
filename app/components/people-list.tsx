@@ -15,7 +15,7 @@ import { AgronomistMultiSelect } from "./agronomist-multi-select";
 import { ExcelExport, type ExportColumn } from "./excel-export";
 import { Select } from "./ui";
 import { DateRangeFilter } from "./date-range-filter";
-import { Loader } from "./loading";
+import { LoadingOverlay } from "./loading";
 import { Pagination } from "./pagination";
 import { usePerm } from "../lib/use-perm";
 
@@ -388,6 +388,25 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
 
   return (
     <div className="card min-w-0 overflow-hidden">
+      {unassignedOnly && (
+        <div className="flex flex-wrap items-center gap-2 border-b border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-300">
+          <span className="font-medium">Showing farmers without an agronomist</span>
+          {highlight.size > 0 && (
+            <span className="text-xs text-blue-700/80 dark:text-blue-400/80">
+              · {highlight.size} highlighted from the home page — open one to assign an agronomist
+            </span>
+          )}
+          <button
+            onClick={clearUnassigned}
+            className="ml-auto inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium hover:bg-blue-100 dark:hover:bg-blue-900/40"
+          >
+            <X size={13} /> Show all farmers
+          </button>
+        </div>
+      )}
+
+      {/* Search and filters on one line (.filter-row): they wrap only when they do not fit. */}
+      <div className="filter-row">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-3 border-b border-zinc-100 p-3 dark:border-zinc-800">
         <button
@@ -408,13 +427,14 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
         {showCounts && (
           <button
             onClick={() => setShowRegions(true)}
-            className="flex items-center gap-2 rounded-lg border border-zinc-300 px-3 py-2 text-sm hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
+            className="order-last flex items-center gap-2 rounded-lg border border-zinc-300 px-3 py-2 text-sm hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
           >
             <MapPin size={15} /> Regions
           </button>
         )}
         {showDetail && (
           // Every farmer the filters match, not just this page of twenty.
+          <div className="order-last">
           <ExcelExport
             id="farmers"
             fileName="farmers"
@@ -432,33 +452,17 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
               })
             }
           />
+          </div>
         )}
         {showDetail && farmerPerm.add && (
           <button
             onClick={openAdd}
-            className="flex items-center gap-2 rounded-lg bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600"
+            className="order-last flex items-center gap-2 rounded-lg bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600"
           >
             <Plus size={15} /> Add farmer
           </button>
         )}
       </div>
-
-      {unassignedOnly && (
-        <div className="flex flex-wrap items-center gap-2 border-b border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-300">
-          <span className="font-medium">Showing farmers without an agronomist</span>
-          {highlight.size > 0 && (
-            <span className="text-xs text-blue-700/80 dark:text-blue-400/80">
-              · {highlight.size} highlighted from the home page — open one to assign an agronomist
-            </span>
-          )}
-          <button
-            onClick={clearUnassigned}
-            className="ml-auto inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium hover:bg-blue-100 dark:hover:bg-blue-900/40"
-          >
-            <X size={13} /> Show all farmers
-          </button>
-        </div>
-      )}
 
       {/* Filters: which farmers to show, or which farmers the counts cover */}
       <div className="filter-bar border-b border-zinc-100 px-3 py-3 dark:border-zinc-800">
@@ -560,6 +564,7 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
           }}
         />
       </div>
+      </div>
 
       {/* How much land one agronomist covers. Shared with Sales Analysis, so
           the two screens can never answer it differently. */}
@@ -577,7 +582,9 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
           and a large monitor both fill what they have. The 19rem reserved is
           the chrome above and below — header, toolbar, filters and pager — and
           little enough beyond that to keep the pager on screen. */}
-      <div className="fill-scroll scroll-thin min-h-[24rem] overflow-auto">
+      <div className="relative fill-scroll scroll-thin min-h-[24rem] overflow-auto">
+        {/* Loading: a spinner centred over the table. */}
+        <LoadingOverlay show={loading} />
         {/* Columns size to their content; when they add up to more than the
             screen, this wrapper scrolls sideways instead. The header cells get
             an opaque background so rows don't show through while it's pinned. */}
@@ -609,13 +616,7 @@ export function PeopleTable({ role }: { role: "farmer" | "agronomist" }) {
             </tr>
           </thead>
           <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan={colCount} className="py-10 text-center text-zinc-500">
-                  <Loader />
-                </td>
-              </tr>
-            ) : error ? (
+            {loading ? null : error ? (
               <tr>
                 <td colSpan={colCount} className="py-10 text-center text-red-600">
                   {error}

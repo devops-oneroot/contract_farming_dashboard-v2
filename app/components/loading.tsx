@@ -27,10 +27,32 @@ export function Loader({ label = "Loading…", size = 16, className = "" }: { la
   );
 }
 
-export function LoadingBlock({ label = "Loading…", className = "" }: { label?: string; className?: string }) {
+/**
+ * A page's loading placeholder. By default it fills the rest of the screen -
+ * the same space the page's table takes once loaded (`.loading-fill` joins
+ * the full-height layout in globals.css) - so the page does not jump when the
+ * data arrives. `fill={false}` for a small spot, e.g. inside a card or a panel.
+ */
+export function LoadingBlock({ label = "Loading…", className = "", fill = true }: { label?: string; className?: string; fill?: boolean }) {
   return (
-    <div className={`flex min-h-32 w-full items-center justify-center py-8 ${className}`}>
+    <div className={`flex w-full items-center justify-center py-8 ${fill ? "loading-fill min-h-56" : "min-h-32"} ${className}`}>
       <Loader label={label} size={20} />
+    </div>
+  );
+}
+
+/**
+ * A spinner centred over a page's table while it (re)loads - the first load,
+ * a filter, a search, the next page. Put it inside the table's box and give
+ * that box `relative`; the rows already shown stay visible, faded, beneath.
+ */
+export function LoadingOverlay({ show, label = "Loading…" }: { show: boolean; label?: string }) {
+  if (!show) return null;
+  return (
+    <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center bg-white/60 backdrop-blur-[1px] dark:bg-zinc-950/60">
+      <div className="flex items-center gap-2 rounded-full bg-white px-4 py-2 shadow-lg ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
+        <Loader label={label} size={18} />
+      </div>
     </div>
   );
 }

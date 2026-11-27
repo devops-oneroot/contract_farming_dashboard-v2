@@ -397,7 +397,7 @@ export function FarmerHistory({ farmer: f, onClose }: { farmer: HistoryFarmer; o
         {error ? (
           <p className="text-red-600">{error}</p>
         ) : !visits ? (
-          <LoadingBlock />
+          <LoadingBlock fill={false} />
         ) : (
           <ol className="relative space-y-4 border-l border-zinc-200 pl-5 dark:border-zinc-800">
             {visits.map((v, i) => {

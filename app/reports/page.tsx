@@ -21,6 +21,8 @@ const fmtDate = (s: string) =>
   new Date(s).toLocaleDateString(undefined, { weekday: "short", day: "2-digit", month: "short" });
 
 const money = (n?: number) => (n ? `₹${n.toLocaleString("en-IN")}` : "—");
+/** Cash in hand: ₹0 is a real answer; only a report filed before it was asked shows —. */
+const cash = (n?: number | null) => (n == null ? "—" : `₹${n.toLocaleString("en-IN")}`);
 
 const initials = (name: string) =>
   name
@@ -44,6 +46,7 @@ const REPORT_COLUMNS: ExportColumn<DailyReport>[] = [
   { key: "km", label: "Meter km", value: (r) => r.totalKm ?? "" },
   { key: "gpsKm", label: "GPS km", value: (r) => r.stats?.distanceKm ?? "" },
   { key: "food", label: "Food (₹)", value: (r) => r.foodExpense ?? "" },
+  { key: "cashInHand", label: "Cash in hand (₹)", value: (r) => r.cashInHand ?? "" },
   { key: "visits", label: "Visits", value: (r) => r.stats?.visits ?? "" },
   { key: "onboarded", label: "Onboarded", value: (r) => r.stats?.newFarmers ?? "" },
   { key: "sales", label: "Sales", value: (r) => r.stats?.sales ?? "" },
@@ -127,6 +130,7 @@ export default function ReportsPage() {
     { label: "Reports", value: String(reports.length) },
     { label: "Meter km", value: `${Math.round(sum((r) => r.totalKm ?? 0) * 10) / 10} km` },
     { label: "Food spend", value: `₹${sum((r) => r.foodExpense ?? 0).toLocaleString("en-IN")}` },
+    { label: "Cash in hand", value: `₹${sum((r) => r.cashInHand ?? 0).toLocaleString("en-IN")}` },
     { label: "Visits", value: String(sum((r) => r.stats?.visits ?? 0)) },
     { label: "Onboarded", value: String(sum((r) => r.stats?.newFarmers ?? 0)) },
   ];
@@ -201,7 +205,7 @@ export default function ReportsPage() {
       </div>
 
       {!loading && !error && reports.length > 0 && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           {summary.map((s) => (
             <div key={s.label} className="card p-3">
               <div className="text-xs uppercase tracking-wide text-zinc-500">{s.label}</div>
@@ -236,6 +240,7 @@ export default function ReportsPage() {
                 <th>Status</th>
                 <th className="num">Meter km</th>
                 <th className="num">Food</th>
+                <th className="num">Cash in hand</th>
                 <th>Today&apos;s Expenses</th>
                 <th className="num">Visits</th>
                 <th />
@@ -290,6 +295,7 @@ export default function ReportsPage() {
                       {r.meterEnd ? <span className="font-semibold text-brand-600">{r.totalKm} km</span> : <Dash />}
                     </td>
                     <td className="num">{money(r.foodExpense)}</td>
+                    <td className="num">{cash(r.cashInHand)}</td>
                     <td>
                       <div className="flex max-w-56 items-center gap-1.5">
                         <span className="truncate" title={r.dailyExpenses || undefined}>

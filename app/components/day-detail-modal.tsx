@@ -421,13 +421,19 @@ export function DayDetailModal({
               </div>
 
               {/* The day in numbers: what the agent entered and what was recorded. */}
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
                 {[
                   {
                     icon: Utensils,
                     label: "Food",
                     value: written?.foodExpense ? money(written.foodExpense) : "—",
                     sub: written?.foodBills?.length ? `${written.foodBills.length} bill photo(s)` : "",
+                  },
+                  {
+                    icon: Wallet,
+                    label: "Cash in hand",
+                    value: written?.cashInHand != null ? `₹${written.cashInHand.toLocaleString("en-IN")}` : "—",
+                    sub: "end of day",
                   },
                   { icon: MapPin, label: "Visits", value: String(data.stats.visits) },
                   { icon: UserPlus, label: "Onboarded", value: String(data.stats.newFarmers) },

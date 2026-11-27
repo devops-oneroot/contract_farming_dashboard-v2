@@ -47,9 +47,28 @@ const SDK_URL = "https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js";
 
 let ready: Promise<OneSignalSdk | null> | null = null;
 
+/**
+ * Running on this machine or the office network (npm run dev): localhost,
+ * 127.x, 10.x, 172.16-31.x, 192.168.x or *.local. The OneSignal app only
+ * accepts the live site's address, so push stays off here.
+ */
+function isLocalRun() {
+  const h = window.location.hostname;
+  return (
+    h === "localhost" ||
+    h === "::1" ||
+    h === "[::1]" ||
+    h.endsWith(".local") ||
+    /^127\./.test(h) ||
+    /^10\./.test(h) ||
+    /^192\.168\./.test(h) ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(h)
+  );
+}
+
 /** Load and initialise the SDK once; resolves null when push is off or unavailable. */
 function oneSignal(): Promise<OneSignalSdk | null> {
-  if (!ONESIGNAL_APP_ID || typeof window === "undefined") return Promise.resolve(null);
+  if (!ONESIGNAL_APP_ID || typeof window === "undefined" || isLocalRun()) return Promise.resolve(null);
   if (ready) return ready;
   ready = new Promise((resolve) => {
     window.OneSignalDeferred = window.OneSignalDeferred || [];

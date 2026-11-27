@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight, Bell, BellOff, BellRing, FileQuestion, UserCog } from "lucide-react";
+import { ArrowRight, Bell, BellOff, BellRing, MessageSquareText, UserCog } from "lucide-react";
 import { api, Person, type MyNotifications } from "../lib/api";
 import { useWebPush } from "../lib/web-push";
 import { useAuth } from "../lib/auth";
@@ -211,7 +211,7 @@ export function NotificationsMenu() {
                           }`}
                         >
                           <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-violet-600 text-white">
-                            <FileQuestion size={14} />
+                            <MessageSquareText size={14} />
                           </span>
                           <div className="min-w-0 flex-1">
                             <div className={`truncate ${n.read ? "font-normal" : "font-semibold"}`}>{n.title}</div>

@@ -301,22 +301,40 @@ body {
     @apply mb-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between;
   }
   /*
-   * Filters above a table: one column per filter, label on top, control below.
-   * As many columns as fit (min 11rem each), down to one on phones.
+   * Filters above a table, label on top, control below - all on ONE line as
+   * long as they fit: each filter shrinks to 8.5rem before the row wraps, and
+   * only what does not fit moves down. Two per row on a phone.
    *   <div class="filter-bar">
    *     <label class="filter-field"><span class="filter-label">Region</span><select class="filter-control">…</select></label>
-   *     <div class="filter-field wide">…two dates…</div>    (spans two columns from sm)
+   *     <div class="filter-field wide">…two dates…</div>    (about twice as wide)
    *   </div>
    */
   .filter-bar {
-    @apply grid items-end gap-x-3 gap-y-3 text-sm;
-    grid-template-columns: repeat(auto-fill, minmax(min(11rem, 100%), 1fr));
+    @apply flex flex-wrap items-end gap-x-3 gap-y-3 text-sm;
+  }
+  /* Buttons and other bits sit at their own width. */
+  .filter-bar > * {
+    flex: 0 0 auto;
+    min-width: 0;
   }
   .filter-field {
     @apply flex min-w-0 flex-col gap-1.5;
   }
-  .filter-field.wide {
-    @apply sm:col-span-2;
+  .filter-bar > .filter-field {
+    flex: 1 1 10rem;
+    min-width: min(8.5rem, 100%);
+    max-width: 20rem;
+  }
+  .filter-bar > .filter-field.wide {
+    flex: 2 1 18rem;
+    min-width: min(14rem, 100%);
+    max-width: 36rem;
+  }
+  /* A row of buttons (Quick range): only as wide as they are, wrapping inside. */
+  .filter-bar > .filter-field.w-fit {
+    flex: 0 1 auto;
+    min-width: min(14rem, 100%);
+    max-width: 100%;
   }
   .filter-label {
     @apply truncate text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400;
@@ -328,6 +346,20 @@ body {
   .filter-actions {
     @apply flex h-9 items-center gap-2;
   }
+  /*
+   * A page's toolbar (Refresh, search, actions) and its .filter-bar as ONE
+   * line: both wrappers step aside (display: contents), so every button,
+   * the search box and every filter share the row and wrap only when they
+   * do not fit. Actions marked order-last (Export, Add) go at the end.
+   *   <div class="filter-row">
+   *     <div class="…toolbar…">Refresh, search…</div>
+   *     <div class="filter-bar">…filters…</div>
+   *   </div>
+   */
+  .filter-row {
+    @apply flex flex-wrap items-end gap-3 border-b border-zinc-100 p-3 text-sm dark:border-zinc-800;
+  }
+  /* (.filter-row > * { display: contents } is below, outside the layers.) */
 
   /* Modal: full-width sheet on phones, centred card from sm up, scrolls inside. */
   .modal-backdrop {
@@ -408,11 +440,19 @@ body {
  * (Farmers, Agronomists, FPOs). Grids are left alone so side-by-side layouts
  * keep their columns. Unlayered, so it outranks the max-height utilities.
  */
-.page-frame:has(:is(.table-wrap, .fill-scroll)) {
+/*
+ * A page's loading placeholder (LoadingBlock, .loading-fill) takes the same
+ * full-height space as the table it stands in for, so nothing jumps when the
+ * data arrives. Not inside a popup.
+ */
+.page-frame:has(:is(.table-wrap, .fill-scroll, .loading-fill:not(.modal-panel *))) {
   height: 100%;
 }
-.page-frame:has(:is(.table-wrap, .fill-scroll)) > .page-body,
-.page-body :where(div, section):not(.grid, .modal-backdrop, .modal-panel):has(:is(.table-wrap, .fill-scroll)) {
+.page-frame:has(:is(.table-wrap, .fill-scroll, .loading-fill:not(.modal-panel *))) > .page-body,
+.page-body
+  :where(div, section):not(.grid, .modal-backdrop, .modal-panel):has(
+    :is(.table-wrap, .fill-scroll, .loading-fill:not(.modal-panel *))
+  ) {
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
@@ -422,4 +462,43 @@ body {
   flex: 1 1 0%;
   min-height: 14rem;
   max-height: none;
+}
+.page-body .loading-fill:not(.modal-panel *) {
+  flex: 1 1 0%;
+}
+
+/*
+ * .filter-row's toolbar and filter bar step aside so their children share one
+ * line. Unlayered on purpose: the toolbar carries Tailwind's `flex` utility,
+ * which would beat this rule inside @layer components and keep the toolbar a
+ * full-width box (pushing the filters to a second line).
+ */
+.filter-row > * {
+  display: contents;
+}
+
+/*
+ * In that flex column, a centred page box (mx-auto max-w-7xl) would shrink to
+ * its content - narrow while loading, then wide once the table renders. Keep
+ * it full width (up to its max-w) at all times. In the components layer, so
+ * a width utility on the element still wins.
+ */
+@layer components {
+  .page-body.mx-auto,
+  .page-body > .mx-auto,
+  .page-body :where(div, section) > .mx-auto {
+    width: 100%;
+  }
+}
+
+/* Sidebar tooltip (components/nav-tooltip.tsx): a short fade and slide in from the menu. */
+@keyframes navtip {
+  from {
+    opacity: 0;
+    transform: translate(-4px, -50%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(0, -50%);
+  }
 }

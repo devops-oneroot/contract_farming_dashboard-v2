@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { Phone, PhoneOutgoing, User, Sprout } from "lucide-react";
 import { api, CallLog } from "../lib/api";
 import { LoadingBlock } from "../components/loading";
+import { AudioPlayer } from "../components/audio-player";
 import { Pagination, usePaged } from "../components/pagination";
 import { DateRangeFilter, inDateRange } from "../components/date-range-filter";
 
@@ -137,18 +138,15 @@ export default function CallsPage() {
                     </span>
                   </td>
                   <td>
-                    {l.recordingUrl ? (
-                      // Plivo recording URLs are directly playable.
-                      // eslint-disable-next-line jsx-a11y/media-has-caption
-                      <audio controls preload="none" src={l.recordingUrl} className="h-9 w-56 max-w-full" />
-                    ) : l.status === "completed" ? (
-                      // No URL captured yet — proxy resolves + streams it on demand.
-                      // eslint-disable-next-line jsx-a11y/media-has-caption
-                      <audio
-                        controls
-                        preload="none"
+                    {l.recordingUrl || l.status === "completed" ? (
+                      // Always through our backend: it resolves a missing URL on
+                      // demand, and its file can go through the player's sound controls.
+                      <AudioPlayer
+                        compact
                         src={`${API_URL}/api/plivo/recording-audio/${l._id}`}
-                        className="h-9 w-56 max-w-full"
+                        fallbackSeconds={l.duration || 0}
+                        title={`${l.agronomist?.name ?? "Agronomist"} → ${l.farmerName || "Farmer"}`}
+                        subtitle={`Call on ${fmtTime(l.calledAt)}`}
                       />
                     ) : (
                       <span className="text-xs text-zinc-400">No recording</span>

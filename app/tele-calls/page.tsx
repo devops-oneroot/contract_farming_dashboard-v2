@@ -6,7 +6,8 @@ import { AlertTriangle, CalendarClock, History, MessageSquareText, RefreshCw, Se
 import { api, type PlaceFilter, type TeleCall, type TeleCallTab, type TeleCallsPage } from "../lib/api";
 import { DateRangeFilter } from "../components/date-range-filter";
 import { PlaceFilters } from "../components/place-filter";
-import { Loader } from "../components/loading";
+import { LoadingOverlay } from "../components/loading";
+import { AudioPlayer } from "../components/audio-player";
 import { Pagination } from "../components/pagination";
 import {
   CallStatusPill,
@@ -126,6 +127,8 @@ export default function TeleCallsPage() {
       </div>
 
       <div className="card overflow-hidden">
+        {/* Search and filters on one line (.filter-row): they wrap only when they do not fit. */}
+        <div className="filter-row">
         <div className="flex flex-wrap items-center gap-3 border-b border-zinc-100 p-3 dark:border-zinc-800">
           <button
             onClick={() => setReloadKey((k) => k + 1)}
@@ -145,7 +148,6 @@ export default function TeleCallsPage() {
               className="w-full rounded-lg border border-zinc-300 bg-transparent py-2 pl-9 pr-3 text-sm dark:border-zinc-700"
             />
           </div>
-          {loading && <Loader />}
         </div>
 
         <div className="filter-bar border-b border-zinc-100 px-3 py-3 dark:border-zinc-800">
@@ -178,10 +180,13 @@ export default function TeleCallsPage() {
             }}
           />
         </div>
+        </div>
 
         {error && <p className="m-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950/40">{error}</p>}
 
-        <div className="fill-scroll scroll-thin overflow-auto">
+        <div className="fill-scroll scroll-thin relative overflow-auto">
+          {/* Loading: a spinner centred over the table, not in the filters. */}
+          <LoadingOverlay show={loading} />
           <table className="data-table">
             <thead className="sticky top-0 z-10 [&>tr>th]:bg-zinc-50 dark:[&>tr>th]:bg-zinc-900">
               <tr>
@@ -233,7 +238,7 @@ export default function TeleCallsPage() {
                     </td>
                     <td onClick={(e) => e.stopPropagation()}>
                       {c.hasRecording ? (
-                        <audio controls preload="none" src={api.teleCallRecordingUrl(c._id)} className="h-8 w-48 max-w-none" />
+                        <AudioPlayer compact src={api.teleCallRecordingUrl(c._id)} fallbackSeconds={c.durationSec} title={c.leadName || "Call recording"} subtitle={`Call on ${fmtWhen(c.startedAt)}`} />
                       ) : (
                         <span className="text-xs text-zinc-400">{c.status === "completed" ? "Coming…" : "-"}</span>
                       )}

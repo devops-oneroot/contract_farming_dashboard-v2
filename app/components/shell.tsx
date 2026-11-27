@@ -38,13 +38,16 @@ import {
   Contact,
   Briefcase,
   AudioLines,
-  FileQuestion,
+  MessageSquareText,
+  LayoutGrid,
+  UsersRound,
 } from "lucide-react";
 import { useAuth } from "../lib/auth";
 import { ProfileMenu } from "./profile-menu";
 import { NotificationsMenu } from "./notifications-menu";
 import { canPath, homeFor, roleLabel } from "../lib/rbac";
 import { ThemeToggle } from "./theme-toggle";
+import { NavTooltip } from "./nav-tooltip";
 
 /**
  * The sidebar. A group marked `single` is one page shown as a plain menu
@@ -70,6 +73,7 @@ const NAV_GROUPS: {
       { href: "/leads", label: "Leads", icon: Target },
       { href: "/feedbacks", label: "Feedbacks", icon: MessageSquareHeart },
       { href: "/tele-calls", label: "Calls", icon: PhoneCall },
+      { href: "/meetup-farmers", label: "Meetup Farmers", icon: UsersRound },
     ],
   },
   {
@@ -77,7 +81,7 @@ const NAV_GROUPS: {
     icon: Users,
     items: [
       { href: "/farmers", label: "Farmers", icon: Users },
-      { href: "/enquiries", label: "Enquiries", icon: FileQuestion },
+      { href: "/enquiries", label: "Enquiries", icon: MessageSquareText },
       { href: "/fpos", label: "FPOs", icon: Building2 },
       { href: "/agronomists", label: "Agronomists", icon: UserCog },
       { href: "/land", label: "Land Under Cultivation", icon: Wheat },
@@ -110,17 +114,19 @@ const NAV_GROUPS: {
       { href: "/disease-reports", label: "Disease Reports", icon: Bug },
       { href: "/reports", label: "Daily Reports", icon: ClipboardList },
       { href: "/recordings", label: "Recordings", icon: AudioLines },
-      { href: "/field-users", label: "Users", icon: Contact },
+      { href: "/field-users", label: "App Users", icon: Contact },
     ],
   },
+  // Last: everything that is not part of the daily field and office work.
   {
-    label: "Management",
-    icon: ShieldCheck,
+    label: "Others",
+    icon: LayoutGrid,
     items: [
       { href: "/account", label: "Users", icon: ShieldCheck },
       { href: "/roles", label: "Roles & Access", icon: KeyRound },
-      { href: "/jobs", label: "Jobs", icon: Briefcase },
       { href: "/settings/whatsapp-report", label: "Daily report (WhatsApp)", icon: MessageCircle },
+      { href: "/jobs", label: "OneRoot Website Jobs", icon: Briefcase },
+      { href: "/farmer-meetups", label: "Farmer Meetup", icon: UsersRound },
     ],
   },
 ];
@@ -142,7 +148,8 @@ const TITLES: Record<string, string> = {
   "/tracking": "Tracking & Distance",
   "/disease-reports": "Crop Disease Reports",
   "/reports": "Daily Reports",
-  "/field-users": "Field Users · Farmers & Agronomists",
+  "/field-users": "App Users · Farmers & Agronomists",
+  "/farmer-meetups": "Farmer Meetup",
   "/account": "Users & Dashboard Access",
   "/roles": "Roles & Access",
   "/jobs": "Jobs · Website open roles",
@@ -150,6 +157,7 @@ const TITLES: Record<string, string> = {
   "/leads": "Leads",
   "/feedbacks": "Feedbacks",
   "/tele-calls": "Calls",
+  "/meetup-farmers": "Meetup Farmers · Call farmers from meetups",
   "/settings": "Settings",
   "/settings/whatsapp-report": "Settings · Daily report on WhatsApp",
 };
@@ -224,16 +232,17 @@ export function Shell({ children }: { children: React.ReactNode }) {
    * expanded, under it when collapsed. The phone drawer has its ✕ instead.
    */
   const collapseToggle = (
-    <button
-      type="button"
-      onClick={() => setCollapsed((c) => !c)}
-      aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-      aria-expanded={!collapsed}
-      title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-zinc-400 ring-1 ring-zinc-200 transition-colors hover:bg-brand-50 hover:text-brand-600 hover:ring-brand-300 dark:ring-zinc-800 dark:hover:bg-brand-500/10 dark:hover:text-brand-400"
-    >
-      {collapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
-    </button>
+    <NavTooltip label={collapsed ? "Expand sidebar" : "Collapse sidebar"} hint={collapsed ? "Show menu names" : "Icons only"}>
+      <button
+        type="button"
+        onClick={() => setCollapsed((c) => !c)}
+        aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+        aria-expanded={!collapsed}
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-zinc-400 ring-1 ring-zinc-200 transition-colors hover:bg-brand-50 hover:text-brand-600 hover:ring-brand-300 dark:ring-zinc-800 dark:hover:bg-brand-500/10 dark:hover:text-brand-400"
+      >
+        {collapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+      </button>
+    </NavTooltip>
   );
 
   const sidebar = (compact: boolean, desktop = false) => (
@@ -246,16 +255,17 @@ export function Shell({ children }: { children: React.ReactNode }) {
       >
         {compact ? (
           // Collapsed: the logo tile is the expand button - no separate icon.
-          <button
-            type="button"
-            onClick={() => setCollapsed(false)}
-            aria-label="Expand sidebar"
-            aria-expanded={false}
-            title="Expand sidebar"
-            className="group/logo flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-brand-400 to-brand-600 shadow-md shadow-brand-500/30 transition hover:scale-105 hover:shadow-lg hover:shadow-brand-500/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2"
-          >
-            <Image src="/logo-mark-white.png" alt="" width={169} height={221} className="h-6 w-auto" priority />
-          </button>
+          <NavTooltip label="Expand sidebar" hint="Show menu names">
+            <button
+              type="button"
+              onClick={() => setCollapsed(false)}
+              aria-label="Expand sidebar"
+              aria-expanded={false}
+              className="group/logo flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-brand-400 to-brand-600 shadow-md shadow-brand-500/30 transition hover:scale-105 hover:shadow-lg hover:shadow-brand-500/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2"
+            >
+              <Image src="/logo-mark-white.png" alt="" width={169} height={221} className="h-6 w-auto" priority />
+            </button>
+          </NavTooltip>
         ) : (
           <>
             <Link href="/" onClick={() => setMobileOpen(false)} className="flex items-center" title="OneRoot Contract Farming">
@@ -281,8 +291,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
           if (group.single && !compact) {
             const item = group.items[0];
             return (
+              <NavTooltip key={group.label} label={item.label}>
               <Link
-                key={group.label}
                 href={item.href}
                 onClick={() => setMobileOpen(false)}
                 aria-current={holdsActive ? "page" : undefined}
@@ -303,6 +313,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
                 </span>
                 <span className="min-w-0 flex-1 truncate">{item.label}</span>
               </Link>
+              </NavTooltip>
             );
           }
           return (
@@ -310,6 +321,14 @@ export function Shell({ children }: { children: React.ReactNode }) {
               {compact ? (
                 <div className="mx-auto mb-2 h-px w-6 bg-zinc-200 first:hidden dark:bg-zinc-800" />
               ) : (
+                <NavTooltip
+                  label={group.label}
+                  hint={
+                    open
+                      ? "Click to close"
+                      : `${group.items.length} page${group.items.length > 1 ? "s" : ""} · click to open`
+                  }
+                >
                 <button
                   type="button"
                   onClick={() => setOpenGroup((g) => (g === group.label ? null : group.label))}
@@ -337,6 +356,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
                   {holdsActive && !open ? <span className="h-1.5 w-1.5 rounded-full bg-brand-500" aria-hidden /> : null}
                   <ChevronDown size={15} className={`shrink-0 text-zinc-400 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
                 </button>
+                </NavTooltip>
               )}
               {/* Height animates via the grid-rows trick: 0fr closed, 1fr open. */}
               <div
@@ -353,10 +373,10 @@ export function Shell({ children }: { children: React.ReactNode }) {
                       const active = isActive(pathname, item.href);
                       const Icon = item.icon;
                       return (
+                        // Collapsed to icons the group heading is hidden, so the tooltip names it.
+                        <NavTooltip key={item.href} label={item.label} hint={group.single ? undefined : group.label}>
                         <Link
-                          key={item.href}
                           href={item.href}
-                          title={item.label}
                           onClick={() => setMobileOpen(false)}
                           aria-current={active ? "page" : undefined}
                           className={`group relative flex items-center gap-2.5 rounded-lg text-sm transition-colors ${
@@ -385,6 +405,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
                           </span>
                           {!compact && <span className="truncate">{item.label}</span>}
                         </Link>
+                        </NavTooltip>
                       );
                     })}
                   </div>

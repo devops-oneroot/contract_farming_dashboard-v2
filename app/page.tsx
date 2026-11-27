@@ -172,7 +172,7 @@ function ChartCard({
       </div>
       {/* The chart fills what is left and sits in the middle of it, so a
           short chart beside a tall one does not leave a gap at its foot. */}
-      <div className="flex min-h-0 flex-1 flex-col justify-center">{loading ? <LoadingBlock /> : children}</div>
+      <div className="flex min-h-0 flex-1 flex-col justify-center">{loading ? <LoadingBlock fill={false} /> : children}</div>
     </div>
   );
 }

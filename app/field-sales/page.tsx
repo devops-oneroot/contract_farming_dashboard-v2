@@ -409,6 +409,8 @@ export default function FieldSalesPage() {
           on purpose — somebody who has learned to filter farmers should not
           have to learn a second arrangement here. */}
       <div className="rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+        {/* Search and filters on one line (.filter-row): they wrap only when they do not fit. */}
+        <div className="filter-row">
         <div className="flex flex-wrap items-center gap-3 border-b border-zinc-100 p-3 dark:border-zinc-800">
           <button
             onClick={() => load()}
@@ -515,6 +517,7 @@ export default function FieldSalesPage() {
               rows={() => saleLines(rows)}
             />
           </div>
+        </div>
         </div>
       </div>
 

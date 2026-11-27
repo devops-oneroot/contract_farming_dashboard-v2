@@ -517,6 +517,8 @@ export default function AnalysisPage() {
 
       {/* Filters in one row above the charts, as on every other tab. */}
       <div className="rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+        {/* Search and filters on one line (.filter-row): they wrap only when they do not fit. */}
+        <div className="filter-row">
         <div className="flex flex-wrap items-center gap-3 border-b border-zinc-100 p-3 dark:border-zinc-800">
           <button
             onClick={() => load()}
@@ -534,7 +536,9 @@ export default function AnalysisPage() {
               className="w-full rounded-lg border border-zinc-300 bg-transparent py-2 pl-9 pr-3 text-sm dark:border-zinc-700"
             />
           </div>
-          <ExcelExport id="sales-analysis" fileName="sales" columns={SALE_COLUMNS} rows={() => saleLines(rows)} />
+          <div className="order-last">
+            <ExcelExport id="sales-analysis" fileName="sales" columns={SALE_COLUMNS} rows={() => saleLines(rows)} />
+          </div>
         </div>
 
         {/* One column per filter: label on top, control below. */}
@@ -603,6 +607,7 @@ export default function AnalysisPage() {
             }}
           />
 
+        </div>
         </div>
 
         {/* The same lookup the Farmers tab carries, and the same component -

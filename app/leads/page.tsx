@@ -7,7 +7,7 @@ import { api, type Lead, type LeadsPage, type TeleCall } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { Select } from "../components/ui";
 import { DateRangeFilter } from "../components/date-range-filter";
-import { Loader } from "../components/loading";
+import { Loader, LoadingOverlay } from "../components/loading";
 import { Pagination } from "../components/pagination";
 import { TeleCallDialog, OutcomePill, fmtWhen } from "../components/tele-call";
 
@@ -133,6 +133,8 @@ export default function LeadsPage() {
       </div>
 
       <div className="card overflow-hidden">
+        {/* Search and filters on one line (.filter-row): they wrap only when they do not fit. */}
+        <div className="filter-row">
         {/* Toolbar */}
         <div className="flex flex-wrap items-center gap-3 border-b border-zinc-100 p-3 dark:border-zinc-800">
           <button
@@ -150,7 +152,6 @@ export default function LeadsPage() {
               className="w-full rounded-lg border border-zinc-300 bg-transparent py-2 pl-9 pr-3 text-sm dark:border-zinc-700"
             />
           </div>
-          {loading && <Loader />}
         </div>
 
         {/* Filters */}
@@ -233,11 +234,14 @@ export default function LeadsPage() {
             }}
           />
         </div>
+        </div>
 
         {error && <p className="m-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950/40">{error}</p>}
 
         {/* Table */}
-        <div className="fill-scroll scroll-thin overflow-auto">
+        <div className="fill-scroll scroll-thin relative overflow-auto">
+          {/* Loading: a spinner centred over the table, not in the filters. */}
+          <LoadingOverlay show={loading} />
           <table className="data-table">
             <thead className="sticky top-0 z-10 [&>tr>th]:bg-zinc-50 dark:[&>tr>th]:bg-zinc-900">
               <tr>

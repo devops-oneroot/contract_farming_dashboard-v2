@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Clock, Droplets, MessageSquareText, History, Landmark, Search, ShieldCheck, Tractor, UserCog, UserPlus, X } from "lucide-react";
+import { Banana, Clock, Droplets, FlaskConical, MessageSquareText, History, Landmark, Search, ShieldCheck, Tractor, UserCog, UserPlus, X } from "lucide-react";
 
 import { api, type EnquiryAnswers, type EnquiryAssignee, type EnquiryCategory, type EnquiryRow } from "../lib/api";
 import { useAuth } from "../lib/auth";
@@ -17,6 +17,8 @@ const DEPARTMENTS: { key: EnquiryCategory; label: string; icon: typeof Tractor; 
   { key: "drip", label: "Drip irrigation", icon: Droplets, tint: "bg-sky-100 text-sky-700 dark:bg-sky-950/50 dark:text-sky-300" },
   { key: "insurance", label: "Insurance", icon: ShieldCheck, tint: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300" },
   { key: "kcc", label: "KCC low cost", icon: Landmark, tint: "bg-violet-100 text-violet-700 dark:bg-violet-950/50 dark:text-violet-300" },
+  { key: "chemicals", label: "Chemicals", icon: FlaskConical, tint: "bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300" },
+  { key: "banana", label: "Banana tissue culture", icon: Banana, tint: "bg-yellow-100 text-yellow-700 dark:bg-yellow-950/50 dark:text-yellow-300" },
 ];
 const LABEL = Object.fromEntries(DEPARTMENTS.map((d) => [d.key, d.label])) as Record<EnquiryCategory, string>;
 
@@ -73,7 +75,14 @@ function Cell({ e, cat }: { e: EnquiryAnswers; cat: EnquiryCategory }) {
       <Answer v={e.dripIrrigation} />
     );
   }
-  return <Answer v={cat === "insurance" ? e.insurance : e.kccLowCost} />;
+  const simple: Record<"insurance" | "kcc" | "chemicals" | "banana", boolean | null> = {
+    insurance: e.insurance,
+    kcc: e.kccLowCost,
+    // `?? null`: farmers saved before these questions existed have no key at all.
+    chemicals: e.chemicals ?? null,
+    banana: e.bananaTissueCulture ?? null,
+  };
+  return <Answer v={simple[cat]} />;
 }
 
 /**
@@ -275,6 +284,8 @@ function DepartmentSummary({ rows, categories }: { rows: EnquiryRow[]; categorie
     drip: rows.filter((r) => r.enquiry.dripIrrigation === true),
     insurance: rows.filter((r) => r.enquiry.insurance === true),
     kcc: rows.filter((r) => r.enquiry.kccLowCost === true),
+    chemicals: rows.filter((r) => r.enquiry.chemicals === true),
+    banana: rows.filter((r) => r.enquiry.bananaTissueCulture === true),
   };
   const items: Partial<Record<EnquiryCategory, { label: string; n: number }[]>> = {
     tractor: itemCounts(yes.tractor, (r) => r.enquiry.implements, IMPLEMENTS),
@@ -282,7 +293,7 @@ function DepartmentSummary({ rows, categories }: { rows: EnquiryRow[]; categorie
   };
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
       {DEPARTMENTS.filter((d) => categories.includes(d.key)).map((d) => {
         const Icon = d.icon;
         const list = items[d.key];

@@ -1391,10 +1391,12 @@ export type EnquiryAnswers = {
   dripParts: string[];
   insurance: boolean | null;
   kccLowCost: boolean | null;
+  chemicals: boolean | null;
+  bananaTissueCulture: boolean | null;
 };
 
-/** The four enquiry departments. */
-export type EnquiryCategory = "tractor" | "drip" | "insurance" | "kcc";
+/** The enquiry departments. */
+export type EnquiryCategory = "tractor" | "drip" | "insurance" | "kcc" | "chemicals" | "banana";
 
 /** A user (or, from earlier setups, a role) who handles an enquiry department. */
 export type EnquiryAssignee = { type: "role" | "user"; id: string; label: string };
